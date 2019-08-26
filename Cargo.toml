@@ -1,0 +1,24 @@
+[package]
+name = "fontdue"
+version = "0.1.0"
+authors = ["mooman219 <mooman219@gmail.com>"]
+license = "MIT"
+documentation = "https://docs.rs/fontdue"
+homepage = "https://github.com/mooman219/fontdue"
+repository = "https://github.com/mooman219/fontdue"
+description = "A simple no_std font parser and rasterizer."
+keywords = ["font", "truetype", "ttf"]
+readme = "README.md"
+edition = "2018"
+
+[badges]
+maintenance = { status = "experimental" }
+
+[dependencies]
+hashbrown = "0.5"
+
+[profile.dev]
+opt-level = 3
+
+[profile.test]
+opt-level = 3
