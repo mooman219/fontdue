@@ -1,9 +1,10 @@
 # Fontdue
 
-Fontdue is a simple, `no_std`, pure Rust, truetype font parser and rasterizer. It aims to support all valid (unicode encoded) TrueType fonts correctly.
+Fontdue is a simple, `no_std`, pure Rust, truetype font parser and rasterizer. It aims to support all valid (unicode encoded) TrueType fonts correctly. It aims to make interacting with fonts as fast as possible. This includes getting layout information and rasterization.
 
-This libary _does_ make allocations and depends on the `alloc` library. Fonts are fully parsed on creation and relevant information is stored in a faster to accesss format (TODO). The font structures have no lifetime dependencies unlike other font libraries.
+A non-goal of this library is to be allocation free and have a fast/"zero cost" initial load. This libary _does_ make allocations and depends on the `alloc` crate. Fonts are fully parsed on creation and relevant information is stored in a more conveinent to accesss format. Unlike other font libraries, the font structures have no lifetime dependencies since it allocates its own space.
 
+Ideally, font loading should be faster in the future, but making the loading process correct and readable was the initial priority.
 
 ## TrueType Tables
 - `cmap` Character to glyph mapping (Unicode only)
