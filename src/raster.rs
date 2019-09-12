@@ -47,10 +47,8 @@ impl Raster {
 
     #[inline(always)]
     fn add(&mut self, index: i32, value: f32) {
-        // Negligible performance impact.
-        // unsafe {
-        //     *self.a.get_unchecked_mut(index as usize) += value;
-        // }
+        // This can technically go out of bounds if the glyph isn't offset, or if the font is
+        // malicious. These situation are corrected for in font.rs.
         self.a[index as usize] += value;
     }
 
