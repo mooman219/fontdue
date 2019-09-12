@@ -12,7 +12,4 @@ pub fn main() {
     println!("hmtx.hmetrics: {}", font.hmtx.hmetrics.len());
     println!("cmap.map: {}", font.cmap.map.len());
     println!("head.index_to_loc_format: {}", font.head.index_to_loc_format);
-    for point in &font.glyf.glyphs[47].points {
-        println!("{:?}", point);
-    }
 }

@@ -108,9 +108,11 @@ impl TableCmap {
                             let mut glyph_index_offset = 16 + seg_count * 6;
                             // Offset into where we are in the id_range_offset_array.
                             glyph_index_offset += i * 2;
-                            // Add the value of the idRangeOffset, which will move us into the glyphIndex array.
+                            // Add the value of the idRangeOffset, which will move us into the
+                            // glyphIndex array.
                             glyph_index_offset += id_range_offset as usize;
-                            // Then add the character index of the current segment, multiplied by 2 for USHORTs.
+                            // Then add the character index of the current segment, multiplied by
+                            // 2 for USHORTs.
                             glyph_index_offset += (c - start_code) as usize * 2;
                             let glyph_index = read_u16(&map[glyph_index_offset..]);
                             if glyph_index != 0 {

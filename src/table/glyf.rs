@@ -74,9 +74,13 @@ impl RawPoint {
 pub struct Glyph {
     /// The number of contours in the glyph.
     pub num_contours: i16,
+    /// The lowest x point. This is derived from the points in case the font is malicious.
     pub xmin: i16,
-    pub ymin: i16,
+    /// The highest x point. This is derived from the points in case the font is malicious.
     pub xmax: i16,
+    /// The lowest y point. This is derived from the points in case the font is malicious.
+    pub ymin: i16,
+    /// The highest y point. This is derived from the points in case the font is malicious.
     pub ymax: i16,
     /// The index of the metrics location for this glyph.
     pub metrics: usize,
@@ -90,8 +94,8 @@ impl Default for Glyph {
         Glyph {
             num_contours: 0,
             xmin: 0,
-            ymin: 0,
             xmax: 0,
+            ymin: 0,
             ymax: 0,
             metrics: 0,
             points: Vec::with_capacity(0),
@@ -117,6 +121,8 @@ fn parse_glyph(glyf: &[u8], locations: &[GlyphLocation], index: usize) -> FontRe
     }
     let mut offset = loc.offset;
     glyph.num_contours = read_i16(&glyf[offset..]);
+    // The boundary box is read here, but can be adjusted if a point goes outside of the box when
+    // the glyph is being parsed.
     glyph.xmin = read_i16(&glyf[offset + 2..]);
     glyph.ymin = read_i16(&glyf[offset + 4..]);
     glyph.xmax = read_i16(&glyf[offset + 6..]);
@@ -313,13 +319,28 @@ fn parse_glyph(glyf: &[u8], locations: &[GlyphLocation], index: usize) -> FontRe
 
             let mut compound_glyph_points =
                 parse_glyph(glyf, locations, compound_glyph_index as usize)?.points;
-            // if index == 437 {
-            //     println!("{} {} {} {} ({}, {})", a, b, c, d, cx as f32, cy as f32);
-            // }
             for point in &mut compound_glyph_points {
                 point.transform(a, b, c, d, cx as f32, cy as f32);
             }
             glyph.points.append(&mut compound_glyph_points);
+        }
+    }
+
+    // In case any of the points go outside of the bounding box, that's fixed here. This can happen
+    // with a well meaning font putting an off curve point outside of the bounding box, or a
+    // malicious font trying to crash the rasterizer.
+    for point in &glyph.points {
+        let x = point.x as i16;
+        if x < glyph.xmin {
+            glyph.xmin = x;
+        } else if x > glyph.xmax {
+            glyph.xmax = x;
+        }
+        let y = point.y as i16;
+        if y < glyph.ymin {
+            glyph.ymin = y;
+        } else if y > glyph.ymax {
+            glyph.ymax = y;
         }
     }
 

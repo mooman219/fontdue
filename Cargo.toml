@@ -17,6 +17,13 @@ maintenance = { status = "experimental" }
 [dependencies]
 hashbrown = "0.5"
 
+[dev-dependencies]
+criterion = "0.3"
+
+[[bench]]
+name = "glyph"
+harness = false
+
 [profile.dev]
 opt-level = 3
 

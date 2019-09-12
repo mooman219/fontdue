@@ -7,15 +7,16 @@
 
 extern crate alloc;
 
+mod font;
 mod math;
 mod parse;
 mod raster;
-/// It holds the lower level raw data that was parsed from the font. Raw is unstable and prone to
-/// change.
+/// Functionality for the lower level raw data that was parsed from the font. Raw is unstable and
+/// prone to change.
 pub mod raw;
 mod table;
 
-pub use crate::math::*;
-pub use crate::raster::*;
+pub use crate::font::*;
 
+/// Alias for Result<T, &'static str>.
 pub type FontResult<T> = Result<T, &'static str>;

@@ -1,6 +1,7 @@
-// Raster from font-rs. Various changes for a more favorable output.
+// Raster from font-rs.
+// Includes changes for a performance and correctness.
 
-use crate::{Geometry, Point};
+use crate::math::{Geometry, Point};
 use alloc::vec;
 use alloc::vec::*;
 use core::cmp::min;
@@ -17,7 +18,7 @@ fn accumulate(src: &[f32]) -> Vec<u8> {
         } else {
             1.0
         };
-        unsafe { *(output.get_unchecked_mut(i)) = (255.0 * y) as u8 };
+        unsafe { *(output.get_unchecked_mut(i)) = (255.99998 * y) as u8 };
     }
     output
 }
@@ -41,8 +42,12 @@ impl Raster {
         match geometry {
             Geometry::Line(a, b) => self.draw_line(a, b),
             Geometry::Curve(a, b, c) => self.draw_curve(a, b, c),
-            Geometry::None => {}
         }
+    }
+
+    #[inline]
+    fn add(&mut self, index: i32, value: f32) {
+        self.a[index as usize] += value;
     }
 
     pub fn draw_line(&mut self, p0: &Point, p1: &Point) {
@@ -62,7 +67,7 @@ impl Raster {
             x -= p0.y * dxdy;
         }
         for y in y0..min(self.h, p1.y.ceil() as usize) {
-            let linestart = y * self.w;
+            let linestart = (y * self.w) as i32;
             let dy = ((y + 1) as f32).min(p1.y) - (y as f32).max(p0.y);
             let xnext = x + dxdy * dy;
             let d = dy * dir;
@@ -77,27 +82,27 @@ impl Raster {
             let x1i = x1ceil as i32;
             if x1i <= x0i + 1 {
                 let xmf = 0.5 * (x + xnext) - x0floor;
-                self.a[linestart + x0i as usize] += d - d * xmf;
-                self.a[linestart + (x0i + 1) as usize] += d * xmf;
+                self.add(linestart + x0i, d - d * xmf);
+                self.add(linestart + x0i + 1, d * xmf);
             } else {
                 let s = (x1 - x0).recip();
                 let x0f = x0 - x0floor;
                 let a0 = 0.5 * s * (1.0 - x0f) * (1.0 - x0f);
                 let x1f = x1 - x1ceil + 1.0;
                 let am = 0.5 * s * x1f * x1f;
-                self.a[linestart + x0i as usize] += d * a0;
+                self.add(linestart + x0i, d * a0);
                 if x1i == x0i + 2 {
-                    self.a[linestart + (x0i + 1) as usize] += d * (1.0 - a0 - am);
+                    self.add(linestart + x0i + 1, d * (1.0 - a0 - am));
                 } else {
                     let a1 = s * (1.5 - x0f);
-                    self.a[linestart + (x0i + 1) as usize] += d * (a1 - a0);
+                    self.add(linestart + x0i + 1, d * (a1 - a0));
                     for xi in x0i + 2..x1i - 1 {
-                        self.a[linestart + xi as usize] += d * s;
+                        self.add(linestart + xi, d * s);
                     }
                     let a2 = a1 + (x1i - x0i - 3) as f32 * s;
-                    self.a[linestart + (x1i - 1) as usize] += d * (1.0 - a2 - am);
+                    self.add(linestart + x1i - 1, d * (1.0 - a2 - am));
                 }
-                self.a[linestart + x1i as usize] += d * am;
+                self.add(linestart + x1i, d * am);
             }
             x = xnext;
         }
