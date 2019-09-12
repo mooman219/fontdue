@@ -84,7 +84,13 @@ impl Font {
     /// Retrieves the layout metrics for the given character. If the caracter isn't present in the
     /// font, then the layout for the font's default character is returned instead.
     pub fn metrics(&self, character: char, px: f32) -> Metrics {
-        let glyph = &self.glyphs[self.lookup(character)];
+        self.metrics_indexed(self.lookup_glyph_index(character), px)
+    }
+
+    /// Retrieves the layout metrics at the given index. You normally want to be using
+    /// metrics(char, f32) instead, unless your glyphs are pre-indexed.
+    pub fn metrics_indexed(&self, index: usize, px: f32) -> Metrics {
+        let glyph = &self.glyphs[index];
         glyph.metrics(px, self.units_per_em)
     }
 
@@ -92,7 +98,13 @@ impl Font {
     /// isn't present in the font, then the layout and bitmap for the font's default character is
     /// returned instead.
     pub fn rasterize(&self, character: char, px: f32) -> (Metrics, Vec<u8>) {
-        let glyph = &self.glyphs[self.lookup(character)];
+        self.rasterize_indexed(self.lookup_glyph_index(character), px)
+    }
+
+    /// Retrieves the layout metrics and rasterized bitmap at the given index. You normally want to
+    /// be using rasterize(char, f32) instead, unless your glyphs are pre-indexed.
+    pub fn rasterize_indexed(&self, index: usize, px: f32) -> (Metrics, Vec<u8>) {
+        let glyph = &self.glyphs[index];
         let metrics = glyph.metrics(px, self.units_per_em);
 
         let mut raster = Raster::new(metrics.width, metrics.height);
@@ -102,8 +114,7 @@ impl Font {
         (metrics, raster.get_bitmap())
     }
 
-    #[inline]
-    fn lookup(&self, character: char) -> usize {
+    pub fn lookup_glyph_index(&self, character: char) -> usize {
         let result = self.char_to_glyph.get(&(character as u32));
         match result.copied() {
             Some(index) => index as usize,

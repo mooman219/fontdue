@@ -19,9 +19,14 @@ hashbrown = "0.5"
 
 [dev-dependencies]
 criterion = "0.3"
+rusttype = "0.7.7"
 
 [[bench]]
-name = "glyph"
+name = "fontdue"
+harness = false
+
+[[bench]]
+name = "rusttype"
 harness = false
 
 [profile.dev]

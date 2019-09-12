@@ -45,8 +45,12 @@ impl Raster {
         }
     }
 
-    #[inline]
+    #[inline(always)]
     fn add(&mut self, index: i32, value: f32) {
+        // Negligible performance impact.
+        // unsafe {
+        //     *self.a.get_unchecked_mut(index as usize) += value;
+        // }
         self.a[index as usize] += value;
     }
 
