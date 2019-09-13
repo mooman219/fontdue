@@ -348,7 +348,7 @@ fn parse_glyph(glyf: &[u8], locations: &[GlyphLocation], index: usize) -> FontRe
 }
 
 impl TableGlyf {
-    pub fn new(glyf: &[u8], locations: &Vec<GlyphLocation>) -> FontResult<TableGlyf> {
+    pub fn new(glyf: &[u8], locations: &[GlyphLocation]) -> FontResult<TableGlyf> {
         let mut glyphs = Vec::with_capacity(locations.len());
         for i in 0..locations.len() {
             let glyph = parse_glyph(glyf, locations, i)?;

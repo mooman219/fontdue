@@ -68,7 +68,7 @@ impl Font {
             }
             // Construct the glyph.
             glyphs.push(Glyph {
-                geometry: geometry,
+                geometry,
                 width: (glyph.xmax - glyph.xmin) as f32,
                 height: (glyph.ymax - glyph.ymin) as f32,
             });

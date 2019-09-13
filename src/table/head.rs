@@ -27,7 +27,7 @@ impl TableHead {
         let font_revision = read_u32(&head[4..]);
         let checksum_adjustment = read_u32(&head[8..]);
         let magic_number = read_u32(&head[12..]);
-        if magic_number != 0x5F0F3CF5 {
+        if magic_number != 0x5F0_F3CF5 {
             return Err("Font.head: Incorrect magic number, is this a font?");
         }
         let flags = read_u16(&head[16..]);

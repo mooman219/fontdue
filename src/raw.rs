@@ -21,10 +21,10 @@ fn find_table_offset(data: &[u8], fontstart: usize, tag: &[u8]) -> FontResult<us
 fn is_font(data: &[u8]) -> bool {
     if data.len() >= 4 {
         let tag = read_u32(data);
-        tag == 0x74727565 // true
-        || tag == 0x74797031 // typ1
-        || tag == 0x4F54544F // OTTO
-        || tag == 0x00010000 // The normal one
+        tag == 0x7472_7565 // true
+        || tag == 0x7479_7031 // typ1
+        || tag == 0x4F54_544F // OTTO
+        || tag == 0x0001_0000 // The normal one
     } else {
         false
     }
@@ -33,7 +33,7 @@ fn is_font(data: &[u8]) -> bool {
 fn is_collection(data: &[u8]) -> bool {
     if data.len() >= 4 {
         let tag = read_u32(data);
-        tag == 0x74746366 // ttcf
+        tag == 0x7474_6366 // ttcf
     } else {
         false
     }
