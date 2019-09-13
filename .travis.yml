@@ -23,4 +23,4 @@ branches:
 script:
   # Clippy is for another day.
   # - cargo clippy -- -D warnings
-  - cargo build
+  - cargo build --all-targets
