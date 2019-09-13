@@ -9,8 +9,6 @@ use core::cmp::min;
 pub struct Raster {
     w: usize,
     h: usize,
-    curr_w: usize,
-    curr_h: usize,
     a: Vec<f32>,
 }
 
@@ -19,23 +17,16 @@ impl Raster {
         Raster {
             w,
             h,
-            curr_w: w,
-            curr_h: h,
             a: vec![0.0; w * h + 4],
         }
     }
 
-    pub fn setup(&mut self, w: usize, h: usize) {
-        self.curr_w = w;
-        self.curr_h = h;
-        // self.a = vec![0.0; w * h + 4];
-        // for element in &mut self.a[0..self.curr_w * self.curr_h] {
-        //     *element = 0.0;
-        // }
-        // unsafe {
-        //     let vec_ptr = self.a.as_mut_ptr();
-        //     core::ptr::write_bytes(vec_ptr, 0, w * h);
-        // }
+    pub fn refit(&mut self, w: usize, h: usize) {
+        if w * h >= self.a.len() {
+            panic!("Given width ({}) and height ({}) exceed the raster's range ({}).", w, h, self.a.len());
+        }
+        self.w = w;
+        self.h = h;
     }
 
     pub fn draw(&mut self, geometry: &Geometry) {
@@ -68,8 +59,8 @@ impl Raster {
         if p0.y < 0.0 {
             x -= p0.y * dxdy;
         }
-        for y in y0..min(self.curr_h, p1.y.ceil() as usize) {
-            let linestart = (y * self.curr_w) as i32;
+        for y in y0..min(self.h, p1.y.ceil() as usize) {
+            let linestart = (y * self.w) as i32;
             let dy = ((y + 1) as f32).min(p1.y) - (y as f32).max(p0.y);
             let xnext = x + dxdy * dy;
             let d = dy * dir;
@@ -132,8 +123,8 @@ impl Raster {
         self.draw_line(&p, p2);
     }
 
-    pub fn get_bitmap(&mut self) -> Vec<u8> {
-        let length = self.curr_w * self.curr_h;
+    pub fn consume_bitmap(&mut self) -> Vec<u8> {
+        let length = self.w * self.h;
         let mut acc = 0.0;
         let mut output = Vec::with_capacity(length);
         unsafe { output.set_len(length) };
@@ -155,7 +146,25 @@ impl Raster {
         output
     }
 
-    // pub fn get_bitmap(&self) -> Vec<u8> {
-    //     accumulate(&self.a[0..self.curr_w * self.curr_h])
-    // }
+    pub fn get_bitmap(&self) -> Vec<u8> {
+        let length = self.w * self.h;
+        let mut acc = 0.0;
+        let mut output = Vec::with_capacity(length);
+        unsafe { output.set_len(length) };
+        for i in 0..length {
+            unsafe {
+                acc += self.a.get_unchecked(i);
+            }
+            let y = acc.abs();
+            let y = if y < 1.0 {
+                y
+            } else {
+                1.0
+            };
+            unsafe {
+                *(output.get_unchecked_mut(i)) = (255.99998 * y) as u8;
+            }
+        }
+        output
+    }
 }

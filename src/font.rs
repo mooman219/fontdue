@@ -51,7 +51,6 @@ pub struct Font {
     units_per_em: f32,
     glyphs: Vec<Glyph>,
     char_to_glyph: HashMap<u32, u32>,
-    canvas: Raster,
 }
 
 impl Font {
@@ -79,7 +78,6 @@ impl Font {
             glyphs,
             char_to_glyph: raw.cmap.map.clone(),
             units_per_em: raw.head.units_per_em as f32,
-            canvas: Raster::new(100, 100),
         })
     }
 
@@ -108,12 +106,11 @@ impl Font {
     pub fn rasterize_indexed(&mut self, index: usize, px: f32) -> (Metrics, Vec<u8>) {
         let glyph = &self.glyphs[index];
         let metrics = glyph.metrics(px, self.units_per_em);
-
-        self.canvas.setup(metrics.width, metrics.height);
+        let mut canvas = Raster::new(metrics.width, metrics.height);
         for element in &glyph.geometry {
-            self.canvas.draw(&element.scale(metrics.scale));
+            canvas.draw(&element.scale(metrics.scale));
         }
-        (metrics, self.canvas.get_bitmap())
+        (metrics, canvas.get_bitmap())
     }
 
     pub fn lookup_glyph_index(&self, character: char) -> usize {
