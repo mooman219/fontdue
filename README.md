@@ -1,5 +1,10 @@
 # Fontdue
 
+[![Documentation](https://travis-ci.org/mooman219/fontdue.svg?branch=master)](https://travis-ci.org/mooman219/fontdue)
+[![Documentation](https://docs.rs/fontdue/badge.svg)](https://docs.rs/fontdue)
+[![Crates.io](https://img.shields.io/crates/v/fontdue.svg)](https://crates.io/crates/fontdue)
+[![License](https://img.shields.io/crates/l/fontdue.svg)](https://github.com/mooman219/fontdue/blob/master/LICENSE)
+
 Fontdue is a simple, `no_std`, pure Rust, truetype font parser and rasterizer. It aims to support all valid (unicode encoded) TrueType fonts correctly. It aims to make interacting with fonts as fast as possible. This includes getting layout information and rasterization.
 
 A non-goal of this library is to be allocation free and have a fast/"zero cost" initial load. This libary _does_ make allocations and depends on the `alloc` crate. Fonts are fully parsed on creation and relevant information is stored in a more conveinent to accesss format. Unlike other font libraries, the font structures have no lifetime dependencies since it allocates its own space.
