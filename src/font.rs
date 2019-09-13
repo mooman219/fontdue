@@ -51,6 +51,7 @@ pub struct Font {
     units_per_em: f32,
     glyphs: Vec<Glyph>,
     char_to_glyph: HashMap<u32, u32>,
+    canvas: Raster,
 }
 
 impl Font {
@@ -78,6 +79,7 @@ impl Font {
             glyphs,
             char_to_glyph: raw.cmap.map.clone(),
             units_per_em: raw.head.units_per_em as f32,
+            canvas: Raster::new(100, 100),
         })
     }
 
@@ -97,21 +99,21 @@ impl Font {
     /// Retrieves the layout metrics and rasterized bitmap for the given character. If the caracter
     /// isn't present in the font, then the layout and bitmap for the font's default character is
     /// returned instead.
-    pub fn rasterize(&self, character: char, px: f32) -> (Metrics, Vec<u8>) {
+    pub fn rasterize(&mut self, character: char, px: f32) -> (Metrics, Vec<u8>) {
         self.rasterize_indexed(self.lookup_glyph_index(character), px)
     }
 
     /// Retrieves the layout metrics and rasterized bitmap at the given index. You normally want to
     /// be using rasterize(char, f32) instead, unless your glyphs are pre-indexed.
-    pub fn rasterize_indexed(&self, index: usize, px: f32) -> (Metrics, Vec<u8>) {
+    pub fn rasterize_indexed(&mut self, index: usize, px: f32) -> (Metrics, Vec<u8>) {
         let glyph = &self.glyphs[index];
         let metrics = glyph.metrics(px, self.units_per_em);
 
-        let mut raster = Raster::new(metrics.width, metrics.height);
+        self.canvas.setup(metrics.width, metrics.height);
         for element in &glyph.geometry {
-            raster.draw(&element.scale(metrics.scale));
+            self.canvas.draw(&element.scale(metrics.scale));
         }
-        (metrics, raster.get_bitmap())
+        (metrics, self.canvas.get_bitmap())
     }
 
     pub fn lookup_glyph_index(&self, character: char) -> usize {

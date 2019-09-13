@@ -17,7 +17,7 @@ fn rasterize(font: &Font, character: char, size: f32) -> Vec<u8> {
 
 fn criterion_benchmark(c: &mut Criterion) {
     // Loading
-    let font = include_bytes!("resources/Roboto-Regular.ttf") as &[u8];
+    let font = include_bytes!("../resources/Roboto-Regular.ttf") as &[u8];
     let font = Font::from_bytes(font).unwrap();
 
     c.bench_function("RustType: Rasterize 'g' at 12", |b| b.iter(|| rasterize(black_box(&font), 'g', 12.0)));

@@ -1,7 +1,7 @@
 use fontdue::raw::*;
 
 pub fn main() {
-    let font = include_bytes!("resources/Roboto-Regular.ttf") as &[u8];
+    let font = include_bytes!("../resources/Roboto-Regular.ttf") as &[u8];
     let font = RawFont::new(font).unwrap();
     println!("head.units_per_em: {}", font.head.units_per_em);
     println!("head.xmin: {}", font.head.xmin);

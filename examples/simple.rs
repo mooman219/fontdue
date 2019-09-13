@@ -9,8 +9,8 @@ const SIZE: f32 = 17.0;
 
 pub fn main() {
     // Loading and rasterization
-    let font = include_bytes!("resources/Roboto-Regular.ttf") as &[u8];
-    let font = fontdue::Font::from_bytes(font).unwrap();
+    let font = include_bytes!("../resources/Roboto-Regular.ttf") as &[u8];
+    let mut font = fontdue::Font::from_bytes(font).unwrap();
     let (metrics, bitmap) = font.rasterize('g', 17.0);
 
     // Output
@@ -18,7 +18,7 @@ pub fn main() {
     let _ = o.write(format!("P5\n{} {}\n255\n", metrics.width, metrics.height).as_bytes());
     let _ = o.write(&bitmap);
 
-    let font = include_bytes!("resources/Roboto-Regular.ttf") as &[u8];
+    let font = include_bytes!("../resources/Roboto-Regular.ttf") as &[u8];
     let font = rusttype::Font::from_bytes(font).unwrap();
     let glyph = font.glyph(CHARACTER).scaled(Scale::uniform(SIZE)).positioned(rusttype::point(0.0, 0.0));
     let rect = glyph.pixel_bounding_box().unwrap();
