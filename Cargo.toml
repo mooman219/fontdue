@@ -1,15 +1,17 @@
 [package]
 name = "fontdue"
-version = "0.1.0"
-authors = ["mooman219 <mooman219@gmail.com>"]
+version = "0.0.1"
+authors = ["Joe Cumbo <mooman219@gmail.com>"]
 license = "MIT"
 documentation = "https://docs.rs/fontdue"
 homepage = "https://github.com/mooman219/fontdue"
 repository = "https://github.com/mooman219/fontdue"
 description = "A simple no_std font parser and rasterizer."
-keywords = ["font", "truetype", "ttf"]
+keywords = ["font", "parser", "rasterizer", "truetype", "ttf"]
+categories = ["parser-implementations"]
 readme = "README.md"
 edition = "2018"
+exclude = ["resources/**", "examples/**", "benches/**"]
 
 [badges]
 maintenance = { status = "experimental" }
