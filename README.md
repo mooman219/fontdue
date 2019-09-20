@@ -18,15 +18,15 @@ Ideally, font loading should be faster in the future, but making the loading pro
 - `glyf` Glyph outlining
   - Planned support: Compound glyph matched points, compound glyph scaled offset
 - `head` General font information
-- `hhea` General horizontal layout
-- `hmtx` Glyph horizontal layout
+- `hhea` General horizontal layout (Optional)
+- `hmtx` Glyph horizontal layout (Optional)
+- `vhea` General vertical layout (Optional)
+- `vmtx` Glyph vertical layout (Optional)
 - `loca` Glyph outline offsets and lengths
 - `maxp` Maximum values used for the font
 
 Planned support for:
 - `kern` Kerning pair layout
-- `vhea` General vertical layout
-- `vmtx` Glyph vertical layout
 
 ## Performance
 
@@ -68,4 +68,4 @@ time:   [13.515 us 13.540 us 13.569 us]
 
 ## Attribution
 
-Inspired by how simple the wonderful `rusttype` crate made font parsing look. Rasterizer from the `font-rs` crate.
+Inspired by how simple the wonderful `rusttype` crate made font parsing look. Rasterizer from the `font-rs` crate [(link)](https://github.com/raphlinus/font-rs).
