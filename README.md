@@ -5,13 +5,13 @@
 [![Crates.io](https://img.shields.io/crates/v/fontdue.svg)](https://crates.io/crates/fontdue)
 [![License](https://img.shields.io/crates/l/fontdue.svg)](https://github.com/mooman219/fontdue/blob/master/LICENSE)
 
-Fontdue is a simple, `no_std`, pure Rust, truetype font parser and rasterizer. It aims to support all valid (unicode encoded) TrueType fonts correctly. It aims to make interacting with fonts as fast as possible. This includes getting layout information and rasterization.
+Fontdue is a simple, `no_std`, pure Rust, truetype font parser and rasterizer. It aims to support all valid (unicode encoded) TrueType fonts correctly, and strives to make interacting with fonts as fast as possible. This includes: layout and rasterization.
 
-A non-goal of this library is to be allocation free and have a fast/"zero cost" initial load. This libary _does_ make allocations and depends on the `alloc` crate. Fonts are fully parsed on creation and relevant information is stored in a more conveinent to accesss format. Unlike other font libraries, the font structures have no lifetime dependencies since it allocates its own space.
+A non-goal of this library is to be allocation free and have a fast, "zero cost" initial load. This libary _does_ make allocations and depends on the `alloc` crate. Fonts are fully parsed on creation and relevant information is stored in a more conveinent to accesss format. Unlike other font libraries, the font structures have no lifetime dependencies since it allocates its own space.
 
 Ideally, font loading should be faster in the future, but making the loading process correct and readable was the initial priority.
 
-## TrueType Tables
+## TrueType Table Support
 - `cmap` Character to glyph mapping (Unicode only)
   - Supports popular formats 0, 4, 6, 10, 12, 13
   - Planned support: formats 2, 8, 14
@@ -68,4 +68,4 @@ time:   [13.515 us 13.540 us 13.569 us]
 
 ## Attribution
 
-Inspired by how simple the wonderful `rusttype` crate made font parsing look. Rasterizer from the `font-rs` crate [(link)](https://github.com/raphlinus/font-rs).
+Inspired by how simple the wonderful `rusttype` crate made font parsing look ([link](https://gitlab.redox-os.org/redox-os/rusttype)). Rasterizer from the `font-rs` crate ([link](https://github.com/raphlinus/font-rs)).
