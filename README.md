@@ -28,9 +28,20 @@ Ideally, font loading should be faster in the future, but making the loading pro
 Planned support for:
 - `kern` Kerning pair layout
 
+## Example
+
+```rust
+// Read the font data.
+let font = include_bytes!("../resources/Roboto-Regular.ttf") as &[u8];
+// Parse it into the font type.
+let mut font = fontdue::Font::from_bytes(font).unwrap();
+// Rasterize and get the layout metrics for the letter 'g' at 17px.
+let (metrics, bitmap) = font.rasterize('g', 17.0);
+```
+
 ## Performance
 
-Fastest rasterizing in the west.
+Strives to be the fastest.
 
 ### Fontdue
 
