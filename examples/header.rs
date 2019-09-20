@@ -9,7 +9,16 @@ pub fn main() {
     println!("head.xmax: {}", font.head.xmax);
     println!("head.ymax: {}", font.head.ymax);
     println!("maxp.num_glyphs: {}", font.maxp.num_glyphs);
-    println!("hmtx.hmetrics: {}", font.hmtx.hmetrics.len());
     println!("cmap.map: {}", font.cmap.map.len());
     println!("head.index_to_loc_format: {}", font.head.index_to_loc_format);
+
+    if let Some(hmtx) = &font.hmtx {
+        println!("hmtx.hmetrics: {}", hmtx.hmetrics.len());
+    }
+
+    if let Some(hhea) = &font.hhea {
+        println!("hhea.ascent: {}", hhea.ascent);
+        println!("hhea.descent: {}", hhea.descent);
+        println!("hhea.line_gap: {}", hhea.line_gap);
+    }
 }
