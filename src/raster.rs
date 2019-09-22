@@ -30,9 +30,10 @@ impl Raster {
     }
 
     pub fn draw(&mut self, geometry: &Geometry) {
-        match geometry {
-            Geometry::Line(a, b) => self.draw_line(a, b),
-            Geometry::Curve(a, b, c) => self.draw_curve(a, b, c),
+        if geometry.is_line() {
+            self.draw_line(&geometry.a, &geometry.b);
+        } else {
+            self.draw_curve(&geometry.a, &geometry.b, &geometry.c);
         }
     }
 

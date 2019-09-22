@@ -97,13 +97,13 @@ impl Font {
     /// Retrieves the layout metrics and rasterized bitmap for the given character. If the caracter
     /// isn't present in the font, then the layout and bitmap for the font's default character is
     /// returned instead.
-    pub fn rasterize(&mut self, character: char, px: f32) -> (Metrics, Vec<u8>) {
+    pub fn rasterize(&self, character: char, px: f32) -> (Metrics, Vec<u8>) {
         self.rasterize_indexed(self.lookup_glyph_index(character), px)
     }
 
     /// Retrieves the layout metrics and rasterized bitmap at the given index. You normally want to
     /// be using rasterize(char, f32) instead, unless your glyphs are pre-indexed.
-    pub fn rasterize_indexed(&mut self, index: usize, px: f32) -> (Metrics, Vec<u8>) {
+    pub fn rasterize_indexed(&self, index: usize, px: f32) -> (Metrics, Vec<u8>) {
         let glyph = &self.glyphs[index];
         let metrics = glyph.metrics(px, self.units_per_em);
         let mut canvas = Raster::new(metrics.width, metrics.height);

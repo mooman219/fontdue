@@ -45,24 +45,13 @@ Strives to be the fastest.
 
 ### Fontdue
 
-Here are some benchmarks. They generate the layout metrics and bitmap for the letter 'g' are different sizes. This is going straight from the character 'g' to the metrics and bitmap, which is how the majority of people will interact with a font library.
+Here are some benchmarks. They generate the layout metrics and bitmap for the letter 'g' are different sizes. This is going straight from the character 'g' to the metrics and bitmap, which is how the majority of people will interact with a font library and is the expected real world performance.
 
 ```
-Fontdue: Metrics and rasterize 'g' at 12px
-time:   [1.9893 us 2.0058 us 2.0241 us]
-
-Fontdue: Metrics and rasterize 'g' at 24px
-time:   [2.8187 us 2.8463 us 2.8767 us]
-```
-
-For benchmarks, you often see the lookup step skipped and instead just see the direct glyph index to output. Below are those benchmarks. Indexed benchmarks aren't typically representative of real world performance.
-
-```
-Fontdue: Metrics and rasterize 'g' indexed at 12px
-time:   [1.9635 us 1.9878 us 2.0167 us]
-
-Fontdue: Metrics and rasterize 'g' indexed at 24px
-time:   [2.7852 us 2.8059 us 2.8312 us]
+Fontdue:  Metrics + Rasterize 'g' at 12:  [1.8995 us 1.9230 us 1.9568 us]
+Fontdue:  Metrics + Rasterize 'g' at 24:  [2.7252 us 2.7405 us 2.7593 us]
+Fontdue:  Metrics + Rasterize 'g' at 36:  [3.6501 us 3.6755 us 3.7070 us]
+Fontdue:  Metrics + Rasterize 'g' at 48:  [4.6069 us 4.6914 us 4.7858 us]
 ```
 
 ### RustType
@@ -70,11 +59,10 @@ time:   [2.7852 us 2.8059 us 2.8312 us]
 Other popular font library.
 
 ```
-RustType: Metrics and rasterize 'g' at 12px
-time:   [9.7445 us 9.7559 us 9.7690 us]
-
-RustType: Metrics and rasterize 'g' at 24px
-time:   [13.515 us 13.540 us 13.569 us]
+RustType: Metrics + Rasterize 'g' at 12:  [9.9614 us 10.081 us 10.221 us]
+RustType: Metrics + Rasterize 'g' at 24:  [13.946 us 14.055 us 14.188 us]
+RustType: Metrics + Rasterize 'g' at 36:  [17.703 us 17.791 us 17.890 us]
+RustType: Metrics + Rasterize 'g' at 48:  [22.840 us 22.934 us 23.046 us]
 ```
 
 ## Attribution

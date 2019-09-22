@@ -1,39 +1,27 @@
 #[macro_use]
 extern crate criterion;
 
-use criterion::black_box;
-use criterion::Criterion;
+use criterion::{BenchmarkId, Criterion};
 use fontdue::*;
 
+#[inline]
 fn rasterize(font: &mut Font, character: char, size: f32) -> (Metrics, Vec<u8>) {
     font.rasterize(character, size)
 }
 
-fn rasterize_indexed(font: &mut Font, index: usize, size: f32) -> (Metrics, Vec<u8>) {
-    font.rasterize_indexed(index, size)
-}
-
-fn criterion_benchmark(c: &mut Criterion) {
+fn fontdue_benchmark(c: &mut Criterion) {
     // Loading
     let font = include_bytes!("../resources/Roboto-Regular.ttf") as &[u8];
     let mut font = Font::from_bytes(font).unwrap();
 
-    c.bench_function("Fontdue: Rasterize 'g' at 12", |b| {
-        b.iter(|| rasterize(black_box(&mut font), 'g', 12.0))
-    });
-    c.bench_function("Fontdue: Rasterize 'g' at 24", |b| {
-        b.iter(|| rasterize(black_box(&mut font), 'g', 24.0))
-    });
-
-    // Indexed benchmarks
-    let g_index = font.lookup_glyph_index('g');
-    c.bench_function("Fontdue: Rasterize 'g' indexed at 12", |b| {
-        b.iter(|| rasterize_indexed(black_box(&mut font), g_index, 12.0))
-    });
-    c.bench_function("Fontdue: Rasterize 'g' indexed at 24", |b| {
-        b.iter(|| rasterize_indexed(black_box(&mut font), g_index, 24.0))
-    });
+    let mut group = c.benchmark_group("Fontdue: Rasterize 'g'");
+    for size in [12.0, 24.0, 36.0, 48.0].iter() {
+        group.bench_with_input(BenchmarkId::from_parameter(size), size, |b, &size| {
+            b.iter(|| rasterize(&mut font, 'g', size));
+        });
+    }
+    group.finish();
 }
 
-criterion_group!(benches, criterion_benchmark);
+criterion_group!(benches, fontdue_benchmark);
 criterion_main!(benches);

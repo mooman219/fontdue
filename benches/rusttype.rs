@@ -1,10 +1,10 @@
 #[macro_use]
 extern crate criterion;
 
-use criterion::black_box;
-use criterion::Criterion;
+use criterion::{BenchmarkId, Criterion};
 use rusttype::*;
 
+#[inline]
 fn rasterize(font: &Font, character: char, size: f32) -> Vec<u8> {
     let glyph = font.glyph(character).scaled(Scale::uniform(size)).positioned(rusttype::point(0.0, 0.0));
     let rect = glyph.pixel_bounding_box().unwrap();
@@ -15,14 +15,19 @@ fn rasterize(font: &Font, character: char, size: f32) -> Vec<u8> {
     buffer
 }
 
-fn criterion_benchmark(c: &mut Criterion) {
+fn rusttype_benchmark(c: &mut Criterion) {
     // Loading
     let font = include_bytes!("../resources/Roboto-Regular.ttf") as &[u8];
     let font = Font::from_bytes(font).unwrap();
 
-    c.bench_function("RustType: Rasterize 'g' at 12", |b| b.iter(|| rasterize(black_box(&font), 'g', 12.0)));
-    c.bench_function("RustType: Rasterize 'g' at 24", |b| b.iter(|| rasterize(black_box(&font), 'g', 24.0)));
+    let mut group = c.benchmark_group("RustType: Rasterize 'g'");
+    for size in [12.0, 24.0, 36.0, 48.0].iter() {
+        group.bench_with_input(BenchmarkId::from_parameter(size), size, |b, &size| {
+            b.iter(|| rasterize(&font, 'g', size));
+        });
+    }
+    group.finish();
 }
 
-criterion_group!(benches, criterion_benchmark);
+criterion_group!(benches, rusttype_benchmark);
 criterion_main!(benches);

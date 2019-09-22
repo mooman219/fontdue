@@ -39,7 +39,10 @@ impl Point {
     }
 
     pub fn midpoint_raw(a: &RawPoint, b: &RawPoint) -> Point {
-        Point::lerp_raw(0.5, a, b)
+        Point {
+            x: (a.x + b.x) / 2.0,
+            y: (a.y + b.y) / 2.0,
+        }
     }
 
     /// Scales the X and Y components by the given scale.
@@ -67,36 +70,69 @@ impl Point {
     }
 }
 
-#[derive(Copy, Clone, Debug, PartialEq)]
-pub enum Geometry {
-    /// Represents a line.
-    Line(Point, Point),
-    /// Represents a quadratic bezier curve, with the second point being the off curve point.
-    Curve(Point, Point, Point),
+pub struct Geometry {
+    pub a: Point,
+    pub b: Point,
+    pub c: Point,
 }
 
 impl Geometry {
+    pub fn line(a: Point, b: Point) -> Geometry {
+        Geometry {
+            a,
+            b,
+            c: Point::new(f32::from_bits(!0u32), 0.0),
+        }
+    }
+
+    pub fn curve(a: Point, b: Point, c: Point) -> Geometry {
+        Geometry {
+            a,
+            b,
+            c,
+        }
+    }
+
+    pub fn is_line(&self) -> bool {
+        self.c.x.to_bits() == !0u32
+    }
+
     /// Scales the X and Y components by the given scale.
     pub fn scale(&self, scale: f32) -> Geometry {
-        match self {
-            Geometry::Line(a, b) => Geometry::Line(a.scale(scale), b.scale(scale)),
-            Geometry::Curve(a, b, c) => Geometry::Curve(a.scale(scale), b.scale(scale), c.scale(scale)),
+        Geometry {
+            a: self.a.scale(scale),
+            b: self.b.scale(scale),
+            c: if self.c.x.to_bits() == !0u32 {
+                self.c
+            } else {
+                self.c.scale(scale)
+            },
         }
     }
 
     /// Mirrors the geometry ofer the horizontal line at the given y.
     pub fn mirror_x(&self, y: f32) -> Geometry {
-        match self {
-            Geometry::Line(a, b) => Geometry::Line(a.mirror_x(y), b.mirror_x(y)),
-            Geometry::Curve(a, b, c) => Geometry::Curve(a.mirror_x(y), b.mirror_x(y), c.mirror_x(y)),
+        Geometry {
+            a: self.a.mirror_x(y),
+            b: self.b.mirror_x(y),
+            c: if self.c.x.to_bits() == !0u32 {
+                self.c
+            } else {
+                self.c.mirror_x(y)
+            },
         }
     }
 
     /// Offsets the geometry by the given x and y.
     pub fn offset(&self, x: f32, y: f32) -> Geometry {
-        match self {
-            Geometry::Line(a, b) => Geometry::Line(a.offset(x, y), b.offset(x, y)),
-            Geometry::Curve(a, b, c) => Geometry::Curve(a.offset(x, y), b.offset(x, y), c.offset(x, y)),
+        Geometry {
+            a: self.a.offset(x, y),
+            b: self.b.offset(x, y),
+            c: if self.c.x.to_bits() == !0u32 {
+                self.c
+            } else {
+                self.c.offset(x, y)
+            },
         }
     }
 }
@@ -126,12 +162,12 @@ pub fn to_geometry(points: &[RawPoint]) -> Vec<Geometry> {
                         Point::midpoint_raw(current, &next)
                     };
                     let current = Point::new_raw(current);
-                    geometry.push(Geometry::Curve(previous, current, next));
+                    geometry.push(Geometry::curve(previous, current, next));
                 } else if next.on_curve() {
                     // Line. Both the current and the next point are on the curve, it's a line.
                     let current = Point::new_raw(current);
                     let next = Point::new_raw(&next);
-                    geometry.push(Geometry::Line(current, next));
+                    geometry.push(Geometry::line(current, next));
                 } else {
                     // Do nothing. The current point is on the curve but the next one isn't, so the
                     // next point will end up drawing the curve that the current point is on.
