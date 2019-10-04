@@ -46,6 +46,19 @@ impl Glyph {
     }
 }
 
+pub struct FontSettings {
+    /// Transforms all glyphs to be flipped vertically. False by default.
+    pub flip_vertical: bool,
+}
+
+impl Default for FontSettings {
+    fn default() -> FontSettings {
+        FontSettings {
+            flip_vertical: false,
+        }
+    }
+}
+
 /// Represents a font. Fonts are immutable after creation and owns its own copy of the font data.
 pub struct Font {
     units_per_em: f32,
@@ -55,7 +68,7 @@ pub struct Font {
 
 impl Font {
     /// Constructs a font from an array of bytes.
-    pub fn from_bytes<Data: Deref<Target = [u8]>>(data: Data) -> FontResult<Font> {
+    pub fn from_bytes<Data: Deref<Target = [u8]>>(data: Data, settings: FontSettings) -> FontResult<Font> {
         let raw = RawFont::new(data)?;
 
         let mut glyphs = Vec::with_capacity(raw.glyf.glyphs.len());
@@ -64,7 +77,9 @@ impl Font {
             let mut geometry = to_geometry(&glyph.points);
             for element in &mut geometry {
                 *element = element.offset(-glyph.xmin as f32, -glyph.ymin as f32);
-                *element = element.mirror_x((glyph.ymax - glyph.ymin) as f32 / 2.0);
+                if settings.flip_vertical {
+                    *element = element.mirror_x((glyph.ymax - glyph.ymin) as f32 / 2.0);
+                }
             }
             // Construct the glyph.
             glyphs.push(Glyph {

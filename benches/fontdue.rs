@@ -12,7 +12,7 @@ fn rasterize(font: &mut Font, character: char, size: f32) -> (Metrics, Vec<u8>) 
 fn fontdue_benchmark(c: &mut Criterion) {
     // Loading
     let font = include_bytes!("../resources/Roboto-Regular.ttf") as &[u8];
-    let mut font = Font::from_bytes(font).unwrap();
+    let mut font = Font::from_bytes(font, FontSettings::default()).unwrap();
 
     let mut group = c.benchmark_group("Fontdue: Rasterize 'g'");
     for size in [12.0, 24.0, 36.0, 48.0].iter() {
