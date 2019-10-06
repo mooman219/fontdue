@@ -70,6 +70,8 @@ impl Point {
     }
 }
 
+const INVALID_COORD: u32 = !0u32;
+
 pub struct Geometry {
     pub a: Point,
     pub b: Point,
@@ -81,7 +83,7 @@ impl Geometry {
         Geometry {
             a,
             b,
-            c: Point::new(f32::from_bits(!0u32), 0.0),
+            c: Point::new(f32::from_bits(INVALID_COORD), 0.0),
         }
     }
 
@@ -94,7 +96,7 @@ impl Geometry {
     }
 
     pub fn is_line(&self) -> bool {
-        self.c.x.to_bits() == !0u32
+        self.c.x.to_bits() == INVALID_COORD
     }
 
     /// Scales the X and Y components by the given scale.
@@ -102,7 +104,7 @@ impl Geometry {
         Geometry {
             a: self.a.scale(scale),
             b: self.b.scale(scale),
-            c: if self.c.x.to_bits() == !0u32 {
+            c: if self.c.x.to_bits() == INVALID_COORD {
                 self.c
             } else {
                 self.c.scale(scale)
@@ -115,7 +117,7 @@ impl Geometry {
         Geometry {
             a: self.a.mirror_x(y),
             b: self.b.mirror_x(y),
-            c: if self.c.x.to_bits() == !0u32 {
+            c: if self.c.x.to_bits() == INVALID_COORD {
                 self.c
             } else {
                 self.c.mirror_x(y)
@@ -128,7 +130,7 @@ impl Geometry {
         Geometry {
             a: self.a.offset(x, y),
             b: self.b.offset(x, y),
-            c: if self.c.x.to_bits() == !0u32 {
+            c: if self.c.x.to_bits() == INVALID_COORD {
                 self.c
             } else {
                 self.c.offset(x, y)
