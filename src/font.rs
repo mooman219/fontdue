@@ -47,6 +47,7 @@ impl Glyph {
 }
 
 /// Settings for controling specific font and layout behavior.
+#[derive(Copy, Clone, PartialEq)]
 pub struct FontSettings {
     /// Transforms all glyphs to be flipped vertically. False by default.
     pub flip_vertical: bool,
@@ -170,6 +171,8 @@ impl Font {
         (metrics, canvas.get_bitmap())
     }
 
+    /// Finds the internal glyph index for the given character. If the character is not present in
+    /// the font then 0 is returned.
     pub fn lookup_glyph_index(&self, character: char) -> usize {
         let result = self.char_to_glyph.get(&(character as u32));
         match result.copied() {
