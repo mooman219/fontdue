@@ -9,43 +9,44 @@ use hashbrown::HashMap;
 /// Encapsulates all layout information associated with a glyph for a fixed scale.
 #[derive(Copy, Clone, PartialEq)]
 pub struct Metrics {
-    /// The scale used to adjust the glyph points by.
-    scale: f32,
-    /// The width of the associated glyph.
+    /// The width of the associated glyph in pixels.
     pub width: usize,
-    /// The height of the associated glyph.
+    /// The height of the associated glyph in pixels.
     pub height: usize,
-    /// The left side bearing. Used in horizontal fonts.
-    pub bearing_x: f32,
-    /// The top side bearing. Used in vertical fonts.
-    pub bearing_y: f32,
-    /// The advance width. Used in horizontal fonts.
-    pub advance_x: f32,
-    /// The advance height. Used in vertical fonts.
-    pub advance_y: f32,
+    /// The left side bearing in pixels. Used only in horizontal fonts.
+    pub bearing_left: f32,
+    /// The top side bearing in pixels. Used only in vertical fonts.
+    pub bearing_top: f32,
+    /// The advance width in pixels. Used only in horizontal fonts.
+    pub advance_width: f32,
+    /// The advance height in pixels. Used only in vertical fonts.
+    pub advance_height: f32,
 }
 
 struct Glyph {
     geometry: Vec<Geometry>,
     width: f32,
     height: f32,
+    bearing_left: f32,
+    bearing_top: f32,
+    advance_width: f32,
+    advance_height: f32,
 }
 
 impl Glyph {
-    fn metrics(&self, px: f32, units_per_em: f32) -> Metrics {
-        let scale = px / units_per_em;
+    fn metrics(&self, scale: f32) -> Metrics {
         Metrics {
-            scale,
             width: (scale * self.width).ceil() as usize,
             height: (scale * self.height).ceil() as usize,
-            bearing_x: 0.0,
-            bearing_y: 0.0,
-            advance_x: 0.0,
-            advance_y: 0.0,
+            bearing_left: scale * self.bearing_left,
+            bearing_top: scale * self.bearing_top,
+            advance_width: scale * self.advance_width,
+            advance_height: scale * self.advance_height,
         }
     }
 }
 
+/// Settings for controling specific font and layout behavior.
 pub struct FontSettings {
     /// Transforms all glyphs to be flipped vertically. False by default.
     pub flip_vertical: bool,
@@ -64,6 +65,9 @@ pub struct Font {
     units_per_em: f32,
     glyphs: Vec<Glyph>,
     char_to_glyph: HashMap<u32, u32>,
+    // Metrics
+    new_line_width: f32,
+    new_line_height: f32,
 }
 
 impl Font {
@@ -77,23 +81,59 @@ impl Font {
             let mut geometry = to_geometry(&glyph.points);
             for element in &mut geometry {
                 *element = element.offset(-glyph.xmin as f32, -glyph.ymin as f32);
-                if settings.flip_vertical {
+                if !settings.flip_vertical {
                     *element = element.mirror_x((glyph.ymax - glyph.ymin) as f32 / 2.0);
                 }
             }
+            // Glyph metrics.
+            let (advance_width, bearing_left) = if let Some(hmtx) = &raw.hmtx {
+                let hmetric = hmtx.hmetrics[glyph.metrics];
+                (hmetric.advance_width as f32, hmetric.left_side_bearing as f32)
+            } else {
+                (0.0, 0.0)
+            };
+            let (advance_height, bearing_top) = if let Some(vmtx) = &raw.vmtx {
+                let vmetric = vmtx.vmetrics[glyph.metrics];
+                (vmetric.advance_height as f32, vmetric.top_side_bearing as f32)
+            } else {
+                (0.0, 0.0)
+            };
             // Construct the glyph.
             glyphs.push(Glyph {
                 geometry,
                 width: (glyph.xmax - glyph.xmin) as f32,
                 height: (glyph.ymax - glyph.ymin) as f32,
+                bearing_left,
+                bearing_top,
+                advance_width,
+                advance_height,
             });
         }
+
+        // New line metrics.
+        let new_line_height = if let Some(hhea) = &raw.hhea {
+            (hhea.ascent - hhea.descent + hhea.line_gap) as f32
+        } else {
+            0.0
+        };
+        let new_line_width = if let Some(vhea) = &raw.vhea {
+            (vhea.ascent - vhea.descent + vhea.line_gap) as f32
+        } else {
+            0.0
+        };
 
         Ok(Font {
             glyphs,
             char_to_glyph: raw.cmap.map.clone(),
             units_per_em: raw.head.units_per_em as f32,
+            new_line_height,
+            new_line_width,
         })
+    }
+
+    /// Calculates the glyph scale factor for a given px size.
+    fn scale_factor(px: f32, units_per_em: f32) -> f32 {
+        px / units_per_em
     }
 
     /// Retrieves the layout metrics for the given character. If the caracter isn't present in the
@@ -106,7 +146,8 @@ impl Font {
     /// metrics(char, f32) instead, unless your glyphs are pre-indexed.
     pub fn metrics_indexed(&self, index: usize, px: f32) -> Metrics {
         let glyph = &self.glyphs[index];
-        glyph.metrics(px, self.units_per_em)
+        let scale = Font::scale_factor(px, self.units_per_em);
+        glyph.metrics(scale)
     }
 
     /// Retrieves the layout metrics and rasterized bitmap for the given character. If the caracter
@@ -120,10 +161,11 @@ impl Font {
     /// be using rasterize(char, f32) instead, unless your glyphs are pre-indexed.
     pub fn rasterize_indexed(&self, index: usize, px: f32) -> (Metrics, Vec<u8>) {
         let glyph = &self.glyphs[index];
-        let metrics = glyph.metrics(px, self.units_per_em);
+        let scale = Font::scale_factor(px, self.units_per_em);
+        let metrics = glyph.metrics(scale);
         let mut canvas = Raster::new(metrics.width, metrics.height);
         for element in &glyph.geometry {
-            canvas.draw(&element.scale(metrics.scale));
+            canvas.draw(&element.scale(scale));
         }
         (metrics, canvas.get_bitmap())
     }
