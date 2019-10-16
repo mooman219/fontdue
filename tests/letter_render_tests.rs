@@ -1,11 +1,10 @@
-use fontdue;
-use std::assert;
+use fontdue::{Font, FontSettings};
 
 const CHAR_SIZE: f32 = 17.0;
 
 const ROBOTO_REGULAR_TTF: &[u8] = include_bytes!("../resources/Roboto-Regular.ttf");
 const ROBOTO_MONO_REGULAR_TTF: &[u8] = include_bytes!("../resources/RobotoMono-Regular.ttf");
-const LIBERATION_SERIF_REGULAR: &[u8] = include_bytes!("../resources/LiberationSerif-Regular.ttf"); 
+const LIBERATION_SERIF_REGULAR: &[u8] = include_bytes!("../resources/LiberationSerif-Regular.ttf");
 
 // Performs some basic asserts on the rasterization output.
 fn check_best_guess_rasterization((metrics, bitmap): (fontdue::Metrics, Vec<u8>), rendered_char: char) {
@@ -25,7 +24,7 @@ fn check_best_guess_rasterization((metrics, bitmap): (fontdue::Metrics, Vec<u8>)
 
 #[test]
 fn render_roboto_characters() {
-    let font = fontdue::Font::from_bytes(ROBOTO_REGULAR_TTF).unwrap();
+    let font = Font::from_bytes(ROBOTO_REGULAR_TTF, FontSettings::default()).unwrap();
 
     for chr in &['a', '1', '2', '#', '?', '█', '▒', '¾', 'æ'] {
         check_best_guess_rasterization(font.rasterize(*chr, CHAR_SIZE), *chr);
@@ -34,7 +33,7 @@ fn render_roboto_characters() {
 
 #[test]
 fn render_roboto_mono_characters() {
-    let font = fontdue::Font::from_bytes(ROBOTO_MONO_REGULAR_TTF).unwrap();
+    let font = Font::from_bytes(ROBOTO_MONO_REGULAR_TTF, FontSettings::default()).unwrap();
 
     for chr in &['a', '1', '2', '#', '?', 'æ'] {
         check_best_guess_rasterization(font.rasterize(*chr, CHAR_SIZE), *chr);
@@ -43,7 +42,7 @@ fn render_roboto_mono_characters() {
 
 #[test]
 fn render_liberation_serif_characters() {
-    let font = fontdue::Font::from_bytes(LIBERATION_SERIF_REGULAR).unwrap();
+    let font = Font::from_bytes(LIBERATION_SERIF_REGULAR, FontSettings::default()).unwrap();
 
     for chr in &['a', '1', '2', '#', '?', '█', '▒', '¾', 'æ'] {
         check_best_guess_rasterization(font.rasterize(*chr, CHAR_SIZE), *chr);
