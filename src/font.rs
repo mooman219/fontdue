@@ -21,6 +21,8 @@ pub struct Metrics {
     pub advance_width: f32,
     /// The advance height in pixels. Used only in vertical fonts.
     pub advance_height: f32,
+    // TODO: You need the glyph bounding box positions
+    // TODO: Removed a bearing and an advance
 }
 
 struct Glyph {
@@ -69,6 +71,8 @@ pub struct Font {
     // Metrics
     new_line_width: f32,
     new_line_height: f32,
+    has_horizontal_metrics: bool,
+    has_vertical_metrics: bool,
 }
 
 impl Font {
@@ -112,15 +116,15 @@ impl Font {
         }
 
         // New line metrics.
-        let new_line_height = if let Some(hhea) = &raw.hhea {
-            (hhea.ascent - hhea.descent + hhea.line_gap) as f32
+        let (has_horizontal_metrics, new_line_height) = if let Some(hhea) = &raw.hhea {
+            (true, (hhea.ascent - hhea.descent + hhea.line_gap) as f32)
         } else {
-            0.0
+            (false, 0.0)
         };
-        let new_line_width = if let Some(vhea) = &raw.vhea {
-            (vhea.ascent - vhea.descent + vhea.line_gap) as f32
+        let (has_vertical_metrics, new_line_width) = if let Some(vhea) = &raw.vhea {
+            (true, (vhea.ascent - vhea.descent + vhea.line_gap) as f32)
         } else {
-            0.0
+            (false, 0.0)
         };
 
         Ok(Font {
@@ -129,7 +133,31 @@ impl Font {
             units_per_em: raw.head.units_per_em as f32,
             new_line_height,
             new_line_width,
+            has_horizontal_metrics,
+            has_vertical_metrics,
         })
+    }
+
+    /// The new line height for the font. Only populated for fonts with vertical text layout
+    /// metrics. Zero if unpopulated.
+    pub fn new_line_width(&self) -> f32 {
+        self.new_line_width
+    }
+
+    /// The new line height for the font. Only populated for fonts with horizontal text layout
+    /// metrics. Zero if unpopulated.
+    pub fn new_line_height(&self) -> f32 {
+        self.new_line_height
+    }
+
+    /// Returns true if the font provides horizontal text layout metrics.
+    pub fn has_horizontal_metrics(&self) -> bool {
+        self.has_horizontal_metrics
+    }
+
+    /// Returns true if the font provides vertical text layout metrics.
+    pub fn has_vertical_metrics(&self) -> bool {
+        self.has_vertical_metrics
     }
 
     /// Calculates the glyph scale factor for a given px size.

@@ -1,18 +1,19 @@
-//! Fontdue is both a font parser and rasterizer.
+//! Fontdue is a font parser, rasterizer, and layout tool.
 //!
-//! This is a #![no_std] crate, but still requires alloc.
+//! This is a #![no_std] crate, but still requires the alloc crate.
 
-#![no_std]
+// #![no_std]
 #![allow(dead_code)]
 
 extern crate alloc;
 
 mod font;
+/// Tools for laying out strings of text.
+pub mod layout;
 mod math;
 mod parse;
 mod raster;
-/// Functionality for the lower level raw data that was parsed from the font. Raw is unstable and
-/// prone to change.
+/// Lower level raw data that was parsed from the font. Raw is unstable and prone to change.
 pub mod raw;
 mod table;
 
