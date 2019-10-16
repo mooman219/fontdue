@@ -1,8 +1,7 @@
-// The functions [Raster::draw_line, Raster::draw_curve] from the project
-// [https://github.com/raphlinus/font-rs] have been modified and are licensed under the Apache
+// The functions Raster::draw_line and Raster::draw_curve from the project
+// https://github.com/raphlinus/font-rs have been modified and are licensed under the Apache
 // License, Version 2.0 (the "License"); you may not use those functions except in compliance with
-// the License. You may obtain a copy of the License at
-// [http://www.apache.org/licenses/LICENSE-2.0].
+// the License. You may obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0.
 //
 // Unless required by applicable law or agreed to in writing, software distributed under the
 // License is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either
