@@ -24,3 +24,4 @@ script:
   # Clippy is for another day.
   # - cargo clippy -- -D warnings
   - cargo build --all-targets
+  - cargo test --all-targets
