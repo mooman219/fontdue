@@ -40,7 +40,7 @@ impl Raster {
     }
 
     #[inline(always)]
-    pub fn line(&mut self, x0: f32, y0: f32, x1: f32, y1: f32, x_mod: f32, y_mod: f32) {
+    fn line(&mut self, x0: f32, y0: f32, x1: f32, y1: f32, x_mod: f32, y_mod: f32) {
         let dx = x1 - x0;
         let dy = y1 - y0;
         let sx = (1f32).copysign(dx);
@@ -109,8 +109,10 @@ impl Raster {
         let length = self.w * self.h;
         let aligned_length = (length + 3) & !3;
         assert!(aligned_length <= self.a.len());
-        let mut output = vec![0; aligned_length];
+        // Turns out zeroing takes a while on very large sizes.
+        let mut output = Vec::with_capacity(aligned_length);
         unsafe {
+            output.set_len(aligned_length);
             // offset = Zeroed out lanes
             let mut offset = _mm_setzero_ps();
             // lookup = The 4 bytes (12, 8, 4, 0) in all lanes
@@ -143,52 +145,4 @@ impl Raster {
         output.truncate(length);
         output
     }
-
-    // pub fn get_bitmap_no_unsafe(&self) -> Vec<u8> {
-    //     let mut height = 0.0;
-    //     let output: Vec<u8> = self
-    //         .a
-    //         .iter()
-    //         .take(self.a.len() - 1)
-    //         .map(|elem| {
-    //             height += *elem;
-    //             (height * 255.0) as u8
-    //         })
-    //         .collect();
-    //     output
-    // }
-
-    // fn print_sum(&self) {
-    //     let mut height = 0.0;
-    //     let mut width = 0;
-    //     for i in 0..(self.w * self.h) {
-    //         if width == self.w {
-    //             println!("");
-    //             width = 0;
-    //         }
-    //         width += 1;
-    //         unsafe {
-    //             height += self.a.get_unchecked(i);
-    //             print!(" {:>4}", (height * 255.0) as i16);
-    //         }
-    //     }
-    //     println!("");
-    //     println!("");
-    // }
-
-    // fn print_diff(&self) {
-    //     let mut width = 0;
-    //     for i in 0..(self.w * self.h) {
-    //         if width == self.w {
-    //             println!("");
-    //             width = 0;
-    //         }
-    //         width += 1;
-    //         unsafe {
-    //             print!(" {:>4}", (self.a.get_unchecked(i) * 255.0) as i16);
-    //         }
-    //     }
-    //     println!("");
-    //     println!("");
-    // }
 }
