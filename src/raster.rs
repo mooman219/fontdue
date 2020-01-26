@@ -94,7 +94,7 @@ impl Raster {
         let length = self.w * self.h;
         let mut height = 0.0;
         assert!(length <= self.a.len());
-        let mut output = vec![0; aligned_length];
+        let mut output = vec![0; length];
         for i in 0..length {
             unsafe {
                 height += self.a.get_unchecked(i);
