@@ -91,12 +91,10 @@ impl Raster {
 
     #[cfg(not(all(target_feature = "sse", any(target_arch = "x86", target_arch = "x86_64"))))]
     pub fn get_bitmap(&self) -> Vec<u8> {
-        // self.print_diff();
-        // self.print_sum();
         let length = self.w * self.h;
         let mut height = 0.0;
-        let mut output = Vec::with_capacity(length);
-        unsafe { output.set_len(length) };
+        assert!(length <= self.a.len());
+        let mut output = vec![0; aligned_length];
         for i in 0..length {
             unsafe {
                 height += self.a.get_unchecked(i);
@@ -110,16 +108,16 @@ impl Raster {
     pub fn get_bitmap(&self) -> Vec<u8> {
         let length = self.w * self.h;
         let aligned_length = (length + 3) & !3;
-        let mut output = Vec::with_capacity(aligned_length);
+        assert!(aligned_length <= self.a.len());
+        let mut output = vec![0; aligned_length];
         unsafe {
-            output.set_len(aligned_length);
             // offset = Zeroed out lanes
             let mut offset = _mm_setzero_ps();
             // lookup = The 4 bytes (12, 8, 4, 0) in all lanes
             let lookup = _mm_set1_epi32(0x0c_08_04_00);
             for i in (0..aligned_length).step_by(4) {
                 // x = Read 4 floats from self.a
-                let mut x = _mm_loadu_ps(&self.a[i]);
+                let mut x = _mm_loadu_ps(self.a.get_unchecked(i));
                 // x += Shift x register left by 32 bits (Padding with 0s). The casts are to
                 // satisfy the type requirements, they are otherwise nops.
                 x = _mm_add_ps(x, _mm_castsi128_ps(_mm_slli_si128(_mm_castps_si128(x), 4)));
@@ -137,12 +135,12 @@ impl Raster {
                 y = _mm_shuffle_epi8(y, lookup);
 
                 // Store the first 4 u8s from y in output. The cast again is a nop.
-                _mm_store_ss(core::mem::transmute(&output[i]), _mm_castsi128_ps(y));
+                _mm_store_ss(core::mem::transmute(output.get_unchecked_mut(i)), _mm_castsi128_ps(y));
                 // offset = (x[3], x[3], x[3], x[3])
                 offset = _mm_shuffle_ps(x, x, 0b11_11_11_11);
             }
-            output.set_len(length);
         }
+        output.truncate(length);
         output
     }
 
