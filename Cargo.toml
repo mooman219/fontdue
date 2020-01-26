@@ -17,6 +17,7 @@ exclude = ["resources/**", "examples/**", "benches/**"]
 maintenance = { status = "experimental" }
 
 [dependencies]
+wide = "0.4"
 hashbrown = "0.5"
 
 [dev-dependencies]
@@ -30,9 +31,3 @@ harness = false
 [[bench]]
 name = "rusttype"
 harness = false
-
-[profile.dev]
-opt-level = 3
-
-[profile.test]
-opt-level = 3

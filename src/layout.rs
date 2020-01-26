@@ -1,6 +1,6 @@
-use crate::Font;
-use crate::FontResult;
-use alloc::vec::*;
+// use crate::Font;
+// use crate::FontResult;
+// use alloc::vec::*;
 
 #[derive(Copy, Clone, PartialEq)]
 pub enum HorizontalAlign {
@@ -69,19 +69,19 @@ impl Default for GlyphPosition {
     }
 }
 
-pub fn layout_horizontal(
-    text: &str,
-    font: &Font,
-    settings: &LayoutSettings,
-    output: &mut Vec<GlyphPosition>,
-) {
-    if !font.has_horizontal_metrics() {
-        panic!("Font missing horizontal metrics");
-    }
-    let mut origin_x = settings.x;
-    let mut origin_y = settings.y - font.new_line_height();
-    for c in text.chars() {}
-}
+// pub fn layout_horizontal(
+//     text: &str,
+//     font: &Font,
+//     settings: &LayoutSettings,
+//     output: &mut Vec<GlyphPosition>,
+// ) {
+//     if !font.has_horizontal_metrics() {
+//         panic!("Font missing horizontal metrics");
+//     }
+//     let mut origin_x = settings.x;
+//     let mut origin_y = settings.y - font.new_line_height();
+//     for c in text.chars() {}
+// }
 
 // Idea spitballing
 

@@ -26,7 +26,7 @@ pub struct Metrics {
 }
 
 struct Glyph {
-    geometry: Vec<Geometry>,
+    polygons: Polygons,
     width: f32,
     height: f32,
     bearing_left: f32,
@@ -83,12 +83,10 @@ impl Font {
         let mut glyphs = Vec::with_capacity(raw.glyf.glyphs.len());
         for glyph in &raw.glyf.glyphs {
             // Invert and offset the geometry here.
-            let mut geometry = to_geometry(&glyph.points);
-            for element in &mut geometry {
-                *element = element.offset(-glyph.xmin as f32, -glyph.ymin as f32);
-                if !settings.flip_vertical {
-                    *element = element.mirror_x((glyph.ymax - glyph.ymin) as f32 / 2.0);
-                }
+            let mut polygons = to_polygons(&glyph.points);
+            polygons.offset(-glyph.xmin as f32, -glyph.ymin as f32);
+            if !settings.flip_vertical {
+                polygons.mirror_x((glyph.ymax - glyph.ymin) as f32 / 2.0);
             }
             // Glyph metrics.
             let (advance_width, bearing_left) = if let Some(hmtx) = &raw.hmtx {
@@ -105,7 +103,7 @@ impl Font {
             };
             // Construct the glyph.
             glyphs.push(Glyph {
-                geometry,
+                polygons,
                 width: (glyph.xmax - glyph.xmin) as f32,
                 height: (glyph.ymax - glyph.ymin) as f32,
                 bearing_left,
@@ -193,9 +191,7 @@ impl Font {
         let scale = Font::scale_factor(px, self.units_per_em);
         let metrics = glyph.metrics(scale);
         let mut canvas = Raster::new(metrics.width, metrics.height);
-        for element in &glyph.geometry {
-            canvas.draw(&element.scale(scale));
-        }
+        canvas.draw(&glyph.polygons, scale);
         (metrics, canvas.get_bitmap())
     }
 

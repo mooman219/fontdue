@@ -2,8 +2,8 @@ use std::fs::File;
 use std::io::Write;
 
 // Scratch pad for glyphs: ⅞ g
-const CHARACTER: char = '⅞';
-const SIZE: f32 = 17.0;
+const CHARACTER: char = 'g';
+const SIZE: f32 = 50.0;
 
 pub fn main() {
     // Loading and rasterization

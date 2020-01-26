@@ -41,7 +41,7 @@ pub mod CompoundFlags {
     pub const ARGS_ARE_WORDS_AND_XY_VALUES: u16 = ARGS_ARE_WORDS | ARGS_ARE_XY_VALUES;
 }
 
-#[derive(Copy, Clone, Debug, PartialEq)]
+#[derive(Copy, Clone, Debug, PartialEq, Default)]
 pub struct RawPoint {
     /// Absolute X coordinate.
     pub x: f32,

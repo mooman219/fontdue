@@ -2,7 +2,7 @@
 //!
 //! This is a #![no_std] crate, but still requires the alloc crate.
 
-// #![no_std]
+#![no_std]
 #![allow(dead_code)]
 
 extern crate alloc;

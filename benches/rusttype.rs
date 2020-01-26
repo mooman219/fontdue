@@ -4,6 +4,10 @@ extern crate criterion;
 use criterion::{BenchmarkId, Criterion};
 use rusttype::*;
 
+// Scratch pad for glyphs: ⅞ g
+const CHARACTER: char = 'g';
+const SIZES: [f32; 4] = [20.0, 40.0, 60.0, 80.0];
+
 #[inline]
 fn rasterize(font: &Font, character: char, size: f32) -> Vec<u8> {
     let glyph = font.glyph(character).scaled(Scale::uniform(size)).positioned(rusttype::point(0.0, 0.0));
@@ -20,10 +24,10 @@ fn rusttype_benchmark(c: &mut Criterion) {
     let font = include_bytes!("../resources/Roboto-Regular.ttf") as &[u8];
     let font = Font::from_bytes(font).unwrap();
 
-    let mut group = c.benchmark_group("RustType: Rasterize 'g'");
-    for size in [12.0, 24.0, 36.0, 48.0].iter() {
+    let mut group = c.benchmark_group(format!("RustType: Rasterize '{}'", CHARACTER));
+    for size in SIZES.iter() {
         group.bench_with_input(BenchmarkId::from_parameter(size), size, |b, &size| {
-            b.iter(|| rasterize(&font, 'g', size));
+            b.iter(|| rasterize(&font, CHARACTER, size));
         });
     }
     group.finish();

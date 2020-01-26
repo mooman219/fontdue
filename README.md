@@ -48,10 +48,10 @@ Strives to be the fastest.
 Here are some benchmarks. They generate the layout metrics and bitmap for the letter 'g' are different sizes. This is going straight from the character 'g' to the metrics and bitmap, which is how the majority of people will interact with a font library and is the expected real world performance.
 
 ```
-Fontdue:  Metrics + Rasterize 'g' at 12:  [1.8995 us 1.9230 us 1.9568 us]
-Fontdue:  Metrics + Rasterize 'g' at 24:  [2.7252 us 2.7405 us 2.7593 us]
-Fontdue:  Metrics + Rasterize 'g' at 36:  [3.6501 us 3.6755 us 3.7070 us]
-Fontdue:  Metrics + Rasterize 'g' at 48:  [4.6069 us 4.6914 us 4.7858 us]
+Fontdue: Metrics + Rasterize 'g'/20  time:   [1.2464 us 1.2606 us 1.2778 us]
+Fontdue: Metrics + Rasterize 'g'/40  time:   [1.7638 us 1.7869 us 1.8146 us]
+Fontdue: Metrics + Rasterize 'g'/60  time:   [2.4972 us 2.5130 us 2.5292 us]
+Fontdue: Metrics + Rasterize 'g'/80  time:   [3.3278 us 3.3578 us 3.3976 us]
 ```
 
 ### RustType
@@ -59,12 +59,12 @@ Fontdue:  Metrics + Rasterize 'g' at 48:  [4.6069 us 4.6914 us 4.7858 us]
 Other popular font library.
 
 ```
-RustType: Metrics + Rasterize 'g' at 12:  [9.9614 us 10.081 us 10.221 us]
-RustType: Metrics + Rasterize 'g' at 24:  [13.946 us 14.055 us 14.188 us]
-RustType: Metrics + Rasterize 'g' at 36:  [17.703 us 17.791 us 17.890 us]
-RustType: Metrics + Rasterize 'g' at 48:  [22.840 us 22.934 us 23.046 us]
+RustType: Metrics + Rasterize 'g'/20 time:   [11.519 us 11.540 us 11.565 us]
+RustType: Metrics + Rasterize 'g'/40 time:   [18.607 us 18.645 us 18.688 us]
+RustType: Metrics + Rasterize 'g'/60 time:   [26.687 us 26.750 us 26.825 us]
+RustType: Metrics + Rasterize 'g'/80 time:   [36.481 us 36.591 us 36.711 us]
 ```
 
 ## Attribution
 
-Inspired by how simple the wonderful `rusttype` crate made font parsing look ([link](https://gitlab.redox-os.org/redox-os/rusttype)). Rasterizer from the `font-rs` crate ([link](https://github.com/raphlinus/font-rs)).
+Inspired by how simple the wonderful `rusttype` crate made font parsing look ([link](https://gitlab.redox-os.org/redox-os/rusttype)), and how fast the `font-rs` crate made rasterization look ([link](https://github.com/raphlinus/font-rs)).
