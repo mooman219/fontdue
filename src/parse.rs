@@ -1,40 +1,32 @@
-use core::ptr::copy_nonoverlapping;
-
 // READ UNSIGNED
 
 #[inline]
 pub fn read_u8(buf: &[u8]) -> u8 {
-    let mut val: u8 = 0;
-    unsafe { copy_nonoverlapping(buf.as_ptr(), &mut val as *mut u8, 1) }
-    val.to_be()
+    buf[0]
 }
 
 #[inline]
 pub fn read_u16(buf: &[u8]) -> u16 {
-    let mut val: u16 = 0;
-    unsafe { copy_nonoverlapping(buf.as_ptr(), &mut val as *mut u16 as *mut u8, 2) }
-    val.to_be()
+    assert!(buf.len() >= 2);
+    u16::from_be_bytes(unsafe { *(buf.as_ptr() as *const [u8; 2]) })
 }
 
 #[inline]
 pub fn read_u32(buf: &[u8]) -> u32 {
-    let mut val: u32 = 0;
-    unsafe { copy_nonoverlapping(buf.as_ptr(), &mut val as *mut u32 as *mut u8, 4) }
-    val.to_be()
+    assert!(buf.len() >= 4);
+    u32::from_be_bytes(unsafe { *(buf.as_ptr() as *const [u8; 4]) })
 }
 
 #[inline]
 pub fn read_u64(buf: &[u8]) -> u64 {
-    let mut val: u64 = 0;
-    unsafe { copy_nonoverlapping(buf.as_ptr(), &mut val as *mut u64 as *mut u8, 8) }
-    val.to_be()
+    assert!(buf.len() >= 8);
+    u64::from_be_bytes(unsafe { *(buf.as_ptr() as *const [u8; 8]) })
 }
 
 #[inline]
 pub fn read_u128(buf: &[u8]) -> u128 {
-    let mut val: u128 = 0;
-    unsafe { copy_nonoverlapping(buf.as_ptr(), &mut val as *mut u128 as *mut u8, 16) }
-    val.to_be()
+    assert!(buf.len() >= 16);
+    u128::from_be_bytes(unsafe { *(buf.as_ptr() as *const [u8; 16]) })
 }
 
 // READ SIGNED
