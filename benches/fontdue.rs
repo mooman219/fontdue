@@ -19,6 +19,8 @@ fn fontdue_benchmark(c: &mut Criterion) {
     let mut font = Font::from_bytes(font, FontSettings::default()).unwrap();
 
     let mut group = c.benchmark_group(format!("Fontdue: Rasterize '{}'", CHARACTER));
+    group.measurement_time(core::time::Duration::from_secs(10));
+    group.sample_size(1000);
     for size in SIZES.iter() {
         group.bench_with_input(BenchmarkId::from_parameter(size), size, |b, &size| {
             b.iter(|| rasterize(&mut font, CHARACTER, size));

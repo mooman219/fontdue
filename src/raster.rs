@@ -1,4 +1,5 @@
 use crate::math::Polygons;
+use crate::simd::*;
 use alloc::vec;
 use alloc::vec::*;
 
@@ -23,24 +24,25 @@ impl Raster {
     }
 
     pub fn draw(&mut self, polygons: &Polygons, scale: f32) {
-        let scale = wide::f32x4::from(scale);
+        let scale = f32x4::splat(scale);
         for line in &polygons.lines {
             let abcd = line.abcd * scale;
-            self.line(abcd[0], abcd[1], abcd[2], abcd[3], line.x_mod, line.y_mod);
+            self.line(abcd, line.x_mod, line.y_mod);
         }
     }
 
     #[inline(always)]
     fn add(&mut self, index: usize, height: f32, mid_x: f32) {
         unsafe {
-            let mid_x = wide::f32x4::from(mid_x).fract()[0];
+            let mid_x = f32x4::single(mid_x).fract_first();
             *self.a.get_unchecked_mut(index) += height * (1.0 - mid_x);
             *self.a.get_unchecked_mut(index + 1) += height * mid_x;
         }
     }
 
     #[inline(always)]
-    fn line(&mut self, x0: f32, y0: f32, x1: f32, y1: f32, x_mod: f32, y_mod: f32) {
+    fn line(&mut self, pos: f32x4, x_mod: f32, y_mod: f32) {
+        let &[x0, y0, x1, y1] = pos.borrowed();
         let dx = x1 - x0;
         let dy = y1 - y0;
         let sx = (1f32).copysign(dx);
@@ -89,7 +91,7 @@ impl Raster {
         self.add(index, y_prev - y1, (x_prev + x1) / 2.0);
     }
 
-    #[cfg(not(all(target_feature = "sse", any(target_arch = "x86", target_arch = "x86_64"))))]
+    #[cfg(not(any(target_arch = "x86", target_arch = "x86_64")))]
     pub fn get_bitmap(&self) -> Vec<u8> {
         let length = self.w * self.h;
         let mut height = 0.0;
@@ -104,7 +106,7 @@ impl Raster {
         output
     }
 
-    #[cfg(all(target_feature = "sse", any(target_arch = "x86", target_arch = "x86_64")))]
+    #[cfg(any(target_arch = "x86", target_arch = "x86_64"))]
     pub fn get_bitmap(&self) -> Vec<u8> {
         let length = self.w * self.h;
         let aligned_length = (length + 3) & !3;

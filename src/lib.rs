@@ -15,6 +15,7 @@ mod parse;
 mod raster;
 /// Lower level raw data that was parsed from the font. Raw is unstable and prone to change.
 pub mod raw;
+mod simd;
 mod table;
 
 pub use crate::font::*;

@@ -1,4 +1,5 @@
 use crate::raw::RawPoint;
+use crate::simd::*;
 use alloc::vec::*;
 
 #[derive(Copy, Clone, Debug, PartialEq)]
@@ -46,11 +47,11 @@ impl Point {
     }
 }
 
-#[derive(Copy, Clone, Debug)]
+#[derive(Copy, Clone)]
 /// Variable names for job security.
 pub struct Line {
     /// X0, Y0, X1, Y1.
-    pub abcd: wide::f32x4,
+    pub abcd: f32x4,
     pub x_mod: f32,
     pub y_mod: f32,
 }
@@ -68,7 +69,7 @@ impl Line {
             0.0
         };
         Line {
-            abcd: wide::f32x4::new(start.x, start.y, end.x, end.y),
+            abcd: f32x4::new(start.x, start.y, end.x, end.y),
             x_mod,
             y_mod,
         }
@@ -78,15 +79,15 @@ impl Line {
         Line::new(Point::new_raw(start), Point::new_raw(end))
     }
 
-    pub fn scale_wide(&mut self, scale: wide::f32x4) {
+    pub fn scale(&mut self, scale: f32x4) {
         self.abcd *= scale;
     }
 
     pub fn mirror_x(&mut self, y: f32) {
-        let &[x0, y0, x1, y1] = self.abcd.as_ref();
+        let [x0, y0, x1, y1] = self.abcd.borrowed();
         let y0 = y0 + ((y - y0) * 2.0);
         let y1 = y1 + ((y - y1) * 2.0);
-        self.abcd = wide::f32x4::new(x0, y0, x1, y1);
+        self.abcd = f32x4::new(*x0, y0, *x1, y1);
         self.y_mod = if y1 >= y0 {
             1.0
         } else {
@@ -94,7 +95,7 @@ impl Line {
         };
     }
 
-    pub fn offset_wide(&mut self, offset: wide::f32x4) {
+    pub fn offset(&mut self, offset: f32x4) {
         self.abcd += offset;
     }
 }
@@ -112,9 +113,9 @@ impl Polygons {
 
     /// Scales all X and Y components by the given scale.
     pub fn scale(&mut self, scale: f32) {
-        let scale = wide::f32x4::from(scale);
+        let scale = f32x4::splat(scale);
         for line in &mut self.lines {
-            line.scale_wide(scale);
+            line.scale(scale);
         }
     }
 
@@ -127,9 +128,9 @@ impl Polygons {
 
     /// Offsets the points by the given x and y.
     pub fn offset(&mut self, x: f32, y: f32) {
-        let offset = wide::f32x4::new(x, y, x, y);
+        let offset = f32x4::new(x, y, x, y);
         for line in &mut self.lines {
-            line.offset_wide(offset);
+            line.offset(offset);
         }
     }
 }

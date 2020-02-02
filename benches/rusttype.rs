@@ -25,6 +25,8 @@ fn rusttype_benchmark(c: &mut Criterion) {
     let font = Font::from_bytes(font).unwrap();
 
     let mut group = c.benchmark_group(format!("RustType: Rasterize '{}'", CHARACTER));
+    group.measurement_time(core::time::Duration::from_secs(10));
+    group.sample_size(1000);
     for size in SIZES.iter() {
         group.bench_with_input(BenchmarkId::from_parameter(size), size, |b, &size| {
             b.iter(|| rasterize(&font, CHARACTER, size));
