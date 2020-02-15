@@ -41,7 +41,7 @@ unsafe fn set_rgba32(output: &mut Vec<u8>, index: usize, value: u8) {
     *(output.get_unchecked_mut(start)) = value;
     *(output.get_unchecked_mut(start + 1)) = value;
     *(output.get_unchecked_mut(start + 2)) = value;
-    *(output.get_unchecked_mut(start + 3)) = if value == 0 { 0 } else { 255 };
+    *(output.get_unchecked_mut(start + 3)) = value;
 }
 
 #[inline(always)]
