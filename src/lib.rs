@@ -18,6 +18,8 @@ pub mod raw;
 mod simd;
 mod table;
 
+pub use raster::Format;
+
 pub use crate::font::*;
 
 /// Alias for Result<T, &'static str>.

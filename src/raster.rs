@@ -14,6 +14,61 @@ pub struct Raster {
     a: Vec<f32>,
 }
 
+#[derive(Copy, Clone, PartialEq)]
+pub enum Format {
+    Rgba32,
+    Rgb24,
+    A8,
+}
+
+#[inline(always)]
+unsafe fn set_a8(output: &mut Vec<u8>, index: usize, value: u8) {
+    *(output.get_unchecked_mut(index)) = value;
+}
+
+
+#[inline(always)]
+unsafe fn set_rgb24(output: &mut Vec<u8>, index: usize, value: u8) {
+    let start = index * 3;
+    *(output.get_unchecked_mut(start)) = value;
+    *(output.get_unchecked_mut(start + 1)) = value;
+    *(output.get_unchecked_mut(start + 2)) = value;
+}
+
+#[inline(always)]
+unsafe fn set_rgba32(output: &mut Vec<u8>, index: usize, value: u8) {
+    let start = index * 4;
+    *(output.get_unchecked_mut(start)) = value;
+    *(output.get_unchecked_mut(start + 1)) = value;
+    *(output.get_unchecked_mut(start + 2)) = value;
+    *(output.get_unchecked_mut(start + 3)) = if value == 0 { 0 } else { 255 };
+}
+
+#[inline(always)]
+unsafe fn set_a8_sse_x86(output: &mut Vec<u8>, index: usize, value: __m128i) {
+    // Store the first 4 u8s from y in output. The cast again is a nop.
+    _mm_store_ss(core::mem::transmute(output.get_unchecked_mut(index)), _mm_castsi128_ps(value));
+}
+
+#[inline(always)]
+unsafe fn set_rgb24_sse_x86(output: &mut Vec<u8>, index: usize, value: __m128i) {
+    // Store the first 4 u8s from y in output. The cast again is a nop.
+    // This stores the first 4u8s 4 times. We only need it stored 3 times, however we'll overwrite
+    // the last excess write with the next write (if there is one)
+    // This uses an unaligned store, since we're walking over 96 bits at a time
+    // (which is not going to result in 16-byte aligned pointers)
+    _mm_storeu_ps(core::mem::transmute(output.get_unchecked_mut(index * 3)), _mm_castsi128_ps(value));
+}
+
+#[inline(always)]
+unsafe fn set_rgba32_sse_x86(output: &mut Vec<u8>, index: usize, value: __m128i) {
+    // Store the first 4 u8s from y in output. The cast again is a nop.
+    // This stores the first 4u8s 4 times, but we need the 4th value stored to be an alpha value.
+    // Since we're using all the bytes in the lane, this is conviniently going to reuslt in a 16-byte
+    // aligned address on every iteration
+    _mm_store_ps(core::mem::transmute(output.get_unchecked_mut(index * 4)), _mm_castsi128_ps(value));
+}
+
 impl Raster {
     pub fn new(w: usize, h: usize) -> Raster {
         Raster {
@@ -92,33 +147,67 @@ impl Raster {
     }
 
     #[cfg(not(any(target_arch = "x86", target_arch = "x86_64")))]
-    pub fn get_bitmap(&self) -> Vec<u8> {
+    pub fn get_bitmap(&self, format: Format) -> Vec<u8> {
         let length = self.w * self.h;
         let mut height = 0.0;
         assert!(length <= self.a.len());
-        let mut output = vec![0; length];
+        let bufSize = match format {
+            Format::A8 => length,
+            Format::Rgb24 => length * 3,
+            Format::Rgba32 => length * 4,
+        };
+        let mut output = vec![0; bufSize];
+        let set = match format {
+            Format::A8 => set_a8,
+            Format::Rgb24 => set_rgb24,
+            Format::Rgba32 => set_rgba32,
+        };
         for i in 0..length {
             unsafe {
                 height += self.a.get_unchecked(i);
-                *(output.get_unchecked_mut(i)) = ((height) * 255.0) as u8;
+                set(output, i, (height * 255.0) as u8);
             }
         }
         output
     }
 
     #[cfg(any(target_arch = "x86", target_arch = "x86_64"))]
-    pub fn get_bitmap(&self) -> Vec<u8> {
+    pub fn get_bitmap(&self, format: Format) -> Vec<u8> {
         let length = self.w * self.h;
+        let width_multiplier = match format {
+            Format::A8 => 1,
+            Format::Rgb24 => 3,
+            Format::Rgba32 => 4,
+        };
         let aligned_length = (length + 3) & !3;
-        assert!(aligned_length <= self.a.len());
+        let buf_size = aligned_length * width_multiplier;
+        assert!(buf_size <= (self.a.len() * width_multiplier));
         // Turns out zeroing takes a while on very large sizes.
-        let mut output = Vec::with_capacity(aligned_length);
+        let mut output = Vec::with_capacity(buf_size);
+        let set = match format {
+            Format::A8 => set_a8_sse_x86,
+            Format::Rgb24 => set_rgb24_sse_x86,
+            Format::Rgba32 => set_rgba32_sse_x86,
+        };
         unsafe {
-            output.set_len(aligned_length);
+            output.set_len(buf_size);
             // offset = Zeroed out lanes
             let mut offset = _mm_setzero_ps();
-            // lookup = The 4 bytes (12, 8, 4, 0) in all lanes
-            let lookup = _mm_set1_epi32(0x0c_08_04_00);
+            let lookup = match format {
+                // lookup = The 4 bytes (12, 8, 4, 0) in all lanes
+                Format::A8 => _mm_set1_epi32(0x0c_08_04_00),
+                // lookup = for each 4-byte lane, replicate the first byte into the 2nd and 3rd bytes (making an rgb sequence),
+                // and pack the equivalent from the next lane down - zero out the now unused last lane
+                Format::Rgb24 => _mm_set_epi8(
+                    -1, -1, -1, -1, 0xc, 0xc, 0xc, 0x8, 0x8, 0x8, 0x4, 0x4, 0x4, 0x0, 0x0, 0x0,
+                ),
+                // lookup = for each 4-byte lane, replicate the first byte into the 2nd, 3rd, and 4th bytes (making an rgba sequence),
+                // This may not _strictly speaking_ be desired - the text wasn't really rasterized with an alpha channel in mind,
+                // so using the character mask for the alpha channel _may_ wash out the result.
+                Format::Rgba32 => _mm_set_epi8(
+                    0xc, 0xc, 0xc, 0xc, 0x8, 0x8, 0x8, 0x8, 0x4, 0x4, 0x4, 0x4, 0x0, 0x0, 0x0, 0x0,
+                ),
+            };
             for i in (0..aligned_length).step_by(4) {
                 // x = Read 4 floats from self.a
                 let mut x = _mm_loadu_ps(self.a.get_unchecked(i));
@@ -137,14 +226,12 @@ impl Raster {
                 // (SSSE3) y = Take the first byte of each of the 4 values in y and pack them into
                 // the first 4 bytes of y. This produces the same value in all 4 lanes.
                 y = _mm_shuffle_epi8(y, lookup);
-
-                // Store the first 4 u8s from y in output. The cast again is a nop.
-                _mm_store_ss(core::mem::transmute(output.get_unchecked_mut(i)), _mm_castsi128_ps(y));
+                set(&mut output, i, y);
                 // offset = (x[3], x[3], x[3], x[3])
                 offset = _mm_shuffle_ps(x, x, 0b11_11_11_11);
             }
         }
-        output.truncate(length);
+        output.truncate(length * width_multiplier);
         output
     }
 }

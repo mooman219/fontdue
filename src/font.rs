@@ -2,6 +2,7 @@ use crate::math::*;
 use crate::raster::Raster;
 use crate::raw::RawFont;
 use crate::FontResult;
+use crate::Format;
 use alloc::vec::*;
 use core::ops::Deref;
 use hashbrown::HashMap;
@@ -53,12 +54,14 @@ impl Glyph {
 pub struct FontSettings {
     /// Transforms all glyphs to be flipped vertically. False by default.
     pub flip_vertical: bool,
+    pub buffer_kind: Format,
 }
 
 impl Default for FontSettings {
     fn default() -> FontSettings {
         FontSettings {
             flip_vertical: false,
+            buffer_kind: Format::A8,
         }
     }
 }
@@ -73,6 +76,7 @@ pub struct Font {
     new_line_height: f32,
     has_horizontal_metrics: bool,
     has_vertical_metrics: bool,
+    settings: FontSettings,
 }
 
 impl Font {
@@ -133,6 +137,7 @@ impl Font {
             new_line_width,
             has_horizontal_metrics,
             has_vertical_metrics,
+            settings,
         })
     }
 
@@ -192,7 +197,7 @@ impl Font {
         let metrics = glyph.metrics(scale);
         let mut canvas = Raster::new(metrics.width, metrics.height);
         canvas.draw(&glyph.polygons, scale);
-        (metrics, canvas.get_bitmap())
+        (metrics, canvas.get_bitmap(self.settings.buffer_kind))
     }
 
     /// Finds the internal glyph index for the given character. If the character is not present in
