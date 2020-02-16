@@ -74,7 +74,7 @@ impl Raster {
         Raster {
             w,
             h,
-            a: vec![0.0; w * h + 3],
+            a: vec![0.0; w * h + 15],
         }
     }
 
@@ -179,7 +179,7 @@ impl Raster {
             Format::Rgb24 => 3,
             Format::Rgba32 => 4,
         };
-        let aligned_length = (length + 3) & !3;
+        let aligned_length = (length + 15) & !15;
         let buf_size = aligned_length * width_multiplier;
         assert!(buf_size <= (self.a.len() * width_multiplier));
         // Turns out zeroing takes a while on very large sizes.
