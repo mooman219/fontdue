@@ -122,11 +122,10 @@ impl Raster {
             for i in (0..aligned_length).step_by(4) {
                 // x = Read 4 floats from self.a
                 let mut x = _mm_loadu_ps(self.a.get_unchecked(i));
-                // x += Shift x register left by 32 bits (Padding with 0s). The casts are to
-                // satisfy the type requirements, they are otherwise nops.
+                // x += (0.0, x[0], x[1], x[2])
                 x = _mm_add_ps(x, _mm_castsi128_ps(_mm_slli_si128(_mm_castps_si128(x), 4)));
-                // x += (0.0, 0.0, x[0], x[2])
-                x = _mm_add_ps(x, _mm_shuffle_ps(_mm_setzero_ps(), x, 0x40));
+                // x += (0.0, 0.0, x[0], x[1])
+                x = _mm_add_ps(x, _mm_castsi128_ps(_mm_slli_si128(_mm_castps_si128(x), 8)));
                 // x += offset
                 x = _mm_add_ps(x, offset);
 
