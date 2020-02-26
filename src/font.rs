@@ -77,17 +77,14 @@ pub struct Font {
 
 impl Font {
     /// Constructs a font from an array of bytes.
-    pub fn from_bytes<Data: Deref<Target = [u8]>>(data: Data, settings: FontSettings) -> FontResult<Font> {
-        let raw = RawFont::new(data)?;
+    pub fn from_bytes<Data: Deref<Target = [u8]>>(data: Data, _: FontSettings) -> FontResult<Font> {
+        let mut raw = RawFont::new(data)?;
 
         let mut glyphs = Vec::with_capacity(raw.glyf.glyphs.len());
-        for glyph in &raw.glyf.glyphs {
+        for glyph in &mut raw.glyf.glyphs {
             // Invert and offset the geometry here.
-            let mut geometry = compile(&glyph.points);
-            geometry.offset(-glyph.xmin as f32, -glyph.ymin as f32);
-            if !settings.flip_vertical {
-                geometry.mirror_x((glyph.ymax - glyph.ymin) as f32 / 2.0);
-            }
+            glyph.reposition();
+            let geometry = compile(&glyph.points);
             // Glyph metrics.
             let (advance_width, bearing_left) = if let Some(hmtx) = &raw.hmtx {
                 let hmetric = hmtx.hmetrics[glyph.metrics];

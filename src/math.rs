@@ -87,26 +87,6 @@ impl Line {
     pub fn new_raw(start: &RawPoint, end: &RawPoint) -> Line {
         Line::new(Point::new_raw(start), Point::new_raw(end))
     }
-
-    pub fn scale(&mut self, scale: f32x4) {
-        self.abcd *= scale;
-    }
-
-    pub fn mirror_x(&mut self, y: f32) {
-        let [x0, y0, x1, y1] = self.abcd.borrowed();
-        let y0 = y0 + ((y - y0) * 2.0);
-        let y1 = y1 + ((y - y1) * 2.0);
-        self.abcd = f32x4::new(*x0, y0, *x1, y1);
-        self.y_mod = if y1 >= y0 {
-            1.0
-        } else {
-            0.0
-        };
-    }
-
-    pub fn offset(&mut self, offset: f32x4) {
-        self.abcd += offset;
-    }
 }
 
 pub struct Geometry {
@@ -117,29 +97,6 @@ impl Geometry {
     pub fn new() -> Geometry {
         Geometry {
             lines: Vec::new(),
-        }
-    }
-
-    /// Scales all X and Y components by the given scale.
-    pub fn scale(&mut self, scale: f32) {
-        let scale = f32x4::splat(scale);
-        for line in &mut self.lines {
-            line.scale(scale);
-        }
-    }
-
-    /// Mirrors the points ofer the horizontal line at the given y.
-    pub fn mirror_x(&mut self, y: f32) {
-        for line in &mut self.lines {
-            line.mirror_x(y);
-        }
-    }
-
-    /// Offsets the points by the given x and y.
-    pub fn offset(&mut self, x: f32, y: f32) {
-        let offset = f32x4::new(x, y, x, y);
-        for line in &mut self.lines {
-            line.offset(offset);
         }
     }
 }

@@ -89,6 +89,17 @@ pub struct Glyph {
     pub points: Vec<RawPoint>,
 }
 
+impl Glyph {
+    pub fn reposition(&mut self) {
+        let y = (self.ymax - self.ymin) as f32 / 2.0;
+        for point in &mut self.points {
+            point.x -= self.xmin as f32;
+            point.y -= self.ymin as f32;
+            point.y += (y - point.y) * 2.0;
+        }
+    }
+}
+
 impl Default for Glyph {
     fn default() -> Glyph {
         Glyph {
