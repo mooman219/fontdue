@@ -34,7 +34,7 @@ impl Raster {
     #[inline(always)]
     fn add(&mut self, index: usize, height: f32, mid_x: f32) {
         unsafe {
-            let mid_x = f32x4::single(mid_x).fract_first();
+            let mid_x = f32x4::fraction(mid_x);
             *self.a.get_unchecked_mut(index) += height * (1.0 - mid_x);
             *self.a.get_unchecked_mut(index + 1) += height * mid_x;
         }
