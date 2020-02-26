@@ -3,6 +3,29 @@ use crate::simd::*;
 use alloc::vec::*;
 
 #[derive(Copy, Clone, Debug, PartialEq)]
+struct Curve {
+    a: Point,
+    b: Point,
+    c: Point,
+}
+
+impl Curve {
+    fn new(a: Point, b: Point, c: Point) -> Curve {
+        Curve {
+            a,
+            b,
+            c,
+        }
+    }
+
+    fn at(&self, t: f32) -> Point {
+        let x = (1.0 - t).powi(2) * self.a.x + 2.0 * (1.0 - t) * t * self.b.x + t.powi(2) * self.c.x;
+        let y = (1.0 - t).powi(2) * self.a.y + 2.0 * (1.0 - t) * t * self.b.y + t.powi(2) * self.c.y;
+        Point::new(x, y)
+    }
+}
+
+#[derive(Copy, Clone, Debug, PartialEq)]
 pub struct Point {
     /// Absolute X coordinate.
     pub x: f32,
@@ -22,20 +45,6 @@ impl Point {
         Point {
             x: p.x,
             y: p.y,
-        }
-    }
-
-    pub fn lerp(t: f32, a: &Point, b: &Point) -> Point {
-        Point {
-            x: a.x + t * (b.x - a.x),
-            y: a.y + t * (b.y - a.y),
-        }
-    }
-
-    pub fn lerp_raw(t: f32, a: &RawPoint, b: &RawPoint) -> Point {
-        Point {
-            x: a.x + t * (b.x - a.x),
-            y: a.y + t * (b.y - a.y),
         }
     }
 
@@ -137,13 +146,6 @@ impl Polygons {
 
 const SUBDIVISIONS: u32 = 3;
 
-/// Calculates the point at t on a quadratic bezier curve.
-fn curve_point(t: f32, previous: Point, current: Point, next: Point) -> Point {
-    let x = (1.0 - t).powi(2) * previous.x + 2.0 * (1.0 - t) * t * current.x + t.powi(2) * next.x;
-    let y = (1.0 - t).powi(2) * previous.y + 2.0 * (1.0 - t) * t * current.y + t.powi(2) * next.y;
-    Point::new(x, y)
-}
-
 fn populate_lines(polygons: &mut Polygons, previous: &RawPoint, current: &RawPoint, next: &RawPoint) {
     if !current.on_curve() {
         // Curve. We're off the curve, find the on-curve positions for the previous and next points
@@ -159,6 +161,7 @@ fn populate_lines(polygons: &mut Polygons, previous: &RawPoint, current: &RawPoi
             Point::midpoint_raw(current, &next)
         };
         let current = Point::new_raw(current);
+        let curve = Curve::new(previous, current, next);
 
         if SUBDIVISIONS <= 1 {
             polygons.lines.push(Line::new(previous, current));
@@ -168,8 +171,8 @@ fn populate_lines(polygons: &mut Polygons, previous: &RawPoint, current: &RawPoi
             for x in 0..SUBDIVISIONS {
                 let t0 = increment * (x as f32);
                 let t1 = increment * ((x + 1) as f32);
-                let p0 = curve_point(t0, previous, current, next);
-                let p1 = curve_point(t1, previous, current, next);
+                let p0 = curve.at(t0);
+                let p1 = curve.at(t1);
                 if p0.y != p1.y {
                     polygons.lines.push(Line::new(p0, p1));
                 }
