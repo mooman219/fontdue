@@ -26,7 +26,7 @@ impl Raster {
     pub fn draw(&mut self, geometry: &Geometry, scale: f32) {
         let scale = f32x4::splat(scale);
         for line in &geometry.lines {
-            let abcd = line.abcd * scale;
+            let abcd = line.coords * scale;
             self.line(abcd, line.x_mod, line.y_mod);
         }
     }

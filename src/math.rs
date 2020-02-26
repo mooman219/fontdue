@@ -41,7 +41,7 @@ impl Point {
         }
     }
 
-    pub fn new_raw(p: &RawPoint) -> Point {
+    pub fn raw(p: &RawPoint) -> Point {
         Point {
             x: p.x,
             y: p.y,
@@ -57,10 +57,9 @@ impl Point {
 }
 
 #[derive(Copy, Clone)]
-/// Variable names for job security.
 pub struct Line {
     /// X0, Y0, X1, Y1.
-    pub abcd: f32x4,
+    pub coords: f32x4,
     pub x_mod: f32,
     pub y_mod: f32,
 }
@@ -78,14 +77,10 @@ impl Line {
             0.0
         };
         Line {
-            abcd: f32x4::new(start.x, start.y, end.x, end.y),
+            coords: f32x4::new(start.x, start.y, end.x, end.y),
             x_mod,
             y_mod,
         }
-    }
-
-    pub fn new_raw(start: &RawPoint, end: &RawPoint) -> Line {
-        Line::new(Point::new_raw(start), Point::new_raw(end))
     }
 }
 
@@ -99,6 +94,12 @@ impl Geometry {
             lines: Vec::new(),
         }
     }
+
+    pub fn push(&mut self, start: Point, end: Point) {
+        if start.y != end.y {
+            self.lines.push(Line::new(start, end));
+        }
+    }
 }
 
 const SUBDIVISIONS: u32 = 3;
@@ -108,21 +109,21 @@ fn populate_lines(geometry: &mut Geometry, previous: &RawPoint, current: &RawPoi
         // Curve. We're off the curve, find the on-curve positions for the previous and next points
         // then make a curve out of that.
         let previous = if previous.on_curve() {
-            Point::new_raw(&previous)
+            Point::raw(&previous)
         } else {
             Point::midpoint_raw(&previous, current)
         };
         let next = if next.on_curve() {
-            Point::new_raw(&next)
+            Point::raw(&next)
         } else {
             Point::midpoint_raw(current, &next)
         };
-        let current = Point::new_raw(current);
+        let current = Point::raw(current);
         let curve = Curve::new(previous, current, next);
 
         if SUBDIVISIONS <= 1 {
-            geometry.lines.push(Line::new(previous, current));
-            geometry.lines.push(Line::new(current, next));
+            geometry.push(previous, current);
+            geometry.push(current, next);
         } else {
             let increment = 1.0 / (SUBDIVISIONS as f32);
             for x in 0..SUBDIVISIONS {
@@ -130,16 +131,12 @@ fn populate_lines(geometry: &mut Geometry, previous: &RawPoint, current: &RawPoi
                 let t1 = increment * ((x + 1) as f32);
                 let p0 = curve.at(t0);
                 let p1 = curve.at(t1);
-                if p0.y != p1.y {
-                    geometry.lines.push(Line::new(p0, p1));
-                }
+                geometry.push(p0, p1);
             }
         }
     } else if next.on_curve() {
         // Line. Both the current and the next point are on the curve, it's a line.
-        if current.y != next.y {
-            geometry.lines.push(Line::new_raw(current, next));
-        }
+        geometry.push(Point::raw(current), Point::raw(next));
     } else {
         // Do nothing. The current point is on the curve but the next one isn't, so the next point
         // will end up drawing the curve that the current point is on.
