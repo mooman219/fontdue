@@ -109,13 +109,13 @@ impl Line {
     }
 }
 
-pub struct Polygons {
+pub struct Geometry {
     pub lines: Vec<Line>,
 }
 
-impl Polygons {
-    pub fn new() -> Polygons {
-        Polygons {
+impl Geometry {
+    pub fn new() -> Geometry {
+        Geometry {
             lines: Vec::new(),
         }
     }
@@ -146,7 +146,7 @@ impl Polygons {
 
 const SUBDIVISIONS: u32 = 3;
 
-fn populate_lines(polygons: &mut Polygons, previous: &RawPoint, current: &RawPoint, next: &RawPoint) {
+fn populate_lines(geometry: &mut Geometry, previous: &RawPoint, current: &RawPoint, next: &RawPoint) {
     if !current.on_curve() {
         // Curve. We're off the curve, find the on-curve positions for the previous and next points
         // then make a curve out of that.
@@ -164,8 +164,8 @@ fn populate_lines(polygons: &mut Polygons, previous: &RawPoint, current: &RawPoi
         let curve = Curve::new(previous, current, next);
 
         if SUBDIVISIONS <= 1 {
-            polygons.lines.push(Line::new(previous, current));
-            polygons.lines.push(Line::new(current, next));
+            geometry.lines.push(Line::new(previous, current));
+            geometry.lines.push(Line::new(current, next));
         } else {
             let increment = 1.0 / (SUBDIVISIONS as f32);
             for x in 0..SUBDIVISIONS {
@@ -174,14 +174,14 @@ fn populate_lines(polygons: &mut Polygons, previous: &RawPoint, current: &RawPoi
                 let p0 = curve.at(t0);
                 let p1 = curve.at(t1);
                 if p0.y != p1.y {
-                    polygons.lines.push(Line::new(p0, p1));
+                    geometry.lines.push(Line::new(p0, p1));
                 }
             }
         }
     } else if next.on_curve() {
         // Line. Both the current and the next point are on the curve, it's a line.
         if current.y != next.y {
-            polygons.lines.push(Line::new_raw(current, next));
+            geometry.lines.push(Line::new_raw(current, next));
         }
     } else {
         // Do nothing. The current point is on the curve but the next one isn't, so the next point
@@ -189,8 +189,8 @@ fn populate_lines(polygons: &mut Polygons, previous: &RawPoint, current: &RawPoi
     }
 }
 
-pub fn to_polygons(points: &[RawPoint]) -> Polygons {
-    let mut polygons = Polygons::new();
+pub fn compile(points: &[RawPoint]) -> Geometry {
+    let mut geometry = Geometry::new();
     let mut first = RawPoint::default();
     let mut second = RawPoint::default();
     let mut previous = RawPoint::default();
@@ -207,10 +207,10 @@ pub fn to_polygons(points: &[RawPoint]) -> Polygons {
                 current = *next;
             }
             _ => {
-                populate_lines(&mut polygons, &previous, &current, next);
+                populate_lines(&mut geometry, &previous, &current, next);
                 if next.end_point {
-                    populate_lines(&mut polygons, &current, next, &first);
-                    populate_lines(&mut polygons, next, &first, &second);
+                    populate_lines(&mut geometry, &current, next, &first);
+                    populate_lines(&mut geometry, next, &first, &second);
                     index = -1;
                 } else {
                     previous = current;
@@ -220,5 +220,5 @@ pub fn to_polygons(points: &[RawPoint]) -> Polygons {
         }
         index += 1;
     }
-    polygons
+    geometry
 }

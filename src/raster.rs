@@ -1,4 +1,4 @@
-use crate::math::Polygons;
+use crate::math::Geometry;
 use crate::simd::*;
 use alloc::vec;
 use alloc::vec::*;
@@ -23,9 +23,9 @@ impl Raster {
         }
     }
 
-    pub fn draw(&mut self, polygons: &Polygons, scale: f32) {
+    pub fn draw(&mut self, geometry: &Geometry, scale: f32) {
         let scale = f32x4::splat(scale);
-        for line in &polygons.lines {
+        for line in &geometry.lines {
             let abcd = line.abcd * scale;
             self.line(abcd, line.x_mod, line.y_mod);
         }
