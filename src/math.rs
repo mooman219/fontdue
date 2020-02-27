@@ -18,10 +18,21 @@ impl Curve {
         }
     }
 
-    fn at(&self, t: f32) -> Point {
+    fn point(&self, t: f32) -> Point {
         let x = (1.0 - t).powi(2) * self.a.x + 2.0 * (1.0 - t) * t * self.b.x + t.powi(2) * self.c.x;
         let y = (1.0 - t).powi(2) * self.a.y + 2.0 * (1.0 - t) * t * self.b.y + t.powi(2) * self.c.y;
         Point::new(x, y)
+    }
+
+    fn slope(&self, t: f32) -> f32 {
+        let x = 2.0 * (1.0 - t) * (self.b.x - self.a.x) + 2.0 * t * (self.c.x - self.b.x);
+        let y = 2.0 * (1.0 - t) * (self.b.y - self.a.y) + 2.0 * t * (self.c.y - self.b.y);
+        y / x
+    }
+
+    fn angle(&self, t: f32) -> f32 {
+        const PI: f32 = 3.14159265359;
+        self.slope(t).atan().abs() * 180.0 / PI
     }
 }
 
@@ -102,7 +113,9 @@ impl Geometry {
     }
 }
 
-const SUBDIVISIONS: u32 = 3;
+const MAX_ANGLE: f32 = 17.0;
+const SUBDIVISIONS: u32 = 20;
+const INCREMENT: f32 = 1.0 / (1.0 + SUBDIVISIONS as f32);
 
 fn populate_lines(geometry: &mut Geometry, previous: &RawPoint, current: &RawPoint, next: &RawPoint) {
     if !current.on_curve() {
@@ -120,20 +133,19 @@ fn populate_lines(geometry: &mut Geometry, previous: &RawPoint, current: &RawPoi
         };
         let current = Point::raw(current);
         let curve = Curve::new(previous, current, next);
-
-        if SUBDIVISIONS <= 1 {
-            geometry.push(previous, current);
-            geometry.push(current, next);
-        } else {
-            let increment = 1.0 / (SUBDIVISIONS as f32);
-            for x in 0..SUBDIVISIONS {
-                let t0 = increment * (x as f32);
-                let t1 = increment * ((x + 1) as f32);
-                let p0 = curve.at(t0);
-                let p1 = curve.at(t1);
-                geometry.push(p0, p1);
+        let mut previous_point = previous;
+        let mut previous_angle = curve.angle(0.0);
+        for x in 1..=SUBDIVISIONS {
+            let t = INCREMENT * x as f32;
+            let temp_angle = curve.angle(t);
+            if (previous_angle - temp_angle).abs() > MAX_ANGLE {
+                previous_angle = temp_angle;
+                let temp_point = curve.point(t);
+                geometry.push(previous_point, temp_point);
+                previous_point = temp_point;
             }
         }
+        geometry.push(previous_point, next);
     } else if next.on_curve() {
         // Line. Both the current and the next point are on the curve, it's a line.
         geometry.push(Point::raw(current), Point::raw(next));
