@@ -87,8 +87,7 @@ impl Raster {
             x_prev = x_next;
             y_prev = y_next;
         }
-        let index = (x1 as usize + y1 as usize * self.w) as usize;
-        self.add(index, y_prev - y1, (x_prev + x1) / 2.0);
+        self.add(index as usize, y_prev - y1, (x_prev + x1) / 2.0);
     }
 
     #[cfg(not(any(target_arch = "x86", target_arch = "x86_64")))]
