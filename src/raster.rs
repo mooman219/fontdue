@@ -99,7 +99,7 @@ impl Raster {
         for i in 0..length {
             unsafe {
                 height += self.a.get_unchecked(i);
-                *(output.get_unchecked_mut(i)) = ((height) * 255.0) as u8;
+                *(output.get_unchecked_mut(i)) = ((height) * 255.9) as u8;
             }
         }
         output
@@ -129,7 +129,7 @@ impl Raster {
                 x = _mm_add_ps(x, offset);
 
                 // y = x * 255.0
-                let y = _mm_mul_ps(x, _mm_set1_ps(255.0));
+                let y = _mm_mul_ps(x, _mm_set1_ps(255.9));
                 // y = Convert y to i32s and truncate
                 let mut y = _mm_cvttps_epi32(y);
                 // (SSSE3) y = Take the first byte of each of the 4 values in y and pack them into
