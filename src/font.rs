@@ -6,6 +6,36 @@ use alloc::vec::*;
 use core::ops::Deref;
 use hashbrown::HashMap;
 
+/// Axis aligned bounding box.
+#[derive(Copy, Clone, PartialEq)]
+pub struct AABB {
+    pub xmin: f32,
+    pub xmax: f32,
+    pub ymin: f32,
+    pub ymax: f32,
+}
+
+impl AABB {
+    pub fn new(xmin: f32, xmax: f32, ymin: f32, ymax: f32) -> AABB {
+        AABB {
+            xmin,
+            xmax,
+            ymin,
+            ymax,
+        }
+    }
+
+    #[inline(always)]
+    pub fn scale(&self, scale: f32) -> AABB {
+        AABB {
+            xmin: self.xmin * scale,
+            xmax: self.xmax * scale,
+            ymin: self.ymin * scale,
+            ymax: self.ymax * scale,
+        }
+    }
+}
+
 /// Encapsulates all layout information associated with a glyph for a fixed scale.
 #[derive(Copy, Clone, PartialEq)]
 pub struct Metrics {
@@ -13,37 +43,29 @@ pub struct Metrics {
     pub width: usize,
     /// The height of the associated glyph in pixels.
     pub height: usize,
-    /// The left side bearing in pixels. Used only in horizontal fonts.
-    pub bearing_left: f32,
-    /// The top side bearing in pixels. Used only in vertical fonts.
-    pub bearing_top: f32,
-    /// The advance width in pixels. Used only in horizontal fonts.
-    pub advance_width: f32,
-    /// The advance height in pixels. Used only in vertical fonts.
-    pub advance_height: f32,
-    // TODO: You need the glyph bounding box positions
-    // TODO: Removed a bearing and an advance
+    /// Computed padding offsets for the bounds of the glyph. This can be used to compute the outer
+    /// bounding box of the glyph.
+    pub padding: AABB,
+    /// Inner bounds of the glyph at the offsets specified by the font.
+    pub bounds: AABB,
 }
 
 struct Glyph {
     geometry: Geometry,
     width: f32,
     height: f32,
-    bearing_left: f32,
-    bearing_top: f32,
-    advance_width: f32,
-    advance_height: f32,
+    padding: AABB,
+    bounds: AABB,
 }
 
 impl Glyph {
+    #[inline(always)]
     fn metrics(&self, scale: f32) -> Metrics {
         Metrics {
             width: (scale * self.width).ceil() as usize,
             height: (scale * self.height).ceil() as usize,
-            bearing_left: scale * self.bearing_left,
-            bearing_top: scale * self.bearing_top,
-            advance_width: scale * self.advance_width,
-            advance_height: scale * self.advance_height,
+            padding: self.padding.scale(scale),
+            bounds: self.bounds.scale(scale),
         }
     }
 }
@@ -98,15 +120,21 @@ impl Font {
             } else {
                 (0.0, 0.0)
             };
+            let bounds =
+                AABB::new(glyph.ymax as f32, glyph.ymin as f32, glyph.xmin as f32, glyph.xmax as f32);
+            let padding = AABB::new(
+                bearing_top,
+                advance_height - bearing_top - (bounds.ymax - bounds.ymin),
+                bearing_left,
+                advance_width - bearing_left - (bounds.xmax - bounds.xmin),
+            );
             // Construct the glyph.
             glyphs.push(Glyph {
                 geometry,
                 width: (glyph.xmax - glyph.xmin) as f32,
                 height: (glyph.ymax - glyph.ymin) as f32,
-                bearing_left,
-                bearing_top,
-                advance_width,
-                advance_height,
+                padding,
+                bounds,
             });
         }
 
@@ -156,6 +184,7 @@ impl Font {
     }
 
     /// Calculates the glyph scale factor for a given px size.
+    #[inline(always)]
     fn scale_factor(px: f32, units_per_em: f32) -> f32 {
         px / units_per_em
     }
