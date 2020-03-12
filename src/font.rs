@@ -7,7 +7,7 @@ use core::ops::Deref;
 use hashbrown::HashMap;
 
 /// Axis aligned bounding box.
-#[derive(Copy, Clone, PartialEq)]
+#[derive(Copy, Clone, PartialEq, Debug)]
 pub struct AABB {
     pub xmin: f32,
     pub xmax: f32,
@@ -37,15 +37,16 @@ impl AABB {
 }
 
 /// Encapsulates all layout information associated with a glyph for a fixed scale.
-#[derive(Copy, Clone, PartialEq)]
+#[derive(Copy, Clone, PartialEq, Debug)]
 pub struct Metrics {
     /// The width of the associated glyph in pixels.
     pub width: usize,
     /// The height of the associated glyph in pixels.
     pub height: usize,
-    /// Computed padding offsets for the bounds of the glyph. This can be used to compute the outer
-    /// bounding box of the glyph.
-    pub padding: AABB,
+    /// Advance width of the glyph. Used in horizontal fonts.
+    pub advance_width: f32,
+    /// Advance height of the glyph. Used in vertical fonts.
+    pub advance_height: f32,
     /// Inner bounds of the glyph at the offsets specified by the font.
     pub bounds: AABB,
 }
@@ -54,7 +55,8 @@ struct Glyph {
     geometry: Geometry,
     width: f32,
     height: f32,
-    padding: AABB,
+    advance_width: f32,
+    advance_height: f32,
     bounds: AABB,
 }
 
@@ -64,7 +66,8 @@ impl Glyph {
         Metrics {
             width: (scale * self.width).ceil() as usize,
             height: (scale * self.height).ceil() as usize,
-            padding: self.padding.scale(scale),
+            advance_width: scale * self.advance_width,
+            advance_height: scale * self.advance_height,
             bounds: self.bounds.scale(scale),
         }
     }
@@ -108,32 +111,27 @@ impl Font {
             glyph.reposition();
             let geometry = compile(&glyph.points);
             // Glyph metrics.
-            let (advance_width, bearing_left) = if let Some(hmtx) = &raw.hmtx {
+            let advance_width = if let Some(hmtx) = &raw.hmtx {
                 let hmetric = hmtx.hmetrics[glyph.metrics];
-                (hmetric.advance_width as f32, hmetric.left_side_bearing as f32)
+                hmetric.advance_width as f32
             } else {
-                (0.0, 0.0)
+                0.0
             };
-            let (advance_height, bearing_top) = if let Some(vmtx) = &raw.vmtx {
+            let advance_height = if let Some(vmtx) = &raw.vmtx {
                 let vmetric = vmtx.vmetrics[glyph.metrics];
-                (vmetric.advance_height as f32, vmetric.top_side_bearing as f32)
+                vmetric.advance_height as f32
             } else {
-                (0.0, 0.0)
+                0.0
             };
             let bounds =
-                AABB::new(glyph.ymax as f32, glyph.ymin as f32, glyph.xmin as f32, glyph.xmax as f32);
-            let padding = AABB::new(
-                bearing_top,
-                advance_height - bearing_top - (bounds.ymax - bounds.ymin),
-                bearing_left,
-                advance_width - bearing_left - (bounds.xmax - bounds.xmin),
-            );
+                AABB::new(glyph.xmin as f32, glyph.xmax as f32, glyph.ymin as f32, glyph.ymax as f32);
             // Construct the glyph.
             glyphs.push(Glyph {
                 geometry,
                 width: (glyph.xmax - glyph.xmin) as f32,
                 height: (glyph.ymax - glyph.ymin) as f32,
-                padding,
+                advance_width,
+                advance_height,
                 bounds,
             });
         }
