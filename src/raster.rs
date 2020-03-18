@@ -26,8 +26,8 @@ impl Raster {
     pub fn draw(&mut self, geometry: &Geometry, scale: f32) {
         let scale = f32x4::splat(scale);
         for line in &geometry.lines {
-            let abcd = line.coords * scale;
-            self.line(abcd, line.x_mod, line.y_mod);
+            let pos = line.coords * scale;
+            self.line(pos, line.x_mod, line.y_mod);
         }
     }
 
@@ -66,7 +66,7 @@ impl Raster {
         let mut y_next: f32;
         let mut index = (x0 as usize + y0 as usize * self.w) as isize;
         let index_x_inc = sx as isize;
-        let index_y_inc = (sy * self.w as f32) as isize;
+        let index_y_inc = (self.w as f32).copysign(sy) as isize;
 
         while tmx < 1.0 || tmy < 1.0 {
             let prev_index = index;
