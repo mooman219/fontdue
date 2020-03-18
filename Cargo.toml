@@ -21,7 +21,7 @@ hashbrown = "0.5"
 
 [dev-dependencies]
 criterion = "0.3"
-rusttype = "0.7.7"
+rusttype = "0.8.2"
 
 [[bench]]
 name = "fontdue"
