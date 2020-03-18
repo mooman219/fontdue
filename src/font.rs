@@ -9,13 +9,18 @@ use hashbrown::HashMap;
 /// Axis aligned bounding box.
 #[derive(Copy, Clone, PartialEq, Debug)]
 pub struct AABB {
+    /// Coordinate of the left-most edge.
     pub xmin: f32,
+    /// Coordinate of the right-most edge.
     pub xmax: f32,
+    /// Coordinate of the bottom-most edge.
     pub ymin: f32,
+    /// Coordinate of the top-most edge.
     pub ymax: f32,
 }
 
 impl AABB {
+    /// Creates a new axis aligned bounding box
     pub fn new(xmin: f32, xmax: f32, ymin: f32, ymax: f32) -> AABB {
         AABB {
             xmin,
@@ -25,6 +30,7 @@ impl AABB {
         }
     }
 
+    /// Scales the bounding box by the given factor.
     #[inline(always)]
     pub fn scale(&self, scale: f32) -> AABB {
         AABB {
@@ -75,16 +81,11 @@ impl Glyph {
 
 /// Settings for controling specific font and layout behavior.
 #[derive(Copy, Clone, PartialEq)]
-pub struct FontSettings {
-    /// Transforms all glyphs to be flipped vertically. False by default.
-    pub flip_vertical: bool,
-}
+pub struct FontSettings {}
 
 impl Default for FontSettings {
     fn default() -> FontSettings {
-        FontSettings {
-            flip_vertical: false,
-        }
+        FontSettings {}
     }
 }
 
