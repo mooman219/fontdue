@@ -21,6 +21,11 @@ impl f32x4 {
     }
 
     #[inline(always)]
+    pub fn truncate(value: f32) -> f32 {
+        unsafe { _mm_cvtss_f32(_mm_cvtepi32_ps(_mm_cvttps_epi32(_mm_set_ss(value)))) }
+    }
+
+    #[inline(always)]
     pub fn new(x0: f32, x1: f32, x2: f32, x3: f32) -> Self {
         f32x4(unsafe { _mm_set_ps(x3, x2, x1, x0) })
     }

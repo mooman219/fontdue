@@ -13,6 +13,11 @@ impl f32x4 {
     }
 
     #[inline(always)]
+    pub fn truncate(value: f32) -> f32 {
+        value.trunc()
+    }
+
+    #[inline(always)]
     pub fn new(x0: f32, x1: f32, x2: f32, x3: f32) -> Self {
         f32x4([x0, x1, x2, x3])
     }
