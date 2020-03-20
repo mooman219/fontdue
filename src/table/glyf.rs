@@ -90,6 +90,7 @@ pub struct Glyph {
 }
 
 impl Glyph {
+    /// Reposition vertically flips the glyph and moves it into the +x, +y quadrant of the axis.
     pub fn reposition(&mut self) {
         for point in &mut self.points {
             point.x -= self.xmin as f32;
