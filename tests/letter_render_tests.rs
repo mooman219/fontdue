@@ -1,10 +1,12 @@
 use fontdue::{Font, FontSettings};
 
-const CHAR_SIZE: f32 = 17.0;
-
-const ROBOTO_REGULAR_TTF: &[u8] = include_bytes!("../resources/Roboto-Regular.ttf");
-const ROBOTO_MONO_REGULAR_TTF: &[u8] = include_bytes!("../resources/RobotoMono-Regular.ttf");
-const LIBERATION_SERIF_REGULAR: &[u8] = include_bytes!("../resources/LiberationSerif-Regular.ttf");
+const SIZES: [f32; 7] = [1024.0, 1000.0, 500.0, 32.0, 16.0, 4.0, 3.0];
+const CHARACTERS: [char; 9] = ['a', '1', '2', '#', '?', '█', '▒', '¾', 'æ'];
+const FONTS: [&[u8]; 3] = [
+    include_bytes!("../resources/Roboto-Regular.ttf"),
+    include_bytes!("../resources/RobotoMono-Regular.ttf"),
+    include_bytes!("../resources/LiberationSerif-Regular.ttf"),
+];
 
 // Performs some basic asserts on the rasterization output.
 fn check_best_guess_rasterization((metrics, bitmap): (fontdue::Metrics, Vec<u8>), rendered_char: char) {
@@ -23,28 +25,13 @@ fn check_best_guess_rasterization((metrics, bitmap): (fontdue::Metrics, Vec<u8>)
 }
 
 #[test]
-fn render_roboto_characters() {
-    let font = Font::from_bytes(ROBOTO_REGULAR_TTF, FontSettings::default()).unwrap();
-
-    for chr in &['a', '1', '2', '#', '?', '█', '▒', '¾', 'æ'] {
-        check_best_guess_rasterization(font.rasterize(*chr, CHAR_SIZE), *chr);
-    }
-}
-
-#[test]
-fn render_roboto_mono_characters() {
-    let font = Font::from_bytes(ROBOTO_MONO_REGULAR_TTF, FontSettings::default()).unwrap();
-
-    for chr in &['a', '1', '2', '#', '?', 'æ'] {
-        check_best_guess_rasterization(font.rasterize(*chr, CHAR_SIZE), *chr);
-    }
-}
-
-#[test]
-fn render_liberation_serif_characters() {
-    let font = Font::from_bytes(LIBERATION_SERIF_REGULAR, FontSettings::default()).unwrap();
-
-    for chr in &['a', '1', '2', '#', '?', '█', '▒', '¾', 'æ'] {
-        check_best_guess_rasterization(font.rasterize(*chr, CHAR_SIZE), *chr);
+fn render_characters() {
+    for font in &FONTS {
+        let font = Font::from_bytes(*font, FontSettings::default()).unwrap();
+        for character in &CHARACTERS {
+            for size in &SIZES {
+                check_best_guess_rasterization(font.rasterize(*character, *size), *character);
+            }
+        }
     }
 }
