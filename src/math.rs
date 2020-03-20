@@ -71,26 +71,49 @@ impl Point {
 pub struct Line {
     /// X0, Y0, X1, Y1.
     pub coords: f32x4,
-    pub x_mod: f32,
-    pub y_mod: f32,
+    pub x_first_adj: f32,
+    pub y_first_adj: f32,
+    pub x_start_nudge: u8,
+    pub y_start_nudge: u8,
+    pub x_end_nudge: u8,
+    pub y_end_nudge: u8,
 }
 
 impl Line {
     pub fn new(start: Point, end: Point) -> Line {
-        let x_mod = if end.x >= start.x {
-            1.0
+        const FLOOR_NUDGE: u8 = 0;
+        const CEIL_NUDGE: u8 = 1;
+
+        let (x_start_nudge, x_first_adj) = if end.x >= start.x {
+            (FLOOR_NUDGE, 1.0)
         } else {
-            0.0
+            (CEIL_NUDGE, 0.0)
         };
-        let y_mod = if end.y >= start.y {
-            1.0
+        let (y_start_nudge, y_first_adj) = if end.y >= start.y {
+            (FLOOR_NUDGE, 1.0)
         } else {
-            0.0
+            (CEIL_NUDGE, 0.0)
         };
+
+        let x_end_nudge = if end.x > start.x {
+            CEIL_NUDGE
+        } else {
+            FLOOR_NUDGE
+        };
+        let y_end_nudge = if end.y > start.y {
+            CEIL_NUDGE
+        } else {
+            FLOOR_NUDGE
+        };
+
         Line {
             coords: f32x4::new(start.x, start.y, end.x, end.y),
-            x_mod,
-            y_mod,
+            x_first_adj,
+            y_first_adj,
+            x_start_nudge,
+            y_start_nudge,
+            x_end_nudge,
+            y_end_nudge,
         }
     }
 }
@@ -187,4 +210,11 @@ pub fn compile(points: &[RawPoint]) -> Geometry {
         index += 1;
     }
     geometry
+}
+
+#[inline(always)]
+pub fn nudge_and_truncate(value: f32, nudge: u8) -> f32 {
+    // Floor adjustment and nudge: 0.0, 0
+    // Ceil adjustment and nudge: 1.0, 1
+    f32x4::truncate(f32::from_bits(value.to_bits() - (nudge as u32)))
 }

@@ -1,4 +1,5 @@
-use crate::math::Geometry;
+use crate::math;
+use crate::math::{Geometry, Line};
 use crate::simd::*;
 use alloc::vec;
 use alloc::vec::*;
@@ -26,8 +27,7 @@ impl Raster {
     pub fn draw(&mut self, geometry: &Geometry, scale: f32) {
         let scale = f32x4::splat(scale);
         for line in &geometry.lines {
-            let pos = line.coords * scale;
-            self.line(pos, line.x_mod, line.y_mod);
+            self.line(line, scale);
         }
     }
 
@@ -41,30 +41,33 @@ impl Raster {
     }
 
     #[inline(always)]
-    fn line(&mut self, pos: f32x4, x_mod: f32, y_mod: f32) {
-        let &[x0, y0, x1, y1] = pos.borrowed();
+    fn line(&mut self, line: &Line, scale: f32x4) {
+        let &[x0, y0, x1, y1] = (line.coords * scale).borrowed();
         let dx = x1 - x0;
         let dy = y1 - y0;
         let sx = (1f32).copysign(dx);
         let sy = (1f32).copysign(dy);
-        let mut x = x0.floor() + x_mod;
-        let mut y = y0.floor() + y_mod;
+        let first_x = math::nudge_and_truncate(x0 + line.x_first_adj, line.x_start_nudge);
+        let first_y = math::nudge_and_truncate(y0 + line.y_first_adj, line.y_start_nudge);
         let tdx = if dx == 0.0 {
             1048576.0
         } else {
             1.0 / dx
         };
         let tdy = 1.0 / dy;
-        let mut tmx = tdx * (x - x0);
-        let mut tmy = tdy * (y - y0);
+        let mut tmx = tdx * (first_x - x0);
+        let mut tmy = tdy * (first_y - y0);
         let tdx = tdx.abs();
         let tdy = tdy.abs();
-
+        let mut x = first_x;
+        let mut y = first_y;
         let mut x_prev = x0;
         let mut y_prev = y0;
         let mut x_next: f32;
         let mut y_next: f32;
-        let mut index = (x0 as usize + y0 as usize * self.w) as isize;
+        let start_x = math::nudge_and_truncate(x0, line.x_start_nudge);
+        let start_y = math::nudge_and_truncate(y0, line.y_start_nudge);
+        let mut index = (start_x + start_y * self.w as f32) as isize;
         let index_x_inc = sx as isize;
         let index_y_inc = (self.w as f32).copysign(sy) as isize;
 
@@ -87,6 +90,10 @@ impl Raster {
             x_prev = x_next;
             y_prev = y_next;
         }
+
+        let end_x = math::nudge_and_truncate(x1, line.x_end_nudge);
+        let end_y = math::nudge_and_truncate(y1, line.y_end_nudge);
+        index = (end_x as usize + end_y as usize * self.w) as isize;
         self.add(index as usize, y_prev - y1, (x_prev + x1) / 2.0);
     }
 
