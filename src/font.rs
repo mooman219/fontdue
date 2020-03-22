@@ -212,6 +212,8 @@ impl Font {
     /// Retrieves the layout metrics and rasterized bitmap at the given index. You normally want to
     /// be using rasterize(char, f32) instead, unless your glyphs are pre-indexed.
     pub fn rasterize_indexed(&self, index: usize, px: f32) -> (Metrics, Vec<u8>) {
+        // TODO: Fix rounding errors at high scalings.
+        assert!(px <= 5000.0);
         let glyph = &self.glyphs[index];
         let scale = Font::scale_factor(px, self.units_per_em);
         let metrics = glyph.metrics(scale);

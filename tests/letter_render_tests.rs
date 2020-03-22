@@ -1,6 +1,6 @@
 use fontdue::{Font, FontSettings};
 
-const SMALL_SIZES: [f32; 5] = [128.0, 32.0, 16.0, 4.0, 3.0];
+const SMALL_SIZES: [f32; 5] = [128.0, 32.0, 16.0, 4.0, 2.0];
 const LARGE_SIZES: [f32; 3] = [2048.0, 1024.0, 512.0];
 const CHARACTERS: [char; 94] = [
     'a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k', 'l', 'm', 'n', 'o', 'p', 'q', 'r', 's', 't', 'u',
@@ -9,10 +9,11 @@ const CHARACTERS: [char; 94] = [
     '@', '#', '$', '%', '^', '&', '*', '(', ')', '_', '+', '-', '=', '`', '~', '[', ']', '\\', ';', '\'',
     ',', '.', '/', '{', '}', '|', ':', '"', '<', '>', '?',
 ];
-static FONTS: [&[u8]; 3] = [
+static FONTS: [&[u8]; 4] = [
+    include_bytes!("../resources/LiuJianMaoCao-Regular.ttf"),
+    include_bytes!("../resources/OpenSans-Regular.ttf"),
     include_bytes!("../resources/Roboto-Regular.ttf"),
     include_bytes!("../resources/RobotoMono-Regular.ttf"),
-    include_bytes!("../resources/LiberationSerif-Regular.ttf"),
 ];
 
 // Performs some basic asserts on the rasterization output.

@@ -71,8 +71,9 @@ impl Raster {
         let mut index = (start_x + start_y * self.w as f32) as isize;
         let index_x_inc = sx as isize;
         let index_y_inc = (self.w as f32).copysign(sy) as isize;
-        // TODO: Fix for real. 1-(1/(2^17))
-        while tmx < 0.9999923706 || tmy < 0.9999923706 {
+        // TODO: Fix rounding errors at high scalings.
+        const TMAX: f32 = 0.9999863;
+        while tmx < TMAX || tmy < TMAX {
             let prev_index = index;
             if tmx < tmy {
                 y_next = tmx * dy + y0;
