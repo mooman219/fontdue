@@ -48,10 +48,10 @@ Strives to be the fastest.
 Here are some benchmarks. They generate the layout metrics and bitmap for the letter 'g' are different sizes. This is going straight from the character 'g' to the metrics and bitmap, which is how the majority of people will interact with a font library and is the expected real world performance.
 
 ```
-Fontdue: Metrics + Rasterize 'g'/20  time:   [1.1367 us 1.1381 us 1.1396 us]
-Fontdue: Metrics + Rasterize 'g'/40  time:   [1.6473 us 1.6494 us 1.6518 us]
-Fontdue: Metrics + Rasterize 'g'/60  time:   [2.3421 us 2.3437 us 2.3455 us]
-Fontdue: Metrics + Rasterize 'g'/80  time:   [3.1864 us 3.1896 us 3.1937 us]
+Fontdue: Metrics + Rasterize 'g'/20  time:   [1.0891 us 1.0906 us 1.0924 us]
+Fontdue: Metrics + Rasterize 'g'/40  time:   [1.6041 us 1.6079 us 1.6127 us]
+Fontdue: Metrics + Rasterize 'g'/60  time:   [2.2674 us 2.2697 us 2.2723 us]
+Fontdue: Metrics + Rasterize 'g'/80  time:   [3.1167 us 3.1213 us 3.1268 us]
 ```
 
 ### RustType
