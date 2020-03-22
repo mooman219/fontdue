@@ -1,6 +1,7 @@
 use crate::math;
 use crate::math::{Geometry, Line};
-use crate::simd::*;
+use crate::simd;
+use crate::simd::f32x4;
 use alloc::vec;
 use alloc::vec::*;
 
@@ -34,7 +35,7 @@ impl Raster {
     #[inline(always)]
     fn add(&mut self, index: usize, height: f32, mid_x: f32) {
         unsafe {
-            let mid_x = f32x4::fraction(mid_x);
+            let mid_x = simd::fraction(mid_x);
             *self.a.get_unchecked_mut(index) += height * (1.0 - mid_x);
             *self.a.get_unchecked_mut(index + 1) += height * mid_x;
         }
@@ -43,58 +44,54 @@ impl Raster {
     #[inline(always)]
     fn line(&mut self, line: &Line, scale: f32x4) {
         let &[x0, y0, x1, y1] = (line.coords * scale).borrowed();
+        let mut target_x = simd::truncate(math::nudge(x0 + line.x_first_adj, line.x_start_nudge));
+        let mut target_y = simd::truncate(math::nudge(y0 + line.y_first_adj, line.y_start_nudge));
+        let start_x = simd::truncate(math::nudge(x0, line.x_start_nudge));
+        let start_y = simd::truncate(math::nudge(y0, line.y_start_nudge));
+        let end_x = simd::truncate(math::nudge(x1, line.x_end_nudge));
+        let end_y = simd::truncate(math::nudge(y1, line.y_end_nudge));
         let dx = x1 - x0;
         let dy = y1 - y0;
         let sx = (1f32).copysign(dx);
         let sy = (1f32).copysign(dy);
-        let first_x = math::nudge_and_truncate(x0 + line.x_first_adj, line.x_start_nudge);
-        let first_y = math::nudge_and_truncate(y0 + line.y_first_adj, line.y_start_nudge);
         let tdx = if dx == 0.0 {
-            1048576.0
+            1048576.0 // 2^20, doesn't really matter.
         } else {
             1.0 / dx
         };
         let tdy = 1.0 / dy;
-        let mut tmx = tdx * (first_x - x0);
-        let mut tmy = tdy * (first_y - y0);
+        let mut tmx = tdx * (target_x - x0);
+        let mut tmy = tdy * (target_y - y0);
         let tdx = tdx.abs();
         let tdy = tdy.abs();
-        let mut x = first_x;
-        let mut y = first_y;
         let mut x_prev = x0;
         let mut y_prev = y0;
         let mut x_next: f32;
         let mut y_next: f32;
-        let start_x = math::nudge_and_truncate(x0, line.x_start_nudge);
-        let start_y = math::nudge_and_truncate(y0, line.y_start_nudge);
         let mut index = (start_x + start_y * self.w as f32) as isize;
         let index_x_inc = sx as isize;
         let index_y_inc = (self.w as f32).copysign(sy) as isize;
-
-        while tmx < 1.0 || tmy < 1.0 {
+        // TODO: Fix for real. 1-(1/(2^17))
+        while tmx < 0.9999923706 || tmy < 0.9999923706 {
             let prev_index = index;
             if tmx < tmy {
                 y_next = tmx * dy + y0;
-                x_next = x;
+                x_next = target_x;
                 tmx += tdx;
-                x += sx;
+                target_x += sx;
                 index += index_x_inc;
             } else {
-                y_next = y;
+                y_next = target_y;
                 x_next = tmy * dx + x0;
                 tmy += tdy;
-                y += sy;
+                target_y += sy;
                 index += index_y_inc;
             }
             self.add(prev_index as usize, y_prev - y_next, (x_prev + x_next) / 2.0);
             x_prev = x_next;
             y_prev = y_next;
         }
-
-        let end_x = math::nudge_and_truncate(x1, line.x_end_nudge);
-        let end_y = math::nudge_and_truncate(y1, line.y_end_nudge);
-        index = (end_x as usize + end_y as usize * self.w) as isize;
-        self.add(index as usize, y_prev - y1, (x_prev + x1) / 2.0);
+        self.add((end_x + end_y * self.w as f32) as usize, y_prev - y1, (x_prev + x1) / 2.0);
     }
 
     #[cfg(not(any(target_arch = "x86", target_arch = "x86_64")))]
@@ -135,7 +132,7 @@ impl Raster {
                 // x += offset
                 x = _mm_add_ps(x, offset);
 
-                // y = x * 255.0
+                // y = x * 255.9
                 let y = _mm_mul_ps(x, _mm_set1_ps(255.9));
                 // y = Convert y to i32s and truncate
                 let mut y = _mm_cvttps_epi32(y);
@@ -146,7 +143,7 @@ impl Raster {
                 // Store the first 4 u8s from y in output. The cast again is a nop.
                 _mm_store_ss(core::mem::transmute(output.get_unchecked_mut(i)), _mm_castsi128_ps(y));
                 // offset = (x[3], x[3], x[3], x[3])
-                offset = _mm_shuffle_ps(x, x, 0b11_11_11_11);
+                offset = _mm_set1_ps(core::mem::transmute::<__m128, [f32; 4]>(x)[3]);
             }
         }
         output.truncate(length);

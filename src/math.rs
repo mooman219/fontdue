@@ -1,5 +1,5 @@
 use crate::raw::RawPoint;
-use crate::simd::*;
+use crate::simd::f32x4;
 use alloc::vec::*;
 
 #[derive(Copy, Clone, Debug, PartialEq)]
@@ -213,8 +213,8 @@ pub fn compile(points: &[RawPoint]) -> Geometry {
 }
 
 #[inline(always)]
-pub fn nudge_and_truncate(value: f32, nudge: u8) -> f32 {
+pub fn nudge(value: f32, offset: u8) -> f32 {
     // Floor adjustment and nudge: 0.0, 0
     // Ceil adjustment and nudge: 1.0, 1
-    f32x4::truncate(f32::from_bits(value.to_bits() - (nudge as u32)))
+    unsafe { core::mem::transmute(core::mem::transmute::<f32, u32>(value) - (offset as u32)) }
 }

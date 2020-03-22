@@ -2,21 +2,21 @@
 
 use core::ops::{Add, AddAssign, Div, DivAssign, Mul, MulAssign, Sub, SubAssign};
 
+#[inline(always)]
+pub fn fraction(value: f32) -> f32 {
+    value.fract()
+}
+
+#[inline(always)]
+pub fn truncate(value: f32) -> f32 {
+    value.trunc()
+}
+
 #[derive(Copy, Clone)]
 #[repr(transparent)]
 pub struct f32x4([f32; 4]);
 
 impl f32x4 {
-    #[inline(always)]
-    pub fn fraction(value: f32) -> f32 {
-        value.fract()
-    }
-
-    #[inline(always)]
-    pub fn truncate(value: f32) -> f32 {
-        value.trunc()
-    }
-
     #[inline(always)]
     pub fn new(x0: f32, x1: f32, x2: f32, x3: f32) -> Self {
         f32x4([x0, x1, x2, x3])
