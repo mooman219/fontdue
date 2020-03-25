@@ -162,14 +162,14 @@ impl Font {
 
     /// The new line height for the font. Only populated for fonts with vertical text layout
     /// metrics. Zero if unpopulated.
-    pub fn new_line_width(&self) -> f32 {
-        self.new_line_width
+    pub fn new_line_width(&self, px: f32) -> f32 {
+        self.new_line_width * Self::scale_factor(px, self.units_per_em)
     }
 
     /// The new line height for the font. Only populated for fonts with horizontal text layout
     /// metrics. Zero if unpopulated.
-    pub fn new_line_height(&self) -> f32 {
-        self.new_line_height
+    pub fn new_line_height(&self, px: f32) -> f32 {
+        self.new_line_height * Self::scale_factor(px, self.units_per_em)
     }
 
     /// Returns true if the font provides horizontal text layout metrics.

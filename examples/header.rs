@@ -20,5 +20,7 @@ pub fn main() {
         println!("hhea.ascent: {}", hhea.ascent);
         println!("hhea.descent: {}", hhea.descent);
         println!("hhea.line_gap: {}", hhea.line_gap);
+        let new_line = (hhea.ascent - hhea.descent + hhea.line_gap) as f32;
+        println!("hhea.new_line_height: {}", new_line);
     }
 }
