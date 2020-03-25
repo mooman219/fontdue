@@ -63,15 +63,17 @@ impl Raster {
         let tdy = tdy.abs();
         let mut x_prev = x0;
         let mut y_prev = y0;
-        let mut x_next: f32;
-        let mut y_next: f32;
         let mut index = (start_x + start_y * self.w as f32) as isize;
         let index_x_inc = sx as isize;
         let index_y_inc = (self.w as f32).copysign(sy) as isize;
-        // TODO: Fix rounding errors at high scalings.
-        const TMAX: f32 = 0.9999863;
-        while tmx < TMAX || tmy < TMAX {
+        // The (tmx < 1.0 || tmy < 1.0) condition does not work due to rounding errors in f32, so
+        // dist is used instead to cap the iteration count.
+        let mut dist = ((start_x - end_x).abs() + (start_y - end_y).abs()) as u32;
+        while dist > 0 {
+            dist -= 1;
             let prev_index = index;
+            let y_next: f32;
+            let x_next: f32;
             if tmx < tmy {
                 y_next = tmx * dy + y0;
                 x_next = target_x;
