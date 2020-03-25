@@ -1,4 +1,3 @@
-use crate::math;
 use crate::math::{Geometry, Line};
 use crate::simd;
 use crate::simd::f32x4;
@@ -43,13 +42,11 @@ impl Raster {
 
     #[inline(always)]
     fn line(&mut self, line: &Line, scale: f32x4) {
-        let &[x0, y0, x1, y1] = (line.coords * scale).borrowed();
-        let mut target_x = simd::truncate(math::nudge(x0 + line.x_first_adj, line.x_start_nudge));
-        let mut target_y = simd::truncate(math::nudge(y0 + line.y_first_adj, line.y_start_nudge));
-        let start_x = simd::truncate(math::nudge(x0, line.x_start_nudge));
-        let start_y = simd::truncate(math::nudge(y0, line.y_start_nudge));
-        let end_x = simd::truncate(math::nudge(x1, line.x_end_nudge));
-        let end_y = simd::truncate(math::nudge(y1, line.y_end_nudge));
+        let coords = line.coords * scale;
+        let (x0, y0, x1, y1) = coords.copied();
+        let (start_x, start_y, end_x, end_y) = coords.sub_integer(line.nudge).trunc().copied();
+        let (mut target_x, mut target_y, _, _) =
+            (coords + line.adjustment).sub_integer(line.nudge).trunc().copied();
         let dx = x1 - x0;
         let dy = y1 - y0;
         let sx = (1f32).copysign(dx);

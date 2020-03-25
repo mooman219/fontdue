@@ -15,11 +15,6 @@ pub fn fraction(value: f32) -> f32 {
     }
 }
 
-#[inline(always)]
-pub fn truncate(value: f32) -> f32 {
-    unsafe { _mm_cvtss_f32(_mm_cvtepi32_ps(_mm_cvttps_epi32(_mm_set_ss(value)))) }
-}
-
 #[derive(Copy, Clone)]
 #[repr(transparent)]
 pub struct f32x4(__m128);
@@ -31,8 +26,24 @@ impl f32x4 {
     }
 
     #[inline(always)]
+    pub fn new_u32(x0: u32, x1: u32, x2: u32, x3: u32) -> Self {
+        f32x4(unsafe {
+            _mm_set_ps(
+                core::mem::transmute(x3),
+                core::mem::transmute(x2),
+                core::mem::transmute(x1),
+                core::mem::transmute(x0),
+            )
+        })
+    }
+
+    #[inline(always)]
     pub fn splat(value: f32) -> Self {
         f32x4(unsafe { _mm_set1_ps(value) })
+    }
+
+    pub fn sub_integer(&self, other: f32x4) -> f32x4 {
+        f32x4(unsafe { _mm_castsi128_ps(_mm_sub_epi32(_mm_castps_si128(self.0), _mm_castps_si128(other.0))) })
     }
 
     #[inline(always)]
@@ -41,13 +52,8 @@ impl f32x4 {
     }
 
     #[inline(always)]
-    pub fn copied(self) -> [f32; 4] {
+    pub fn copied(self) -> (f32, f32, f32, f32) {
         unsafe { core::mem::transmute(self.0) }
-    }
-
-    #[inline(always)]
-    pub fn borrowed(&self) -> &[f32; 4] {
-        unsafe { core::mem::transmute(&self.0) }
     }
 
     #[inline(always)]
