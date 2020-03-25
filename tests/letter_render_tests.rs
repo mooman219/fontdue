@@ -1,7 +1,8 @@
 use fontdue::{Font, FontSettings};
 
-const SMALL_SIZES: [f32; 5] = [128.0, 32.0, 16.0, 4.0, 2.0];
-const LARGE_SIZES: [f32; 3] = [2048.0, 1024.0, 512.0];
+const SMALL_SIZES: [f32; 5] = [100.0, 32.0, 16.0, 4.0, 2.0];
+const MED_SIZES: [f32; 2] = [1024.0, 500.0];
+const LARGE_SIZES: [f32; 1] = [2048.0];
 const CHARACTERS: [char; 94] = [
     'a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k', 'l', 'm', 'n', 'o', 'p', 'q', 'r', 's', 't', 'u',
     'v', 'w', 'x', 'y', 'z', 'A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M', 'N', 'O', 'P',
@@ -27,12 +28,11 @@ fn check_best_guess_rasterization((metrics, bitmap): (fontdue::Metrics, Vec<u8>)
     );
 }
 
-#[test]
-fn render_characters_small() {
+fn render_characters(sizes: &[f32]) {
     for font in &FONTS {
         let font = Font::from_bytes(*font, FontSettings::default()).unwrap();
         for character in CHARACTERS.iter().copied() {
-            for size in &SMALL_SIZES {
+            for size in sizes {
                 check_best_guess_rasterization(font.rasterize(character, *size), character);
             }
         }
@@ -40,13 +40,16 @@ fn render_characters_small() {
 }
 
 #[test]
+fn render_characters_small() {
+    render_characters(&SMALL_SIZES);
+}
+
+#[test]
+fn render_characters_med() {
+    render_characters(&MED_SIZES);
+}
+
+#[test]
 fn render_characters_large() {
-    for font in &FONTS {
-        let font = Font::from_bytes(*font, FontSettings::default()).unwrap();
-        for character in CHARACTERS.iter().copied() {
-            for size in &LARGE_SIZES {
-                check_best_guess_rasterization(font.rasterize(character, *size), character);
-            }
-        }
-    }
+    render_characters(&LARGE_SIZES);
 }
