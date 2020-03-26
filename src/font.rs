@@ -45,8 +45,14 @@ impl AABB {
 /// Header table
 #[derive(Copy, Clone, PartialEq, Debug)]
 pub struct Hea {
+    /// The highest point that any glyph in the font extends to above the
+    /// baseline. Typically positive.
     pub ascent: f32,
+    /// The lowest point that any glyph in the font extends to below the
+    /// baseline. Typically negative.
     pub descent: f32,
+    /// The gap to leave between the descent of one line and the ascent of the
+    /// next. This is of course only a guideline given by the font's designers.
     pub line_gap: f32,
 }
 
