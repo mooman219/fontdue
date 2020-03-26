@@ -42,6 +42,37 @@ impl AABB {
     }
 }
 
+/// Header table
+#[derive(Copy, Clone, PartialEq, Debug)]
+pub struct Hea {
+    pub ascent: f32,
+    pub descent: f32,
+    pub line_gap: f32,
+}
+
+impl Hea {
+
+    /// Creates a new header table
+    pub fn new(ascent: f32, descent: f32, line_gap: f32) -> Hea {
+        Hea {
+            ascent,
+            descent,
+            line_gap,
+        }
+    }
+
+    /// Scales the header table by the given factor.
+    #[inline(always)]
+    pub fn scale(&self, scale: f32) -> Hea {
+        Hea {
+            ascent: self.ascent * scale,
+            descent: self.descent * scale,
+            line_gap: self.line_gap * scale,
+        }
+    }
+
+}
+
 /// Encapsulates all layout information associated with a glyph for a fixed scale.
 #[derive(Copy, Clone, PartialEq, Debug)]
 pub struct Metrics {
@@ -97,6 +128,8 @@ pub struct Font {
     // Metrics
     new_line_width: f32,
     new_line_height: f32,
+    hhea: Hea,
+    vhea: Hea,
     has_horizontal_metrics: bool,
     has_vertical_metrics: bool,
 }
@@ -138,15 +171,15 @@ impl Font {
         }
 
         // New line metrics.
-        let (has_horizontal_metrics, new_line_height) = if let Some(hhea) = &raw.hhea {
-            (true, (hhea.ascent - hhea.descent + hhea.line_gap) as f32)
+        let (has_horizontal_metrics, new_line_height, hhea) = if let Some(hhea) = &raw.hhea {
+            (true, (hhea.ascent - hhea.descent + hhea.line_gap) as f32, Hea::new(hhea.ascent as f32, hhea.descent as f32, hhea.line_gap as f32))
         } else {
-            (false, 0.0)
+            (false, 0.0, Hea::new(0.0, 0.0, 0.0))
         };
-        let (has_vertical_metrics, new_line_width) = if let Some(vhea) = &raw.vhea {
-            (true, (vhea.ascent - vhea.descent + vhea.line_gap) as f32)
+        let (has_vertical_metrics, new_line_width, vhea) = if let Some(vhea) = &raw.vhea {
+            (true, (vhea.ascent - vhea.descent + vhea.line_gap) as f32, Hea::new(vhea.ascent as f32, vhea.descent as f32, vhea.line_gap as f32))
         } else {
-            (false, 0.0)
+            (false, 0.0, Hea::new(0.0, 0.0, 0.0))
         };
 
         Ok(Font {
@@ -155,6 +188,8 @@ impl Font {
             units_per_em: raw.head.units_per_em as f32,
             new_line_height,
             new_line_width,
+            hhea,
+            vhea,
             has_horizontal_metrics,
             has_vertical_metrics,
         })
@@ -170,6 +205,18 @@ impl Font {
     /// metrics. Zero if unpopulated.
     pub fn new_line_height(&self, px: f32) -> f32 {
         self.new_line_height * Self::scale_factor(px, self.units_per_em)
+    }
+
+    /// The horizontal header table for the font. Only populated for fonts with horizontal text layout
+    /// metrics. Zero if unpopulated.
+    pub fn hhea(&self, px: f32) -> Hea {
+        self.hhea.scale(Self::scale_factor(px, self.units_per_em))
+    }
+
+    /// The vertical header table for the font. Only populated for fonts with vertical text layout
+    /// metrics. Zero if unpopulated.
+    pub fn vhea(&self, px: f32) -> Hea {
+        self.vhea.scale(Self::scale_factor(px, self.units_per_em))
     }
 
     /// Returns true if the font provides horizontal text layout metrics.
