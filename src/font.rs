@@ -57,6 +57,46 @@ pub struct Metrics {
     pub bounds: AABB,
 }
 
+/// Metrics associated with line positioning.
+#[derive(Copy, Clone, PartialEq, Debug)]
+pub struct LineMetrics {
+    /// The highest point that any glyph in the font extends to above the baseline. Typically
+    /// positive.
+    pub ascent: f32,
+    /// The lowest point that any glyph in the font extends to below the baseline. Typically
+    /// negative.
+    pub descent: f32,
+    /// The gap to leave between the descent of one line and the ascent of the next. This is of
+    /// course only a guideline given by the font's designers.
+    pub line_gap: f32,
+    /// A precalculated value for the height or width of the line depending on if the font is laid
+    /// out horizontally or vertically. It's calculated by: ascent - descent + line_gap.
+    pub new_line_size: f32,
+}
+
+impl LineMetrics {
+    /// Creates a new line metrics struct and computes the new line size.
+    pub fn new(ascent: i16, descent: i16, line_gap: i16) -> LineMetrics {
+        LineMetrics {
+            ascent: ascent as f32,
+            descent: descent as f32,
+            line_gap: line_gap as f32,
+            new_line_size: (ascent - descent + line_gap) as f32,
+        }
+    }
+
+    /// Scales the line metrics by the given factor.
+    #[inline(always)]
+    pub fn scale(&self, scale: f32) -> LineMetrics {
+        LineMetrics {
+            ascent: self.ascent * scale,
+            descent: self.descent * scale,
+            line_gap: self.line_gap * scale,
+            new_line_size: self.new_line_size * scale,
+        }
+    }
+}
+
 struct Glyph {
     geometry: Geometry,
     width: f32,
@@ -94,11 +134,8 @@ pub struct Font {
     units_per_em: f32,
     glyphs: Vec<Glyph>,
     char_to_glyph: HashMap<u32, u32>,
-    // Metrics
-    new_line_width: f32,
-    new_line_height: f32,
-    has_horizontal_metrics: bool,
-    has_vertical_metrics: bool,
+    horizontal_line_metrics: Option<LineMetrics>,
+    vertical_line_metrics: Option<LineMetrics>,
 }
 
 impl Font {
@@ -138,48 +175,44 @@ impl Font {
         }
 
         // New line metrics.
-        let (has_horizontal_metrics, new_line_height) = if let Some(hhea) = &raw.hhea {
-            (true, (hhea.ascent - hhea.descent + hhea.line_gap) as f32)
+        let horizontal_line_metrics = if let Some(hhea) = &raw.hhea {
+            Some(LineMetrics::new(hhea.ascent, hhea.descent, hhea.line_gap))
         } else {
-            (false, 0.0)
+            None
         };
-        let (has_vertical_metrics, new_line_width) = if let Some(vhea) = &raw.vhea {
-            (true, (vhea.ascent - vhea.descent + vhea.line_gap) as f32)
+        let vertical_line_metrics = if let Some(vhea) = &raw.vhea {
+            Some(LineMetrics::new(vhea.ascent, vhea.descent, vhea.line_gap))
         } else {
-            (false, 0.0)
+            None
         };
 
         Ok(Font {
             glyphs,
             char_to_glyph: raw.cmap.map.clone(),
             units_per_em: raw.head.units_per_em as f32,
-            new_line_height,
-            new_line_width,
-            has_horizontal_metrics,
-            has_vertical_metrics,
+            horizontal_line_metrics,
+            vertical_line_metrics,
         })
     }
 
     /// The new line height for the font. Only populated for fonts with vertical text layout
-    /// metrics. Zero if unpopulated.
-    pub fn new_line_width(&self, px: f32) -> f32 {
-        self.new_line_width * Self::scale_factor(px, self.units_per_em)
+    /// metrics. None if unpopulated.
+    pub fn horizontal_line_metrics(&self, px: f32) -> Option<LineMetrics> {
+        if let Some(metrics) = self.horizontal_line_metrics {
+            Some(metrics.scale(Self::scale_factor(px, self.units_per_em)))
+        } else {
+            None
+        }
     }
 
     /// The new line height for the font. Only populated for fonts with horizontal text layout
-    /// metrics. Zero if unpopulated.
-    pub fn new_line_height(&self, px: f32) -> f32 {
-        self.new_line_height * Self::scale_factor(px, self.units_per_em)
-    }
-
-    /// Returns true if the font provides horizontal text layout metrics.
-    pub fn has_horizontal_metrics(&self) -> bool {
-        self.has_horizontal_metrics
-    }
-
-    /// Returns true if the font provides vertical text layout metrics.
-    pub fn has_vertical_metrics(&self) -> bool {
-        self.has_vertical_metrics
+    /// metrics. None if unpopulated.
+    pub fn vertical_line_metrics(&self, px: f32) -> Option<LineMetrics> {
+        if let Some(metrics) = self.vertical_line_metrics {
+            Some(metrics.scale(Self::scale_factor(px, self.units_per_em)))
+        } else {
+            None
+        }
     }
 
     /// Calculates the glyph scale factor for a given px size.
