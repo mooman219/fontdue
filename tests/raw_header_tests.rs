@@ -31,3 +31,12 @@ fn header_hmtx() {
     let hmtx = font.hmtx.expect("Missing the expected hmtx table.");
     assert_eq!(hmtx.hmetrics.len(), 1294);
 }
+
+#[test]
+fn header_hhea() {
+    let font = RawFont::new(FONT).unwrap();
+    let hhea = font.hhea.expect("Missing the expected hhea table.");
+    assert_eq!(hhea.ascent, 1900);
+    assert_eq!(hhea.descent, -500);
+    assert_eq!(hhea.line_gap, 0);
+}
