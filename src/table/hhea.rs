@@ -4,6 +4,7 @@ use crate::FontResult;
 // Apple: https://developer.apple.com/fonts/TrueType-Reference-Manual/RM06/Chap6hhea.html
 // Microsoft: https://docs.microsoft.com/en-us/typography/opentype/spec/hhea
 
+#[derive(Debug, PartialEq)]
 pub struct TableHhea {
     pub version: u32,
     pub ascent: i16,
@@ -16,23 +17,27 @@ pub struct TableHhea {
     pub caret_slope_rise: i16,
     pub caret_slope_run: i16,
     pub caret_offset: i16,
+    pub metric_data_format: i16,
     pub num_long_hmetrics: u16,
 }
 
 impl TableHhea {
     pub fn new(hhea: &[u8]) -> FontResult<TableHhea> {
-        let version = read_u32(&hhea[0..]);
-        let ascent = read_i16(&hhea[4..]);
-        let descent = read_i16(&hhea[6..]);
-        let line_gap = read_i16(&hhea[8..]);
-        let advance_width_max = read_u16(&hhea[10..]);
-        let min_left_side_bearing = read_i16(&hhea[12..]);
-        let min_right_side_bearing = read_i16(&hhea[14..]);
-        let xmax_extent = read_i16(&hhea[16..]);
-        let caret_slope_rise = read_i16(&hhea[18..]);
-        let caret_slope_run = read_i16(&hhea[20..]);
-        let caret_offset = read_i16(&hhea[22..]);
-        let num_long_hmetrics = read_u16(&hhea[34..]);
+        let mut stream = Stream::new(hhea);
+        let version = stream.read_u32();
+        let ascent = stream.read_i16();
+        let descent = stream.read_i16();
+        let line_gap = stream.read_i16();
+        let advance_width_max = stream.read_u16();
+        let min_left_side_bearing = stream.read_i16();
+        let min_right_side_bearing = stream.read_i16();
+        let xmax_extent = stream.read_i16();
+        let caret_slope_rise = stream.read_i16();
+        let caret_slope_run = stream.read_i16();
+        let caret_offset = stream.read_i16();
+        stream.skip(8); // Reserved
+        let metric_data_format = stream.read_i16();
+        let num_long_hmetrics = stream.read_u16();
         if num_long_hmetrics == 0 {
             return Err("Font.hhea: The number of long hmetrics must be geater than 0");
         }
@@ -48,6 +53,7 @@ impl TableHhea {
             caret_slope_rise,
             caret_slope_run,
             caret_offset,
+            metric_data_format,
             num_long_hmetrics,
         })
     }

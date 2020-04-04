@@ -13,10 +13,10 @@ Ideally, font loading should be faster in the future, but making the loading pro
 
 ## TrueType Table Support
 - `cmap` Character to glyph mapping (Unicode only)
-  - Supports popular formats 0, 4, 6, 10, 12, 13
-  - Planned support: formats 2, 8, 14
+  - Supported formats: 0, 4, 6, 10, 12, 13
+  - Unsupported formats: 2, 8, 14
 - `glyf` Glyph outlining
-  - Planned support: Compound glyph matched points, compound glyph scaled offset
+  - Unsupported features: Compound glyph matched points, compound glyph scaled offset
 - `head` General font information
 - `hhea` General horizontal layout (Optional)
 - `hmtx` Glyph horizontal layout (Optional)
@@ -24,9 +24,9 @@ Ideally, font loading should be faster in the future, but making the loading pro
 - `vmtx` Glyph vertical layout (Optional)
 - `loca` Glyph outline offsets and lengths
 - `maxp` Maximum values used for the font
-
-Planned support for:
-- `kern` Kerning pair layout
+- `kern` Kerning pair layout (Optional)
+  - Supported formats: 0
+  - Unsupported formats: 1, 2, 3
 
 ## Example
 

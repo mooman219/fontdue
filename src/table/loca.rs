@@ -11,6 +11,7 @@ pub struct GlyphLocation {
     pub length: usize,
 }
 
+#[derive(Debug, PartialEq)]
 pub struct TableLoca {
     /// Indexed by glyph id.
     pub locations: Vec<GlyphLocation>,
@@ -21,24 +22,27 @@ impl TableLoca {
         if index_to_loc_format > 1 {
             return Err("Font.loca: Unknown index_to_loc_format");
         }
+        let mut stream = Stream::new(loca);
         let mut locations = Vec::with_capacity(num_glyphs as usize);
         if index_to_loc_format == 0 {
-            for i in 0..num_glyphs as usize {
-                let offset = read_u16(&loca[i * 2..]) as usize * 2;
-                let next_offset = read_u16(&loca[(i + 1) * 2..]) as usize * 2;
+            let mut offset = stream.read_u16() as usize * 2;
+            for _ in 0..num_glyphs {
+                let next_offset = stream.read_u16() as usize * 2;
                 locations.push(GlyphLocation {
                     offset,
                     length: next_offset - offset,
                 });
+                offset = next_offset;
             }
         } else {
-            for i in 0..num_glyphs as usize {
-                let offset = read_u32(&loca[i * 4..]) as usize;
-                let next_offset = read_u32(&loca[(i + 1) * 4..]) as usize;
+            let mut offset = stream.read_u32() as usize;
+            for _ in 0..num_glyphs {
+                let next_offset = stream.read_u32() as usize;
                 locations.push(GlyphLocation {
                     offset,
                     length: next_offset - offset,
                 });
+                offset = next_offset;
             }
         }
         Ok(TableLoca {

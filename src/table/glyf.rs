@@ -70,7 +70,7 @@ impl RawPoint {
     }
 }
 
-#[derive(Clone)]
+#[derive(Debug, Clone)]
 pub struct Glyph {
     /// The number of contours in the glyph.
     pub num_contours: i16,
@@ -130,15 +130,15 @@ fn parse_glyph(glyf: &[u8], locations: &[GlyphLocation], index: usize) -> FontRe
     if loc.length == 0 {
         return Ok(glyph);
     }
-    let mut offset = loc.offset;
-    glyph.num_contours = read_i16(&glyf[offset..]);
+    let mut stream = Stream::new(glyf);
+    stream.seek(loc.offset);
+    glyph.num_contours = stream.read_i16();
     // The boundary box is read here, but can be adjusted if a point goes outside of the box when
     // the glyph is being parsed.
-    glyph.xmin = read_i16(&glyf[offset + 2..]);
-    glyph.ymin = read_i16(&glyf[offset + 4..]);
-    glyph.xmax = read_i16(&glyf[offset + 6..]);
-    glyph.ymax = read_i16(&glyf[offset + 8..]);
-    offset += 10;
+    glyph.xmin = stream.read_i16();
+    glyph.ymin = stream.read_i16();
+    glyph.xmax = stream.read_i16();
+    glyph.ymax = stream.read_i16();
 
     // Workaround for fonts in http://www.princexml.com/fonts/
     if glyph.xmin == 32767 && glyph.xmax == -32767 && glyph.ymin == 32767 && glyph.ymax == -32767 {
@@ -164,8 +164,8 @@ fn parse_glyph(glyf: &[u8], locations: &[GlyphLocation], index: usize) -> FontRe
         // for example has 2 contours. The end_points_of_contours array basically has the
         // number of points to read for each contour.
         let mut end_points_of_contours = Vec::with_capacity(glyph.num_contours as usize);
-        for i in 0..glyph.num_contours as usize {
-            let end_points_of_contour = read_u16(&glyf[offset + i * 2..]);
+        for _ in 0..glyph.num_contours as usize {
+            let end_points_of_contour = stream.read_u16();
             end_points_of_contours.push(end_points_of_contour);
         }
         // Since end_points_of_contours indexes by the point index, the last contour has
@@ -174,16 +174,15 @@ fn parse_glyph(glyf: &[u8], locations: &[GlyphLocation], index: usize) -> FontRe
 
         // Skip instructions, we don't need a manual to go where we're going.
         // (Really, what is this for in 2019?)
-        offset += glyph.num_contours as usize * 2;
-        let instruction_length = read_u16(&glyf[offset..]);
+        let instruction_length = stream.read_u16();
+        stream.skip(instruction_length as usize);
 
         // Read flags. Flags can repeat, but they're not stored as literal repeats, they
         // instead have a byte after them for their repeat count and you just need to
         // re-use the prior flag that many times.
-        offset += instruction_length as usize + 2;
         glyph.points = Vec::with_capacity(num_points);
         while glyph.points.len() < num_points {
-            let flags = read_u8(&glyf[offset..]);
+            let flags = stream.read_u8();
             let point = RawPoint {
                 x: 0.0,
                 y: 0.0,
@@ -194,13 +193,10 @@ fn parse_glyph(glyf: &[u8], locations: &[GlyphLocation], index: usize) -> FontRe
             };
             glyph.points.push(point);
             if flag_u8(flags, SimpleFlags::REPEAT) {
-                let count = read_u8(&glyf[offset + 1..]);
+                let count = stream.read_u8();
                 for _ in 0..count {
                     glyph.points.push(point);
                 }
-                offset += 2;
-            } else {
-                offset += 1;
             }
         }
 
@@ -210,19 +206,16 @@ fn parse_glyph(glyf: &[u8], locations: &[GlyphLocation], index: usize) -> FontRe
         for point in &mut glyph.points {
             match point.flags & (SimpleFlags::X_SHORT | SimpleFlags::X_DUAL) {
                 SimpleFlags::X_SHORT_AND_DUAL => {
-                    last_x += read_u8(&glyf[offset..]) as i16;
-                    offset += 1;
+                    last_x += stream.read_u8() as i16;
                 }
                 SimpleFlags::X_SHORT => {
-                    last_x -= read_u8(&glyf[offset..]) as i16;
-                    offset += 1;
+                    last_x -= stream.read_u8() as i16;
                 }
                 SimpleFlags::X_DUAL => {
                     // Reuse last_x.
                 }
                 _ => {
-                    last_x += read_i16(&glyf[offset..]);
-                    offset += 2;
+                    last_x += stream.read_i16();
                 }
             }
             point.x = last_x as f32;
@@ -234,19 +227,16 @@ fn parse_glyph(glyf: &[u8], locations: &[GlyphLocation], index: usize) -> FontRe
         for point in &mut glyph.points {
             match point.flags & SimpleFlags::Y_SHORT_AND_DUAL {
                 SimpleFlags::Y_SHORT_AND_DUAL => {
-                    last_y += read_u8(&glyf[offset..]) as i16;
-                    offset += 1;
+                    last_y += stream.read_u8() as i16;
                 }
                 SimpleFlags::Y_SHORT => {
-                    last_y -= read_u8(&glyf[offset..]) as i16;
-                    offset += 1;
+                    last_y -= stream.read_u8() as i16;
                 }
                 SimpleFlags::Y_DUAL => {
                     // Reuse last_y.
                 }
                 _ => {
-                    last_y += read_i16(&glyf[offset..]);
-                    offset += 2;
+                    last_y += stream.read_i16();
                 }
             }
             point.y = last_y as f32;
@@ -262,20 +252,18 @@ fn parse_glyph(glyf: &[u8], locations: &[GlyphLocation], index: usize) -> FontRe
         // Compound glyphs.
         let mut flags = CompoundFlags::MORE_COMPONENTS;
         while flag_u16(flags, CompoundFlags::MORE_COMPONENTS) {
-            flags = read_u16(&glyf[offset..]);
-            let compound_glyph_index = read_u16(&glyf[offset + 2..]);
+            flags = stream.read_u16();
+            let compound_glyph_index = stream.read_u16();
             if flag_u16(flags, CompoundFlags::USE_MY_METRICS) {
                 glyph.metrics = compound_glyph_index as usize;
             }
-            offset += 4;
 
             let cx;
             let cy;
             match flags & CompoundFlags::ARGS_ARE_WORDS_AND_XY_VALUES {
                 CompoundFlags::ARGS_ARE_WORDS_AND_XY_VALUES => {
-                    cx = read_i16(&glyf[offset..]) as i32;
-                    cy = read_i16(&glyf[offset + 2..]) as i32;
-                    offset += 4;
+                    cx = stream.read_i16() as i32;
+                    cy = stream.read_i16() as i32;
                 }
                 CompoundFlags::ARGS_ARE_WORDS => {
                     return Err("Font.glyf: Component matched point numbers are unsupported");
@@ -285,9 +273,8 @@ fn parse_glyph(glyf: &[u8], locations: &[GlyphLocation], index: usize) -> FontRe
                     // offset += 4;
                 }
                 CompoundFlags::ARGS_ARE_XY_VALUES => {
-                    cx = read_i8(&glyf[offset..]) as i32;
-                    cy = read_i8(&glyf[offset + 1..]) as i32;
-                    offset += 2;
+                    cx = stream.read_i8() as i32;
+                    cy = stream.read_i8() as i32;
                 }
                 _ => {
                     return Err("Font.glyf: Component matched point numbers are unsupported");
@@ -303,19 +290,16 @@ fn parse_glyph(glyf: &[u8], locations: &[GlyphLocation], index: usize) -> FontRe
             let mut c = 0.0;
             let mut d = 1.0;
             if flag_u16(flags, CompoundFlags::WE_HAVE_A_SCALE) {
-                a = read_f2dot14(&glyf[offset..]);
+                a = stream.read_f2dot14();
                 d = a;
-                offset += 2;
             } else if flag_u16(flags, CompoundFlags::WE_HAVE_AN_X_AND_Y_SCALE) {
-                a = read_f2dot14(&glyf[offset..]);
-                d = read_f2dot14(&glyf[offset + 2..]);
-                offset += 4;
+                a = stream.read_f2dot14();
+                d = stream.read_f2dot14();
             } else if flag_u16(flags, CompoundFlags::WE_HAVE_A_TWO_BY_TWO) {
-                a = read_f2dot14(&glyf[offset..]);
-                b = read_f2dot14(&glyf[offset + 2..]);
-                c = read_f2dot14(&glyf[offset + 4..]);
-                d = read_f2dot14(&glyf[offset + 6..]);
-                offset += 8;
+                a = stream.read_f2dot14();
+                b = stream.read_f2dot14();
+                c = stream.read_f2dot14();
+                d = stream.read_f2dot14();
             } else {
                 // Do nothing, use the values we have for a, b, c, d.
             }

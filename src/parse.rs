@@ -1,59 +1,149 @@
-// READ UNSIGNED
+use alloc::vec::*;
 
-#[inline]
-pub fn read_u8(buf: &[u8]) -> u8 {
-    buf[0]
+pub struct Stream<'a> {
+    pub bytes: &'a [u8],
+    pub offset: usize,
 }
 
-#[inline]
-pub fn read_u16(buf: &[u8]) -> u16 {
-    assert!(buf.len() >= 2);
-    u16::from_be_bytes(unsafe { *(buf.as_ptr() as *const [u8; 2]) })
-}
+impl<'a> Stream<'a> {
+    pub fn new(bytes: &'a [u8]) -> Stream<'a> {
+        Stream {
+            bytes,
+            offset: 0,
+        }
+    }
 
-#[inline]
-pub fn read_u32(buf: &[u8]) -> u32 {
-    assert!(buf.len() >= 4);
-    u32::from_be_bytes(unsafe { *(buf.as_ptr() as *const [u8; 4]) })
-}
+    // UTILITY
 
-#[inline]
-pub fn read_u64(buf: &[u8]) -> u64 {
-    assert!(buf.len() >= 8);
-    u64::from_be_bytes(unsafe { *(buf.as_ptr() as *const [u8; 8]) })
-}
+    #[inline]
+    pub fn reset(&mut self) {
+        self.offset = 0;
+    }
 
-#[inline]
-pub fn read_u128(buf: &[u8]) -> u128 {
-    assert!(buf.len() >= 16);
-    u128::from_be_bytes(unsafe { *(buf.as_ptr() as *const [u8; 16]) })
-}
+    #[inline]
+    pub fn offset(&self) -> usize {
+        self.offset
+    }
 
-// READ SIGNED
+    #[inline]
+    pub fn seek(&mut self, offset: usize) {
+        self.offset = offset;
+    }
 
-#[inline]
-pub fn read_i8(buf: &[u8]) -> i8 {
-    read_u8(buf) as i8
-}
+    #[inline]
+    pub fn skip(&mut self, offset: usize) {
+        self.offset += offset;
+    }
 
-#[inline]
-pub fn read_i16(buf: &[u8]) -> i16 {
-    read_u16(buf) as i16
-}
+    // UNSIGNED
 
-#[inline]
-pub fn read_i32(buf: &[u8]) -> i32 {
-    read_u32(buf) as i32
-}
+    #[inline]
+    pub fn read_u8(&mut self) -> u8 {
+        const SIZE: usize = 1;
+        let result = self.bytes[self.offset];
+        self.offset += SIZE;
+        result
+    }
 
-#[inline]
-pub fn read_i64(buf: &[u8]) -> i64 {
-    read_u64(buf) as i64
-}
+    #[inline]
+    pub fn read_u16(&mut self) -> u16 {
+        const SIZE: usize = 2;
+        let slice = &self.bytes[self.offset..];
+        assert!(slice.len() >= SIZE);
+        let result = u16::from_be_bytes(unsafe { *(slice.as_ptr() as *const [u8; SIZE]) });
+        self.offset += SIZE;
+        result
+    }
 
-#[inline]
-pub fn read_i128(buf: &[u8]) -> i128 {
-    read_u128(buf) as i128
+    #[inline]
+    pub fn read_u32(&mut self) -> u32 {
+        const SIZE: usize = 4;
+        let slice = &self.bytes[self.offset..];
+        assert!(slice.len() >= SIZE);
+        let result = u32::from_be_bytes(unsafe { *(slice.as_ptr() as *const [u8; SIZE]) });
+        self.offset += SIZE;
+        result
+    }
+
+    #[inline]
+    pub fn read_u64(&mut self) -> u64 {
+        const SIZE: usize = 8;
+        let slice = &self.bytes[self.offset..];
+        assert!(slice.len() >= SIZE);
+        let result = u64::from_be_bytes(unsafe { *(slice.as_ptr() as *const [u8; SIZE]) });
+        self.offset += SIZE;
+        result
+    }
+
+    // UNSIGNED BATCH
+
+    #[inline]
+    pub fn read_array_u16(&mut self, count: usize) -> Vec<u16> {
+        let mut values = Vec::with_capacity(count);
+        for _ in 0..count {
+            values.push(self.read_u16());
+        }
+        values
+    }
+
+    // SIGNED
+
+    #[inline]
+    pub fn read_i8(&mut self) -> i8 {
+        const SIZE: usize = 1;
+        let result = self.bytes[self.offset] as i8;
+        self.offset += SIZE;
+        result
+    }
+
+    #[inline]
+    pub fn read_i16(&mut self) -> i16 {
+        const SIZE: usize = 2;
+        let slice = &self.bytes[self.offset..];
+        assert!(slice.len() >= SIZE);
+        let result = i16::from_be_bytes(unsafe { *(slice.as_ptr() as *const [u8; SIZE]) });
+        self.offset += SIZE;
+        result
+    }
+
+    #[inline]
+    pub fn read_i32(&mut self) -> i32 {
+        const SIZE: usize = 4;
+        let slice = &self.bytes[self.offset..];
+        assert!(slice.len() >= SIZE);
+        let result = i32::from_be_bytes(unsafe { *(slice.as_ptr() as *const [u8; SIZE]) });
+        self.offset += SIZE;
+        result
+    }
+
+    #[inline]
+    pub fn read_i64(&mut self) -> i64 {
+        const SIZE: usize = 8;
+        let slice = &self.bytes[self.offset..];
+        assert!(slice.len() >= SIZE);
+        let result = i64::from_be_bytes(unsafe { *(slice.as_ptr() as *const [u8; SIZE]) });
+        self.offset += SIZE;
+        result
+    }
+
+    // FONT
+
+    #[inline]
+    pub fn read_f2dot14(&mut self) -> f32 {
+        let val = self.read_i16();
+        let result = val as f32 * (1.0 / (1 << 14) as f32);
+        result
+    }
+
+    #[inline]
+    pub fn read_tag(&mut self) -> [u8; 4] {
+        const SIZE: usize = 4;
+        let slice = &self.bytes[self.offset..];
+        assert!(slice.len() >= SIZE);
+        let result = unsafe { *(slice.as_ptr() as *const [u8; SIZE]) };
+        self.offset += SIZE;
+        result
+    }
 }
 
 // FLAG UNSIGNED
@@ -108,12 +198,4 @@ pub fn flag_i64(value: i64, flags: i64) -> bool {
 #[inline]
 pub fn flag_i128(value: i128, flags: i128) -> bool {
     value & flags == flags
-}
-
-// FONT
-
-#[inline]
-pub fn read_f2dot14(buf: &[u8]) -> f32 {
-    let val = read_i16(buf);
-    val as f32 * (1.0 / (1 << 14) as f32)
 }
