@@ -40,7 +40,7 @@ impl RawFont {
         let loca = TableLoca::new(&data[loca_offset..], head.index_to_loc_format, maxp.num_glyphs)?;
         let glyf = TableGlyf::new(&data[glyf_offset..], &loca.locations)?;
 
-        // Kerning
+        // Kerning (Optional)
         let kern_offset = dir.map.get(b"kern").map(|v| v.offset);
         let kern = if let Some(kern_offset) = kern_offset {
             let kern = TableKern::new(&data[kern_offset..])?;
