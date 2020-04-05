@@ -7,9 +7,8 @@ use hashbrown::HashMap;
 
 #[derive(Debug)]
 pub struct TableKern {
-    pub header: Header,
-    pub matched_sub_header: SubTableHeader,
-    pub mappings: HashMap<u32, i16>,
+    pub horizontal_mappings: Option<HashMap<u32, i16>>,
+    pub vertical_mappings: Option<HashMap<u32, i16>>,
 }
 
 #[derive(Copy, Clone, Debug)]
@@ -74,10 +73,15 @@ impl TableKern {
             match sub_header.coverage.format() {
                 // Ordered List of Kerning Pairs
                 0 => {
+                    let mappings = Self::read_format0(&mut stream);
+                    let (h, v) = if sub_header.coverage.is_horizontal() {
+                        (Some(mappings), None)
+                    } else {
+                        (None, Some(mappings))
+                    };
                     return Ok(TableKern {
-                        header,
-                        matched_sub_header: sub_header,
-                        mappings: Self::read_format0(&mut stream),
+                        horizontal_mappings: h,
+                        vertical_mappings: v,
                     });
                 }
                 // State Table for Contextual Kerning
