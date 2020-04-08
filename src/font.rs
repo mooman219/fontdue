@@ -57,6 +57,20 @@ pub struct Metrics {
     pub bounds: AABB,
 }
 
+impl Metrics {
+    /// Scales the metrics by the given factor.
+    #[inline(always)]
+    pub fn scale(&self, scale: f32) -> Metrics {
+        Metrics {
+            width: (self.width as f32 * scale).ceil() as usize,
+            height: (self.height as f32 * scale).ceil() as usize,
+            advance_width: self.advance_width * scale,
+            advance_height: self.advance_height * scale,
+            bounds: self.bounds.scale(scale),
+        }
+    }
+}
+
 /// Metrics associated with line positioning.
 #[derive(Copy, Clone, PartialEq, Debug)]
 pub struct LineMetrics {
