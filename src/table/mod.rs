@@ -9,6 +9,8 @@ mod loca;
 mod maxp;
 mod vhea;
 mod vmtx;
+mod colr;
+mod cpal;
 
 pub use self::cmap::*;
 pub use self::directory::*;
@@ -21,3 +23,5 @@ pub use self::loca::*;
 pub use self::maxp::*;
 pub use self::vhea::*;
 pub use self::vmtx::*;
+pub use self::colr::*;
+pub use self::cpal::*;

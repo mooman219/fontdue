@@ -15,6 +15,9 @@ pub struct RawFont {
 
     pub vhea: Option<TableVhea>,
     pub vmtx: Option<TableVmtx>,
+
+    pub cpal: Option<TableCpal>,
+    pub colr: Option<TableColr>,
 }
 
 impl RawFont {
@@ -68,6 +71,27 @@ impl RawFont {
             (None, None)
         };
 
+        // Color pallete
+        let cpal_offset = dir.map.get(b"CPAL").map(|v| v.offset);
+        let cpal = if let Some(cpal_offset) = cpal_offset {
+            let cpal = TableCpal::new(&data[cpal_offset..])?;
+            Some(cpal)
+        } else {
+            None
+        };
+
+        // Color layers
+        let colr_offset = dir.map.get(b"COLR").map(|v| v.offset);
+        let colr = if let Some(colr_offset) = colr_offset {
+            if cpal.is_none() {
+                panic!("Font: found COLR, missing CPAL table");
+            }
+            let colr = TableColr::new(&data[colr_offset..])?;
+            Some(colr)
+        } else {
+            None
+        };
+
         Ok(RawFont {
             head,
             cmap,
@@ -79,6 +103,8 @@ impl RawFont {
             kern,
             vhea,
             vmtx,
+            cpal,
+            colr,
         })
     }
 }
