@@ -108,9 +108,9 @@ struct Glyph {
 
 impl Glyph {
     #[inline(always)]
-    fn metrics(&self, scale: f32) -> Metrics {
+    fn metrics(&self, scale: f32, offset: f32) -> Metrics {
         Metrics {
-            width: (scale * self.width).ceil() as usize,
+            width: (scale * self.width + offset).ceil() as usize,
             height: (scale * self.height).ceil() as usize,
             advance_width: scale * self.advance_width,
             advance_height: scale * self.advance_height,
@@ -232,7 +232,7 @@ impl Font {
     pub fn metrics_indexed(&self, index: usize, px: f32) -> Metrics {
         let glyph = &self.glyphs[index];
         let scale = Font::scale_factor(px, self.units_per_em);
-        glyph.metrics(scale)
+        glyph.metrics(scale, 0.0)
     }
 
     /// Retrieves the layout metrics and rasterized bitmap for the given character. If the caracter
@@ -247,9 +247,9 @@ impl Font {
     pub fn rasterize_indexed(&self, index: usize, px: f32) -> (Metrics, Vec<u8>) {
         let glyph = &self.glyphs[index];
         let scale = Font::scale_factor(px, self.units_per_em);
-        let metrics = glyph.metrics(scale);
+        let metrics = glyph.metrics(scale, 0.0);
         let mut canvas = Raster::new(metrics.width, metrics.height);
-        canvas.draw(&glyph.geometry, scale);
+        canvas.draw(&glyph.geometry, scale, 0.0);
         (metrics, canvas.get_bitmap())
     }
 

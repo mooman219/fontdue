@@ -24,25 +24,31 @@ impl Raster {
         }
     }
 
-    pub fn draw(&mut self, geometry: &Geometry, scale: f32) {
+    pub fn draw(&mut self, geometry: &Geometry, scale: f32, offset: f32) {
         let scale = f32x4::splat(scale);
+        let offset = f32x4::new(offset, 0.0, offset, 0.0);
         for line in &geometry.lines {
-            self.line(line, scale);
+            self.line(line, line.coords * scale + offset);
         }
     }
 
     #[inline(always)]
     fn add(&mut self, index: usize, height: f32, mid_x: f32) {
+        // This is fast and hip.
         unsafe {
             let mid_x = simd::fraction(mid_x);
             *self.a.get_unchecked_mut(index) += height * (1.0 - mid_x);
             *self.a.get_unchecked_mut(index + 1) += height * mid_x;
         }
+
+        // This is safe but slow.
+        // let mid_x = simd::fraction(mid_x);
+        // self.a[index] += height * (1.0 - mid_x);
+        // self.a[index + 1] += height * mid_x;
     }
 
     #[inline(always)]
-    fn line(&mut self, line: &Line, scale: f32x4) {
-        let coords = line.coords * scale;
+    fn line(&mut self, line: &Line, coords: f32x4) {
         let (x0, y0, x1, y1) = coords.copied();
         let (start_x, start_y, end_x, end_y) = coords.sub_integer(line.nudge).trunc().copied();
         let (mut target_x, mut target_y, _, _) =
