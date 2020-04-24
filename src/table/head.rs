@@ -39,6 +39,9 @@ impl TableHead {
         }
         let flags = stream.read_u16();
         let units_per_em = stream.read_u16();
+        if units_per_em == 0 {
+            return Err("Font.head: units_per_em must be greater than 0.");
+        }
         let created = stream.read_i64();
         let modified = stream.read_i64();
         let xmin = stream.read_i16();
