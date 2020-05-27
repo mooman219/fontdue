@@ -75,13 +75,13 @@ pub struct Glyph {
     /// The number of contours in the glyph.
     pub num_contours: i16,
     /// The lowest x point. This is derived from the points in case the font is malicious.
-    pub xmin: i16,
+    pub xmin: f32,
     /// The highest x point. This is derived from the points in case the font is malicious.
-    pub xmax: i16,
+    pub xmax: f32,
     /// The lowest y point. This is derived from the points in case the font is malicious.
-    pub ymin: i16,
+    pub ymin: f32,
     /// The highest y point. This is derived from the points in case the font is malicious.
-    pub ymax: i16,
+    pub ymax: f32,
     /// The index of the metrics location for this glyph.
     pub metrics: usize,
     /// The first point is always marked as the start point, and the last point is always marked as
@@ -104,10 +104,10 @@ impl Default for Glyph {
     fn default() -> Glyph {
         Glyph {
             num_contours: 0,
-            xmin: 0,
-            xmax: 0,
-            ymin: 0,
-            ymax: 0,
+            xmin: 0.0,
+            xmax: 0.0,
+            ymin: 0.0,
+            ymax: 0.0,
             metrics: 0,
             points: Vec::with_capacity(0),
         }
@@ -135,17 +135,22 @@ fn parse_glyph(glyf: &[u8], locations: &[GlyphLocation], index: usize) -> FontRe
     glyph.num_contours = stream.read_i16();
     // The boundary box is read here, but can be adjusted if a point goes outside of the box when
     // the glyph is being parsed.
-    glyph.xmin = stream.read_i16();
-    glyph.ymin = stream.read_i16();
-    glyph.xmax = stream.read_i16();
-    glyph.ymax = stream.read_i16();
+    let xmin = stream.read_i16();
+    let ymin = stream.read_i16();
+    let xmax = stream.read_i16();
+    let ymax = stream.read_i16();
 
     // Workaround for fonts in http://www.princexml.com/fonts/
-    if glyph.xmin == 32767 && glyph.xmax == -32767 && glyph.ymin == 32767 && glyph.ymax == -32767 {
-        glyph.xmin = 0;
-        glyph.ymin = 0;
-        glyph.xmax = 0;
-        glyph.ymax = 0;
+    if xmin == 32767 && xmax == -32767 && ymin == 32767 && ymax == -32767 {
+        glyph.xmin = 0.0;
+        glyph.ymin = 0.0;
+        glyph.xmax = 0.0;
+        glyph.ymax = 0.0;
+    } else {
+        glyph.xmin = xmin as f32;
+        glyph.ymin = ymin as f32;
+        glyph.xmax = xmax as f32;
+        glyph.ymax = ymax as f32;
     }
 
     // Reject bad bounding boxes.
@@ -325,13 +330,13 @@ fn parse_glyph(glyf: &[u8], locations: &[GlyphLocation], index: usize) -> FontRe
     // with a well meaning font putting an off curve point outside of the bounding box, or a
     // malicious font trying to crash the rasterizer.
     for point in &glyph.points {
-        let x = point.x as i16;
+        let x = point.x;
         if x < glyph.xmin {
             glyph.xmin = x;
         } else if x > glyph.xmax {
             glyph.xmax = x;
         }
-        let y = point.y as i16;
+        let y = point.y;
         if y < glyph.ymin {
             glyph.ymin = y;
         } else if y > glyph.ymax {
