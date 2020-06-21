@@ -1,4 +1,6 @@
-use crate::math::*;
+use crate::layout::GlyphRasterConfig;
+use crate::math;
+use crate::math::Geometry;
 use crate::raster::Raster;
 use crate::raw::RawFont;
 use crate::FontResult;
@@ -147,7 +149,7 @@ impl Font {
         for glyph in &mut raw.glyf.glyphs {
             // Invert and offset the geometry here.
             glyph.reposition();
-            let geometry = compile(&glyph.points);
+            let geometry = math::compile(&glyph.points);
             // Glyph metrics.
             let advance_width = if let Some(hmtx) = &raw.hmtx {
                 let hmetric = hmtx.hmetrics[glyph.metrics];
@@ -163,11 +165,10 @@ impl Font {
             };
             let bounds =
                 AABB::new(glyph.xmin as f32, glyph.xmax as f32, glyph.ymin as f32, glyph.ymax as f32);
-            // Construct the glyph.
             glyphs.push(Glyph {
                 geometry,
-                width: (glyph.xmax - glyph.xmin) as f32,
-                height: (glyph.ymax - glyph.ymin) as f32,
+                width: bounds.xmax - bounds.xmin,
+                height: bounds.ymax - bounds.ymin,
                 advance_width,
                 advance_height,
                 bounds,
@@ -223,33 +224,70 @@ impl Font {
 
     /// Retrieves the layout metrics for the given character. If the caracter isn't present in the
     /// font, then the layout for the font's default character is returned instead.
-    pub fn metrics(&self, character: char, px: f32) -> Metrics {
-        self.metrics_indexed(self.lookup_glyph_index(character), px)
+    /// # Arguments
+    ///
+    /// * `index` - The character in the font to to generate the layout metrics for.
+    /// * `px` - The size to generate the layout metrics for the character at.
+    /// * `offset` - The horizontal offset to generate the layout metrics for the character at. An
+    /// offset of 0.0 applies no offsetting.
+    pub fn metrics(&self, character: char, px: f32, offset: f32) -> Metrics {
+        self.metrics_indexed(self.lookup_glyph_index(character), px, offset)
     }
 
     /// Retrieves the layout metrics at the given index. You normally want to be using
     /// metrics(char, f32) instead, unless your glyphs are pre-indexed.
-    pub fn metrics_indexed(&self, index: usize, px: f32) -> Metrics {
+    /// # Arguments
+    ///
+    /// * `index` - The glyph index in the font to to generate the layout metrics for.
+    /// * `px` - The size to generate the layout metrics for the glyph at.
+    /// * `offset` - The horizontal offset to generate the layout metrics for the glyph at. An
+    /// offset of 0.0 applies no offsetting.
+    pub fn metrics_indexed(&self, index: usize, px: f32, offset: f32) -> Metrics {
         let glyph = &self.glyphs[index];
         let scale = Font::scale_factor(px, self.units_per_em);
-        glyph.metrics(scale, 0.0)
+        glyph.metrics(scale, offset)
     }
 
     /// Retrieves the layout metrics and rasterized bitmap for the given character. If the caracter
     /// isn't present in the font, then the layout and bitmap for the font's default character is
     /// returned instead.
-    pub fn rasterize(&self, character: char, px: f32) -> (Metrics, Vec<u8>) {
-        self.rasterize_indexed(self.lookup_glyph_index(character), px)
+    /// # Arguments
+    ///
+    /// * `character` - The character to rasterize.
+    /// * `px` - The size to render the character at.
+    /// * `offset` - The horizontal offset to render the character at. An offset of 0.0 applies no
+    /// offsetting.
+    pub fn rasterize_config(&self, config: GlyphRasterConfig) -> (Metrics, Vec<u8>) {
+        self.rasterize_indexed(self.lookup_glyph_index(config.c), config.px, config.offset as f32 / 256.0)
+    }
+
+    /// Retrieves the layout metrics and rasterized bitmap for the given character. If the caracter
+    /// isn't present in the font, then the layout and bitmap for the font's default character is
+    /// returned instead.
+    /// # Arguments
+    ///
+    /// * `character` - The character to rasterize.
+    /// * `px` - The size to render the character at.
+    /// * `offset` - The horizontal offset to render the character at. An offset of 0.0 applies no
+    /// offsetting.
+    pub fn rasterize(&self, character: char, px: f32, offset: f32) -> (Metrics, Vec<u8>) {
+        self.rasterize_indexed(self.lookup_glyph_index(character), px, offset)
     }
 
     /// Retrieves the layout metrics and rasterized bitmap at the given index. You normally want to
     /// be using rasterize(char, f32) instead, unless your glyphs are pre-indexed.
-    pub fn rasterize_indexed(&self, index: usize, px: f32) -> (Metrics, Vec<u8>) {
+    /// # Arguments
+    ///
+    /// * `index` - The glyph index in the font to rasterize.
+    /// * `px` - The size to render the character at.
+    /// * `offset` - The horizontal offset to render the glyph at. An offset of 0.0 applies no
+    /// offsetting.
+    pub fn rasterize_indexed(&self, index: usize, px: f32, offset: f32) -> (Metrics, Vec<u8>) {
         let glyph = &self.glyphs[index];
         let scale = Font::scale_factor(px, self.units_per_em);
-        let metrics = glyph.metrics(scale, 0.0);
+        let metrics = glyph.metrics(scale, offset);
         let mut canvas = Raster::new(metrics.width, metrics.height);
-        canvas.draw(&glyph.geometry, scale, 0.0);
+        canvas.draw(&glyph.geometry, scale, offset);
         (metrics, canvas.get_bitmap())
     }
 

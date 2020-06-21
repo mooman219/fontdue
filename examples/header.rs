@@ -23,4 +23,7 @@ pub fn main() {
         let new_line = (hhea.ascent - hhea.descent + hhea.line_gap) as f32;
         println!("hhea.new_line_height: {}", new_line);
     }
+
+    println!("{:?}", font.maxp);
+    // println!("{:?}", font.hmtx);
 }

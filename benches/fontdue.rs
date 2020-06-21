@@ -10,7 +10,7 @@ const SIZES: [f32; 4] = [20.0, 40.0, 60.0, 80.0];
 
 #[inline]
 fn rasterize(font: &mut Font, character: char, size: f32) -> (Metrics, Vec<u8>) {
-    font.rasterize(character, size)
+    font.rasterize(character, size, 0.0)
 }
 
 fn fontdue_benchmark(c: &mut Criterion) {

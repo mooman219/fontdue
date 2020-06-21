@@ -33,7 +33,7 @@ fn render_characters(sizes: &[f32]) {
         let font = Font::from_bytes(*font, FontSettings::default()).unwrap();
         for character in CHARACTERS.iter().copied() {
             for size in sizes {
-                check_best_guess_rasterization(font.rasterize(character, *size), character);
+                check_best_guess_rasterization(font.rasterize(character, *size, 0.0), character);
             }
         }
     }

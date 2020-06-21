@@ -1,6 +1,6 @@
-// use crate::Font;
-// use crate::FontResult;
-// use alloc::vec::*;
+use crate::Font;
+use alloc::vec::*;
+use core::hash::{Hash, Hasher};
 
 #[derive(Copy, Clone, PartialEq)]
 pub enum HorizontalAlign {
@@ -18,8 +18,12 @@ pub enum VerticalAlign {
 
 #[derive(Copy, Clone, PartialEq)]
 pub struct LayoutSettings {
+    /// The right boundary of the text region.
     pub x: f32,
+    /// The topmost boundary of the text region.
     pub y: f32,
+    /// An optional rightmost boundary on the text region. A line of text that exceeds the
+    /// max_width is wrapped to the line below.
     pub max_width: Option<f32>,
     pub max_height: Option<f32>,
     /// If no horizontal alignment is provided, the default is Left. This option does nothing if
@@ -43,66 +47,92 @@ impl Default for LayoutSettings {
     }
 }
 
-#[derive(Copy, Clone, PartialEq)]
-pub struct GlyphPosition {
+/// Hashable key that can be used to uniquely identify a rasterized glyph.
+#[derive(Debug, Copy, Clone)]
+pub struct GlyphRasterConfig {
     /// The character represented by the glyph being positioned.
     pub c: char,
-    /// The left side of the glyph bounding box.
-    pub x: f32,
-    /// The top side of the glyph bounding box.
-    pub y: f32,
-    /// The width of the glyph.
-    pub width: f32,
-    /// The height of the glyph.
-    pub height: f32,
+    /// The scale of the glyph being positioned in px.
+    pub px: f32,
+    /// The horizontal subpixel offset of the glyph being positioned. Units are 1/256th of a pixel.
+    pub offset: u8,
 }
 
-impl Default for GlyphPosition {
-    fn default() -> GlyphPosition {
-        GlyphPosition {
-            c: ' ',
-            x: 0.0,
-            y: 0.0,
-            width: 0.0,
-            height: 0.0,
-        }
+impl Hash for GlyphRasterConfig {
+    fn hash<H: Hasher>(&self, state: &mut H) {
+        self.c.hash(state);
+        self.px.to_bits().hash(state);
+        self.offset.hash(state);
     }
 }
 
-// pub fn layout_horizontal(
-//     text: &str,
-//     font: &Font,
-//     settings: &LayoutSettings,
-//     output: &mut Vec<GlyphPosition>,
-// ) {
-//     if !font.has_horizontal_metrics() {
-//         panic!("Font missing horizontal metrics");
-//     }
-//     let mut origin_x = settings.x;
-//     let mut origin_y = settings.y - font.new_line_height();
-//     for c in text.chars() {}
-// }
+impl PartialEq for GlyphRasterConfig {
+    fn eq(&self, other: &Self) -> bool {
+        self.c == other.c && self.offset == other.offset && self.px == other.px
+    }
+}
 
-// Idea spitballing
+impl Eq for GlyphRasterConfig {}
 
-// &[
-//   TextStyle {
-//     text: String,
-//     color: Color,
-//     scale: f32,
-//     font: FontToken,
-//   },
-//   ..
-// ]
+/// A positioned scaled glyph.
+#[derive(Debug, Copy, Clone, PartialEq)]
+pub struct GlyphPosition {
+    /// Hashable key that can be used to uniquely identify a rasterized glyph.
+    pub key: GlyphRasterConfig,
+    /// The left side of the glyph bounding box. Dimensions are in pixels, and subpixel positions
+    /// are valid.
+    pub x: f32,
+    /// The bottom side of the glyph bounding box. Dimensions are in pixels, and subpixel positions
+    /// are valid.
+    pub y: f32,
+    /// The width of the glyph. Dimensions are in pixels.
+    pub width: usize,
+    /// The height of the glyph. Dimensions are in pixels.
+    pub height: usize,
+}
 
-// let mut sprites = Vec::new();
-// engine.text(
-//   &mut sprites,
-//   TextBounds {
-//     top_left: (f32, f32)
-//     width: Option<f32>
-//     height: Option<f32>
-//   },
-//   &[
-//     TextStyle {}
-// ])
+/// A style description for a segment of text.
+pub struct TextStyle<'a> {
+    /// The text to layout.
+    pub text: &'a str,
+    /// The scale of the text in pixel units.
+    pub px: f32,
+    /// The font to layout the text in.
+    pub font: &'a Font,
+}
+
+pub fn layout_horizontal(style: &TextStyle, settings: &LayoutSettings, output: &mut Vec<GlyphPosition>) {
+    match style.font.horizontal_line_metrics(style.px) {
+        None => panic!("Font missing horizontal metrics"),
+        Some(metrics) => {
+            let reset_x = settings.x.ceil();
+            let new_line_y = metrics.new_line_size.ceil();
+            let mut x_line = reset_x;
+            let mut y_line = (settings.y - metrics.ascent).ceil();
+            for character in style.text.chars() {
+                let c = style.font.metrics(character, style.px, 0.0);
+                if let Some(max_width) = settings.max_width {
+                    if x_line - settings.x > max_width {
+                        x_line = reset_x;
+                        y_line -= new_line_y;
+                    }
+                }
+                if c.width > 0 && c.height > 0 {
+                    let position = GlyphPosition {
+                        key: GlyphRasterConfig {
+                            c: character,
+                            px: style.px,
+                            offset: 0,
+                        },
+                        x: x_line + c.bounds.xmin.floor(),
+                        y: y_line + c.bounds.ymin.floor(),
+                        width: c.width,
+                        height: c.height,
+                    };
+                    output.push(position);
+                }
+                x_line += c.advance_width;
+            }
+        }
+    }
+}
