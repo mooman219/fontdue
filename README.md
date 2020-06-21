@@ -11,6 +11,10 @@ A non-goal of this library is to be allocation free and have a fast, "zero cost"
 
 Ideally, font loading should be faster in the future, but making the loading process correct and readable was the initial priority.
 
+## Important Notice
+
+Please bear with me on new features or quirks that you find. I will definitely get to issues you open (also thank you for opening them), but I only have a few hours to work on fontdue so please be paitent <3.
+
 ## TrueType Table Support
 - `cmap` Character to glyph mapping (Unicode only)
   - Supported formats: 0, 4, 6, 10, 12, 13
