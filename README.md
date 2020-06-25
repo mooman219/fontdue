@@ -11,9 +11,17 @@ A non-goal of this library is to be allocation free and have a fast, "zero cost"
 
 Ideally, font loading should be faster in the future, but making the loading process correct and readable was the initial priority.
 
-## Important Notice
+## Important Notices
+
+### Maintenance
 
 Please bear with me on new features or quirks that you find. I will definitely get to issues you open (also thank you for opening them), but I only have a few hours to work on fontdue so please be paitent <3.
+
+### Reusing Fontdue code
+
+Please don't reuse `Fontdue`'s raster code directly in your project. `Fontdue` uses **unsafe** code in the rasterizer, and the rasterizer itself is **very not safe** to use on its own with un-sanitized input.
+
+If you're looking to reuse that code in your project (with the appropriate licensing and attribution), please be aware of the effort that went into making it safe. `Fontdue` itself does not expose the raw raster in its API because it performs the necessary sanitization to use it safely for you, and has been fuzzed for bugs in the process.
 
 ## TrueType Table Support
 - `cmap` Character to glyph mapping (Unicode only)
@@ -71,4 +79,4 @@ RustType: Metrics + Rasterize 'g'/80 time:   [37.033 us 37.177 us 37.335 us]
 
 ## Attribution
 
-Inspired by how simple the wonderful `rusttype` crate made font parsing look ([link](https://gitlab.redox-os.org/redox-os/rusttype)), and how fast the `font-rs` crate made rasterization look ([link](https://github.com/raphlinus/font-rs)).
+`Fontdue` started as a slightly more production ready wrapper around `font-rs` because of how fast it made rasterization look ([link](https://github.com/raphlinus/font-rs)), and how simple the wonderful `rusttype` crate made font parsing look ([link](https://gitlab.redox-os.org/redox-os/rusttype)). Since then, I've done a few rewrites on the raster and it no longer shares any code or methodology to `font-rs`, but I feel like it still deservers some attribution. Instead of attempting to find the converage of a pixel, `fontdue` performs pseudo ray tracing collision detection on the geometry of the glyph with the pixel grid and estimates the shading.
