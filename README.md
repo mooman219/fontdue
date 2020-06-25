@@ -15,7 +15,7 @@ Ideally, font loading should be faster in the future, but making the loading pro
 
 ### Maintenance
 
-Please bear with me on new features or quirks that you find. I will definitely get to issues you open (also thank you for opening them), but I only have a few hours to work on fontdue so please be paitent <3.
+Please bear with me on new features or quirks that you find. I will definitely get to issues you open (also thank you for opening them), but I don't have as much time as I would like to work on fontdue so please be paitent, this is a mostly solo project <3.
 
 ### Reusing Fontdue code
 
