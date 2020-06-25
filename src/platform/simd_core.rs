@@ -1,5 +1,6 @@
 #![allow(non_camel_case_types)]
 
+use crate::platform::float::trunc;
 use core::mem::transmute;
 use core::ops::{Add, AddAssign, Div, DivAssign, Mul, MulAssign, Sub, SubAssign};
 
@@ -57,7 +58,7 @@ impl f32x4 {
 
     #[inline(always)]
     pub fn trunc(self) -> Self {
-        Self::new(self.x0.trunc(), self.x1.trunc(), self.x2.trunc(), self.x3.trunc())
+        Self::new(trunc(self.x0), trunc(self.x1), trunc(self.x2), trunc(self.x3))
     }
 }
 
