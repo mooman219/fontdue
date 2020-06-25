@@ -11,7 +11,7 @@ keywords = ["font", "parser", "rasterizer", "truetype", "ttf"]
 categories = ["parser-implementations"]
 readme = "README.md"
 edition = "2018"
-exclude = ["resources/**", "examples/**", "benches/**"]
+exclude = ["resources/**", "examples/**", "benches/**", "fontdue.pgm"]
 
 [badges]
 maintenance = { status = "experimental" }
