@@ -1,4 +1,4 @@
-use crate::simd::{ceil, floor};
+use crate::platform::{ceil, floor};
 use crate::Font;
 use alloc::vec::*;
 use core::hash::{Hash, Hasher};

@@ -1,5 +1,5 @@
+use crate::platform::{abs, atan2, f32x4};
 use crate::raw::RawPoint;
-use crate::simd::{abs, atan2, f32x4};
 use alloc::vec::*;
 
 #[derive(Copy, Clone, Debug, PartialEq)]

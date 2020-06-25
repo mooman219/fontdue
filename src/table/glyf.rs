@@ -1,5 +1,5 @@
 use crate::parse::*;
-use crate::simd::abs;
+use crate::platform::abs;
 use crate::table::loca::*;
 use crate::FontResult;
 use alloc::vec::*;

@@ -1,5 +1,5 @@
 use crate::math::{Geometry, Line};
-use crate::simd::{abs, copysign, f32x4, fraction};
+use crate::platform::{abs, copysign, f32x4, fract};
 use alloc::vec;
 use alloc::vec::*;
 
@@ -35,13 +35,13 @@ impl Raster {
     fn add(&mut self, index: usize, height: f32, mid_x: f32) {
         // This is fast and hip.
         unsafe {
-            let mid_x = fraction(mid_x);
+            let mid_x = fract(mid_x);
             *self.a.get_unchecked_mut(index) += height * (1.0 - mid_x);
             *self.a.get_unchecked_mut(index + 1) += height * mid_x;
         }
 
         // This is safe but slow.
-        // let mid_x = fraction(mid_x);
+        // let mid_x = fract(mid_x);
         // self.a[index] += height * (1.0 - mid_x);
         // self.a[index + 1] += height * mid_x;
     }

@@ -1,9 +1,9 @@
 use crate::layout::GlyphRasterConfig;
 use crate::math;
 use crate::math::Geometry;
+use crate::platform::ceil;
 use crate::raster::Raster;
 use crate::raw::RawFont;
-use crate::simd::ceil;
 use crate::FontResult;
 use alloc::vec::*;
 use core::ops::Deref;
