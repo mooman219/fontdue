@@ -3,6 +3,7 @@ use crate::math;
 use crate::math::Geometry;
 use crate::raster::Raster;
 use crate::raw::RawFont;
+use crate::simd::ceil;
 use crate::FontResult;
 use alloc::vec::*;
 use core::ops::Deref;
@@ -112,8 +113,8 @@ impl Glyph {
     #[inline(always)]
     fn metrics(&self, scale: f32, offset: f32) -> Metrics {
         Metrics {
-            width: (scale * self.width + offset).ceil() as usize,
-            height: (scale * self.height).ceil() as usize,
+            width: ceil(scale * self.width + offset) as usize,
+            height: ceil(scale * self.height) as usize,
             advance_width: scale * self.advance_width,
             advance_height: scale * self.advance_height,
             bounds: self.bounds.scale(scale),

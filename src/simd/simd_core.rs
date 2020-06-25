@@ -3,11 +3,6 @@
 use core::mem::transmute;
 use core::ops::{Add, AddAssign, Div, DivAssign, Mul, MulAssign, Sub, SubAssign};
 
-#[inline(always)]
-pub fn fraction(value: f32) -> f32 {
-    value.fract()
-}
-
 #[repr(C)]
 #[derive(Copy, Clone)]
 pub struct f32x4 {
@@ -63,11 +58,6 @@ impl f32x4 {
     #[inline(always)]
     pub fn trunc(self) -> Self {
         Self::new(self.x0.trunc(), self.x1.trunc(), self.x2.trunc(), self.x3.trunc())
-    }
-
-    #[inline(always)]
-    pub fn fract(self) -> Self {
-        Self::new(self.x0.fract(), self.x1.fract(), self.x2.fract(), self.x3.fract())
     }
 }
 

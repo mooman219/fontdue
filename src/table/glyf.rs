@@ -1,4 +1,5 @@
 use crate::parse::*;
+use crate::simd::abs;
 use crate::table::loca::*;
 use crate::FontResult;
 use alloc::vec::*;
@@ -95,7 +96,7 @@ impl Glyph {
         for point in &mut self.points {
             point.x -= self.xmin as f32;
             point.y -= self.ymax as f32;
-            point.y = point.y.abs();
+            point.y = abs(point.y);
         }
     }
 }

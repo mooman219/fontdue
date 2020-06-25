@@ -1,3 +1,4 @@
+use crate::simd::{ceil, floor};
 use crate::Font;
 use alloc::vec::*;
 use core::hash::{Hash, Hasher};
@@ -105,10 +106,10 @@ pub fn layout_horizontal(style: &TextStyle, settings: &LayoutSettings, output: &
     match style.font.horizontal_line_metrics(style.px) {
         None => panic!("Font missing horizontal metrics"),
         Some(metrics) => {
-            let reset_x = settings.x.ceil();
-            let new_line_y = metrics.new_line_size.ceil();
+            let reset_x = ceil(settings.x);
+            let new_line_y = ceil(metrics.new_line_size);
             let mut x_line = reset_x;
-            let mut y_line = (settings.y - metrics.ascent).ceil();
+            let mut y_line = ceil(settings.y - metrics.ascent);
             for character in style.text.chars() {
                 let c = style.font.metrics(character, style.px, 0.0);
                 if let Some(max_width) = settings.max_width {
@@ -124,8 +125,8 @@ pub fn layout_horizontal(style: &TextStyle, settings: &LayoutSettings, output: &
                             px: style.px,
                             offset: 0,
                         },
-                        x: x_line + c.bounds.xmin.floor(),
-                        y: y_line + c.bounds.ymin.floor(),
+                        x: x_line + floor(c.bounds.xmin),
+                        y: y_line + floor(c.bounds.ymin),
                         width: c.width,
                         height: c.height,
                     };

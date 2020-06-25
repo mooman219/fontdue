@@ -17,7 +17,7 @@ exclude = ["resources/**", "examples/**", "benches/**"]
 maintenance = { status = "experimental" }
 
 [dependencies]
-hashbrown = "0.5"
+hashbrown = "0.8"
 
 [dev-dependencies]
 criterion = "0.3"

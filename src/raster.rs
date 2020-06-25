@@ -1,6 +1,5 @@
 use crate::math::{Geometry, Line};
-use crate::simd;
-use crate::simd::f32x4;
+use crate::simd::{abs, copysign, f32x4, fraction};
 use alloc::vec;
 use alloc::vec::*;
 
@@ -36,13 +35,13 @@ impl Raster {
     fn add(&mut self, index: usize, height: f32, mid_x: f32) {
         // This is fast and hip.
         unsafe {
-            let mid_x = simd::fraction(mid_x);
+            let mid_x = fraction(mid_x);
             *self.a.get_unchecked_mut(index) += height * (1.0 - mid_x);
             *self.a.get_unchecked_mut(index + 1) += height * mid_x;
         }
 
         // This is safe but slow.
-        // let mid_x = simd::fraction(mid_x);
+        // let mid_x = fraction(mid_x);
         // self.a[index] += height * (1.0 - mid_x);
         // self.a[index + 1] += height * mid_x;
     }
@@ -55,8 +54,8 @@ impl Raster {
             (coords + line.adjustment).sub_integer(line.nudge).trunc().copied();
         let dx = x1 - x0;
         let dy = y1 - y0;
-        let sx = (1f32).copysign(dx);
-        let sy = (1f32).copysign(dy);
+        let sx = copysign(1f32, dx);
+        let sy = copysign(1f32, dy);
         let tdx = if dx == 0.0 {
             1048576.0 // 2^20, doesn't really matter.
         } else {
@@ -65,16 +64,16 @@ impl Raster {
         let tdy = 1.0 / dy;
         let mut tmx = tdx * (target_x - x0);
         let mut tmy = tdy * (target_y - y0);
-        let tdx = tdx.abs();
-        let tdy = tdy.abs();
+        let tdx = abs(tdx);
+        let tdy = abs(tdy);
         let mut x_prev = x0;
         let mut y_prev = y0;
         let mut index = (start_x + start_y * self.w as f32) as isize;
         let index_x_inc = sx as isize;
-        let index_y_inc = (self.w as f32).copysign(sy) as isize;
+        let index_y_inc = copysign(self.w as f32, sy) as isize;
         // The (tmx < 1.0 || tmy < 1.0) condition does not work due to rounding errors in f32, so
         // dist is used instead to cap the iteration count.
-        let mut dist = ((start_x - end_x).abs() + (start_y - end_y).abs()) as u32;
+        let mut dist = (abs(start_x - end_x) + abs(start_y - end_y)) as u32;
         while dist > 0 {
             dist -= 1;
             let prev_index = index;

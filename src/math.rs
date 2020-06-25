@@ -1,5 +1,5 @@
 use crate::raw::RawPoint;
-use crate::simd::f32x4;
+use crate::simd::{abs, atan2, f32x4};
 use alloc::vec::*;
 
 #[derive(Copy, Clone, Debug, PartialEq)]
@@ -18,21 +18,26 @@ impl Curve {
         }
     }
 
+    /// The point at time t in the curve.
     fn point(&self, t: f32) -> Point {
-        let x = (1.0 - t).powi(2) * self.a.x + 2.0 * (1.0 - t) * t * self.b.x + t.powi(2) * self.c.x;
-        let y = (1.0 - t).powi(2) * self.a.y + 2.0 * (1.0 - t) * t * self.b.y + t.powi(2) * self.c.y;
+        let a = 1.0 - t;
+        let a = a * a;
+        let x = a * self.a.x + 2.0 * (1.0 - t) * t * self.b.x + (t * t) * self.c.x;
+        let y = a * self.a.y + 2.0 * (1.0 - t) * t * self.b.y + (t * t) * self.c.y;
         Point::new(x, y)
     }
 
+    /// The slope of the tangent line at time t.
     fn slope(&self, t: f32) -> f32 {
         let x = 2.0 * (1.0 - t) * (self.b.x - self.a.x) + 2.0 * t * (self.c.x - self.b.x);
         let y = 2.0 * (1.0 - t) * (self.b.y - self.a.y) + 2.0 * t * (self.c.y - self.b.y);
         y / x
     }
 
+    /// The angle of the tangent line at time t.
     fn angle(&self, t: f32) -> f32 {
         const PI: f32 = 3.14159265359;
-        self.slope(t).atan().abs() * 180.0 / PI
+        abs(atan2(self.slope(t), 1.0)) * 180.0 / PI
     }
 }
 
@@ -157,7 +162,7 @@ fn populate_lines(geometry: &mut Geometry, previous: &RawPoint, current: &RawPoi
         for x in 1..=SUBDIVISIONS {
             let t = INCREMENT * x as f32;
             let temp_angle = curve.angle(t);
-            if (previous_angle - temp_angle).abs() > MAX_ANGLE {
+            if abs(previous_angle - temp_angle) > MAX_ANGLE {
                 previous_angle = temp_angle;
                 let temp_point = curve.point(t);
                 geometry.push(previous_point, temp_point);
