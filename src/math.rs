@@ -1,4 +1,4 @@
-use crate::platform::{abs, atan2, f32x4};
+use crate::platform::{abs, atan, f32x4};
 use crate::raw::RawPoint;
 use alloc::vec::*;
 
@@ -37,7 +37,7 @@ impl Curve {
     /// The angle of the tangent line at time t.
     fn angle(&self, t: f32) -> f32 {
         const PI: f32 = 3.14159265359;
-        abs(atan2(self.slope(t), 1.0)) * 180.0 / PI
+        abs(atan(self.slope(t))) * 180.0 / PI
     }
 }
 
