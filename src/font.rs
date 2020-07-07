@@ -247,9 +247,9 @@ impl Font {
         glyph.metrics(scale, offset_x)
     }
 
-    /// Retrieves the layout metrics and rasterized bitmap for the given character. If the caracter
-    /// isn't present in the font, then the layout and bitmap for the font's default character is
-    /// returned instead.
+    /// Retrieves the layout rasterized bitmap for the given raster config. If the raster config's
+    /// character isn't present in the font, then the layout and bitmap for the font's default
+    /// character's raster is returned instead.
     /// # Arguments
     ///
     /// * `config` - The settings to render the character at.
