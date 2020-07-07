@@ -1,5 +1,6 @@
 use crate::parse::*;
 use crate::FontResult;
+use core::num::NonZeroU32;
 use hashbrown::HashMap;
 
 // Apple: https://developer.apple.com/fonts/TrueType-Reference-Manual/RM06/Chap6cmap.html
@@ -17,7 +18,13 @@ fn is_supported_format(f: u16) -> bool {
 
 #[derive(Debug)]
 pub struct TableCmap {
-    pub map: HashMap<u32, u32>,
+    pub map: HashMap<u32, NonZeroU32>,
+}
+
+/// Wraps the unsafe creation of NonZeroU32::new_unchecked. For us, a zero value actually
+/// represents Option::None, so this is desired.
+fn insert(map: &mut HashMap<u32, NonZeroU32>, k: u32, v: u32) {
+    map.insert(k, unsafe { NonZeroU32::new_unchecked(v) });
 }
 
 impl TableCmap {
@@ -87,7 +94,7 @@ impl TableCmap {
                 stream.skip(2); // language: u16
                 for unicode_codepoint in 0..(length - 6) {
                     let pair = stream.read_u8() as u32;
-                    mappings.insert(unicode_codepoint, pair);
+                    insert(&mut mappings, unicode_codepoint, pair);
                 }
             }
             // High byte mapping through table
@@ -132,7 +139,7 @@ impl TableCmap {
                         } else {
                             c.wrapping_add(id_delta)
                         };
-                        mappings.insert(c as u32, glyph_index as u32);
+                        insert(&mut mappings, c as u32, glyph_index as u32);
                     }
                 }
             }
@@ -143,7 +150,7 @@ impl TableCmap {
                 let count = stream.read_u16() as u32;
                 for unicode_codepoint in first..(first + count) {
                     let pair = stream.read_u16() as u32;
-                    mappings.insert(unicode_codepoint, pair);
+                    insert(&mut mappings, unicode_codepoint, pair);
                 }
             }
             // Mixed coverage
@@ -155,7 +162,7 @@ impl TableCmap {
                 let num_chars = stream.read_u32();
                 for unicode_codepoint in start_char_code..(start_char_code + num_chars) {
                     let pair = stream.read_u16() as u32;
-                    mappings.insert(unicode_codepoint, pair);
+                    insert(&mut mappings, unicode_codepoint, pair);
                 }
             }
             // Segmented coverage
@@ -167,7 +174,7 @@ impl TableCmap {
                     let end_char_code = stream.read_u32();
                     let mut start_glyph_id = stream.read_u32();
                     for char_code in start_char_code..=end_char_code {
-                        mappings.insert(char_code, start_glyph_id);
+                        insert(&mut mappings, char_code, start_glyph_id);
                         start_glyph_id += 1;
                     }
                 }
@@ -181,7 +188,7 @@ impl TableCmap {
                     let end_char_code = stream.read_u32();
                     let glyph_id = stream.read_u32();
                     for char_code in start_char_code..=end_char_code {
-                        mappings.insert(char_code, glyph_id);
+                        insert(&mut mappings, char_code, glyph_id);
                     }
                 }
             }

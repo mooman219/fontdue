@@ -56,20 +56,20 @@ pub struct GlyphRasterConfig {
     /// The scale of the glyph being positioned in px.
     pub px: f32,
     /// The horizontal subpixel offset of the glyph being positioned. Units are 1/256th of a pixel.
-    pub offset: u8,
+    pub offset_x: u8,
 }
 
 impl Hash for GlyphRasterConfig {
     fn hash<H: Hasher>(&self, state: &mut H) {
         self.c.hash(state);
         self.px.to_bits().hash(state);
-        self.offset.hash(state);
+        self.offset_x.hash(state);
     }
 }
 
 impl PartialEq for GlyphRasterConfig {
     fn eq(&self, other: &Self) -> bool {
-        self.c == other.c && self.offset == other.offset && self.px == other.px
+        self.c == other.c && self.offset_x == other.offset_x && self.px == other.px
     }
 }
 
@@ -123,7 +123,7 @@ pub fn layout_horizontal(style: &TextStyle, settings: &LayoutSettings, output: &
                         key: GlyphRasterConfig {
                             c: character,
                             px: style.px,
-                            offset: 0,
+                            offset_x: 0,
                         },
                         x: x_line + floor(c.bounds.xmin),
                         y: y_line + floor(c.bounds.ymin),

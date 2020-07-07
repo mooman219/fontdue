@@ -1,11 +1,12 @@
 use crate::layout::GlyphRasterConfig;
-use crate::math;
 use crate::math::Geometry;
-use crate::platform::ceil;
+use crate::platform::{ceil, fract, is_negative};
 use crate::raster::Raster;
 use crate::raw::RawFont;
 use crate::FontResult;
 use alloc::vec::*;
+use core::mem;
+use core::num::NonZeroU32;
 use core::ops::Deref;
 use hashbrown::HashMap;
 
@@ -111,9 +112,9 @@ struct Glyph {
 
 impl Glyph {
     #[inline(always)]
-    fn metrics(&self, scale: f32, offset: f32) -> Metrics {
+    fn metrics(&self, scale: f32, offset_x: f32) -> Metrics {
         Metrics {
-            width: ceil(scale * self.width + offset) as usize,
+            width: ceil(scale * self.width + offset_x) as usize,
             height: ceil(scale * self.height) as usize,
             advance_width: scale * self.advance_width,
             advance_height: scale * self.advance_height,
@@ -136,7 +137,7 @@ impl Default for FontSettings {
 pub struct Font {
     units_per_em: f32,
     glyphs: Vec<Glyph>,
-    char_to_glyph: HashMap<u32, u32>,
+    char_to_glyph: HashMap<u32, NonZeroU32>,
     horizontal_line_metrics: Option<LineMetrics>,
     vertical_line_metrics: Option<LineMetrics>,
 }
@@ -148,10 +149,7 @@ impl Font {
 
         let mut glyphs = Vec::with_capacity(raw.glyf.glyphs.len());
         for glyph in &mut raw.glyf.glyphs {
-            // Invert and offset the geometry here.
-            glyph.reposition();
-            let geometry = math::compile(&glyph.points);
-            // Glyph metrics.
+            let geometry = Geometry::new(&glyph.points);
             let advance_width = if let Some(hmtx) = &raw.hmtx {
                 let hmetric = hmtx.hmetrics[glyph.metrics];
                 hmetric.advance_width as f32
@@ -164,8 +162,7 @@ impl Font {
             } else {
                 0.0
             };
-            let bounds =
-                AABB::new(glyph.xmin as f32, glyph.xmax as f32, glyph.ymin as f32, glyph.ymax as f32);
+            let bounds = geometry.effective_bounds.unwrap_or(AABB::new(0.0, 0.0, 0.0, 0.0));
             glyphs.push(Glyph {
                 geometry,
                 width: bounds.xmax - bounds.xmin,
@@ -228,11 +225,12 @@ impl Font {
     /// # Arguments
     ///
     /// * `index` - The character in the font to to generate the layout metrics for.
-    /// * `px` - The size to generate the layout metrics for the character at.
-    /// * `offset` - The horizontal offset to generate the layout metrics for the character at. An
-    /// offset of 0.0 applies no offsetting.
-    pub fn metrics(&self, character: char, px: f32, offset: f32) -> Metrics {
-        self.metrics_indexed(self.lookup_glyph_index(character), px, offset)
+    /// * `px` - The size to generate the layout metrics for the character at. Cannot be negative.
+    /// * `offset_x` - The horizontal offset to generate the layout metrics for the character at. An
+    /// offset of 0.0 applies no offsetting. Cannot be negative.
+    #[inline]
+    pub fn metrics(&self, character: char, px: f32, offset_x: f32) -> Metrics {
+        self.metrics_indexed(self.lookup_glyph_index(character), px, offset_x)
     }
 
     /// Retrieves the layout metrics at the given index. You normally want to be using
@@ -240,13 +238,13 @@ impl Font {
     /// # Arguments
     ///
     /// * `index` - The glyph index in the font to to generate the layout metrics for.
-    /// * `px` - The size to generate the layout metrics for the glyph at.
-    /// * `offset` - The horizontal offset to generate the layout metrics for the glyph at. An
-    /// offset of 0.0 applies no offsetting.
-    pub fn metrics_indexed(&self, index: usize, px: f32, offset: f32) -> Metrics {
+    /// * `px` - The size to generate the layout metrics for the glyph at. Cannot be negative.
+    /// * `offset_x` - The horizontal offset to generate the layout metrics for the glyph at. An
+    /// offset of 0.0 applies no offsetting. Cannot be negative.
+    pub fn metrics_indexed(&self, index: usize, px: f32, offset_x: f32) -> Metrics {
         let glyph = &self.glyphs[index];
         let scale = Font::scale_factor(px, self.units_per_em);
-        glyph.metrics(scale, offset)
+        glyph.metrics(scale, offset_x)
     }
 
     /// Retrieves the layout metrics and rasterized bitmap for the given character. If the caracter
@@ -254,12 +252,10 @@ impl Font {
     /// returned instead.
     /// # Arguments
     ///
-    /// * `character` - The character to rasterize.
-    /// * `px` - The size to render the character at.
-    /// * `offset` - The horizontal offset to render the character at. An offset of 0.0 applies no
-    /// offsetting.
+    /// * `config` - The settings to render the character at.
+    #[inline]
     pub fn rasterize_config(&self, config: GlyphRasterConfig) -> (Metrics, Vec<u8>) {
-        self.rasterize_indexed(self.lookup_glyph_index(config.c), config.px, config.offset as f32 / 256.0)
+        self.rasterize_indexed(self.lookup_glyph_index(config.c), config.px, config.offset_x as f32 / 256.0)
     }
 
     /// Retrieves the layout metrics and rasterized bitmap for the given character. If the caracter
@@ -268,11 +264,12 @@ impl Font {
     /// # Arguments
     ///
     /// * `character` - The character to rasterize.
-    /// * `px` - The size to render the character at.
-    /// * `offset` - The horizontal offset to render the character at. An offset of 0.0 applies no
-    /// offsetting.
-    pub fn rasterize(&self, character: char, px: f32, offset: f32) -> (Metrics, Vec<u8>) {
-        self.rasterize_indexed(self.lookup_glyph_index(character), px, offset)
+    /// * `px` - The size to render the character at. Cannot be negative.
+    /// * `offset_x` - The horizontal offset to render the character at. An offset of 0.0 applies no
+    /// offsetting. Cannot be negative.
+    #[inline]
+    pub fn rasterize(&self, character: char, px: f32, offset_x: f32) -> (Metrics, Vec<u8>) {
+        self.rasterize_indexed(self.lookup_glyph_index(character), px, offset_x)
     }
 
     /// Retrieves the layout metrics and rasterized bitmap at the given index. You normally want to
@@ -280,25 +277,38 @@ impl Font {
     /// # Arguments
     ///
     /// * `index` - The glyph index in the font to rasterize.
-    /// * `px` - The size to render the character at.
-    /// * `offset` - The horizontal offset to render the glyph at. An offset of 0.0 applies no
-    /// offsetting.
-    pub fn rasterize_indexed(&self, index: usize, px: f32, offset: f32) -> (Metrics, Vec<u8>) {
+    /// * `px` - The size to render the character at. Cannot be negative.
+    /// * `offset_x` - The horizontal offset to render the glyph at. An offset of 0.0 applies no
+    /// offsetting. Cannot be negative.
+    pub fn rasterize_indexed(&self, index: usize, px: f32, offset_x: f32) -> (Metrics, Vec<u8>) {
         let glyph = &self.glyphs[index];
         let scale = Font::scale_factor(px, self.units_per_em);
-        let metrics = glyph.metrics(scale, offset);
+        let bounds = glyph.bounds.scale(scale);
+        // Because the glyph output is flipped, this adjusts the offset to match the baseline.
+        let height = scale * glyph.height;
+        let mut diff = 1.0 - fract(height) - fract(bounds.ymin);
+        if is_negative(diff) {
+            diff += 1.0;
+        }
+        let metrics = Metrics {
+            width: ceil(scale * glyph.width + offset_x) as usize,
+            height: ceil(height + diff) as usize,
+            advance_width: scale * glyph.advance_width,
+            advance_height: scale * glyph.advance_height,
+            bounds,
+        };
         let mut canvas = Raster::new(metrics.width, metrics.height);
-        canvas.draw(&glyph.geometry, scale, offset);
+        canvas.draw(&glyph.geometry, scale, offset_x, diff);
         (metrics, canvas.get_bitmap())
     }
 
     /// Finds the internal glyph index for the given character. If the character is not present in
     /// the font then 0 is returned.
+    #[inline]
     pub fn lookup_glyph_index(&self, character: char) -> usize {
-        let result = self.char_to_glyph.get(&(character as u32));
-        match result.copied() {
-            Some(index) => index as usize,
-            None => 0,
+        unsafe {
+            mem::transmute::<Option<NonZeroU32>, u32>(self.char_to_glyph.get(&(character as u32)).copied())
+                as usize
         }
     }
 }

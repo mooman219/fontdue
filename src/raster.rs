@@ -23,9 +23,9 @@ impl Raster {
         }
     }
 
-    pub fn draw(&mut self, geometry: &Geometry, scale: f32, offset: f32) {
+    pub fn draw(&mut self, geometry: &Geometry, scale: f32, offset_x: f32, offset_y: f32) {
         let scale = f32x4::splat(scale);
-        let offset = f32x4::new(offset, 0.0, offset, 0.0);
+        let offset = f32x4::new(offset_x, offset_y, offset_x, offset_y);
         for line in &geometry.lines {
             self.line(line, line.coords * scale + offset);
         }
