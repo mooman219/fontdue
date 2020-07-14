@@ -1,6 +1,6 @@
 #![allow(non_camel_case_types)]
 
-use crate::platform::float::trunc;
+use crate::platform::trunc;
 use core::mem::transmute;
 use core::ops::{Add, AddAssign, Div, DivAssign, Mul, MulAssign, Sub, SubAssign};
 
