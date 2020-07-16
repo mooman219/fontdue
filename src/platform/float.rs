@@ -18,6 +18,12 @@ pub fn is_positive(value: f32) -> bool {
     unsafe { transmute::<f32, u32>(value) < 0x80000000 }
 }
 
+/// Inverts the high bit 0x80000000 on a float.
+#[inline(always)]
+pub fn flipsign(value: f32) -> f32 {
+    unsafe { transmute::<u32, f32>(transmute::<f32, u32>(value) ^ 0x80000000) }
+}
+
 /// Assigns the high bit 0x80000000 on the sign to the value.
 #[inline(always)]
 pub fn copysign(value: f32, sign: f32) -> f32 {
