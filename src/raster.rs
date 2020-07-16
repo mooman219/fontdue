@@ -80,7 +80,7 @@ impl Raster {
             let y_next: f32;
             let x_next: f32;
             if tmx < tmy {
-                y_next = tmx * dy + y0;
+                y_next = tmx * dy + y0; // FMA is not faster.
                 x_next = target_x;
                 tmx += tdx;
                 target_x += sx;
