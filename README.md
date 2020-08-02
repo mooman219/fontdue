@@ -42,13 +42,40 @@ If you're looking to reuse that code in your project (with the appropriate licen
 
 ## Example
 
+### Glyph Rasterization
 ```rust
 // Read the font data.
 let font = include_bytes!("../resources/Roboto-Regular.ttf") as &[u8];
 // Parse it into the font type.
-let mut font = fontdue::Font::from_bytes(font).unwrap();
+let font = fontdue::Font::from_bytes(font, fontdue::FontSettings::default()).unwrap();
 // Rasterize and get the layout metrics for the letter 'g' at 17px.
 let (metrics, bitmap) = font.rasterize('g', 17.0);
+```
+
+### Layout
+```rust
+// Read the font data.
+let font = include_bytes!("../resources/Roboto-Regular.ttf") as &[u8];
+// Parse it into the font type.
+let roboto_regular = fontdue::Font::from_bytes(font, fontdue::FontSettings::default()).unwrap();
+// Create a layout context. This stores transient state needed to layout text.
+// Laying out text needs some heap allocations; reusing this context reduces the need to reallocate space.
+let mut layout = Layout::new();
+// The vector where the glyphs positional information will be written to. This vec is cleared before it's written to.
+let mut output = Vec::new();
+// Various settings for laying out the text, such as alignment and wrapping settings.
+let settings = LayoutSettings {
+    ..LayoutSettings::default()
+};
+// The list of fonts that will be used during layout.
+let fonts = &[roboto_regular];
+// The text that will be laid out, its size, and the index of the font in the font list to use for that section of text.
+let styles = &[
+    &TextStyle::new("Hello ", 35.0, 0),
+    &TextStyle::new("world!", 40.0, 0),
+];
+// Calculate the layout.
+layout.layout_horizontal(fonts, styles, &settings, &mut output);
 ```
 
 ## Performance
