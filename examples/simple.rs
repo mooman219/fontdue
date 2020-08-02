@@ -9,7 +9,7 @@ pub fn main() {
     // Loading and rasterization
     let font = include_bytes!("../resources/Roboto-Regular.ttf") as &[u8];
     let font = fontdue::Font::from_bytes(font, fontdue::FontSettings::default()).unwrap();
-    let (metrics, bitmap) = font.rasterize(CHARACTER, SIZE, 0.0);
+    let (metrics, bitmap) = font.rasterize(CHARACTER, SIZE);
 
     // Output
     let mut o = File::create("fontdue.pgm").unwrap();

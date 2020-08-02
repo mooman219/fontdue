@@ -10,7 +10,7 @@ const SIZES: [f32; 4] = [20.0, 40.0, 60.0, 80.0];
 
 #[inline]
 fn rasterize(font: &mut Font, character: char, size: f32) -> (Metrics, Vec<u8>) {
-    font.rasterize(character, size, 0.0)
+    font.rasterize(character, size)
 }
 
 fn fontdue_benchmark(c: &mut Criterion) {
@@ -18,7 +18,7 @@ fn fontdue_benchmark(c: &mut Criterion) {
     let font = include_bytes!("../resources/Roboto-Regular.ttf") as &[u8];
     let mut font = Font::from_bytes(font, FontSettings::default()).unwrap();
 
-    let mut group = c.benchmark_group(format!("Fontdue: Rasterize '{}'", CHARACTER));
+    let mut group = c.benchmark_group(format!("Fontdue Rasterize '{}'", CHARACTER));
     group.measurement_time(core::time::Duration::from_secs(10));
     group.sample_size(1000);
     for size in SIZES.iter() {

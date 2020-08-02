@@ -24,7 +24,7 @@ fn rusttype_benchmark(c: &mut Criterion) {
     let font = include_bytes!("../resources/Roboto-Regular.ttf") as &[u8];
     let font = Font::from_bytes(font).unwrap();
 
-    let mut group = c.benchmark_group(format!("RustType: Rasterize '{}'", CHARACTER));
+    let mut group = c.benchmark_group(format!("RustType Rasterize '{}'", CHARACTER));
     group.measurement_time(core::time::Duration::from_secs(10));
     group.sample_size(1000);
     for size in SIZES.iter() {

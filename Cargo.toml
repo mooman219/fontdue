@@ -22,6 +22,7 @@ hashbrown = "0.8"
 [dev-dependencies]
 criterion = "0.3"
 rusttype = "0.8.2"
+glyph_brush_layout = "0.2.0"
 
 [[bench]]
 name = "fontdue"
@@ -29,4 +30,8 @@ harness = false
 
 [[bench]]
 name = "rusttype"
+harness = false
+
+[[bench]]
+name = "layout"
 harness = false

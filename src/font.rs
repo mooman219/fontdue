@@ -46,6 +46,20 @@ impl AABB {
     }
 }
 
+/// Metric representing a glyph that has no geometry and positional metrics.
+pub const ZERO_METRICS: Metrics = Metrics {
+    width: 0,
+    height: 0,
+    advance_width: 0.0,
+    advance_height: 0.0,
+    bounds: AABB {
+        xmin: 0.0,
+        xmax: 0.0,
+        ymin: 0.0,
+        ymax: 0.0,
+    },
+};
+
 /// Encapsulates all layout information associated with a glyph for a fixed scale.
 #[derive(Copy, Clone, PartialEq, Debug)]
 pub struct Metrics {
@@ -112,18 +126,30 @@ struct Glyph {
 
 impl Glyph {
     #[inline(always)]
-    fn metrics(&self, scale: f32, offset_x: f32) -> Metrics {
+    fn metrics(&self, scale: f32) -> Metrics {
+        let bounds = self.bounds.scale(scale);
+
+        let mut offset_x = fract(bounds.xmin);
+        if is_negative(offset_x) {
+            offset_x += 1.0;
+        }
+        let height = scale * self.height;
+        let mut offset_y = ceil(height) - height - fract(bounds.ymin);
+        if is_negative(offset_y) {
+            offset_y += 1.0;
+        }
+
         Metrics {
             width: ceil(scale * self.width + offset_x) as usize,
-            height: ceil(scale * self.height) as usize,
+            height: ceil(height + offset_y) as usize,
             advance_width: scale * self.advance_width,
             advance_height: scale * self.advance_height,
-            bounds: self.bounds.scale(scale),
+            bounds,
         }
     }
 }
 
-/// Settings for controling specific font and layout behavior.
+/// Settings for controlling specific font and layout behavior.
 #[derive(Copy, Clone, PartialEq)]
 pub struct FontSettings {}
 
@@ -220,17 +246,15 @@ impl Font {
         px / units_per_em
     }
 
-    /// Retrieves the layout metrics for the given character. If the caracter isn't present in the
+    /// Retrieves the layout metrics for the given character. If the character isn't present in the
     /// font, then the layout for the font's default character is returned instead.
     /// # Arguments
     ///
     /// * `index` - The character in the font to to generate the layout metrics for.
     /// * `px` - The size to generate the layout metrics for the character at. Cannot be negative.
-    /// * `offset_x` - The horizontal offset to generate the layout metrics for the character at. An
-    /// offset of 0.0 applies no offsetting. Cannot be negative.
     #[inline]
-    pub fn metrics(&self, character: char, px: f32, offset_x: f32) -> Metrics {
-        self.metrics_indexed(self.lookup_glyph_index(character), px, offset_x)
+    pub fn metrics(&self, character: char, px: f32) -> Metrics {
+        self.metrics_indexed(self.lookup_glyph_index(character), px)
     }
 
     /// Retrieves the layout metrics at the given index. You normally want to be using
@@ -239,12 +263,10 @@ impl Font {
     ///
     /// * `index` - The glyph index in the font to to generate the layout metrics for.
     /// * `px` - The size to generate the layout metrics for the glyph at. Cannot be negative.
-    /// * `offset_x` - The horizontal offset to generate the layout metrics for the glyph at. An
-    /// offset of 0.0 applies no offsetting. Cannot be negative.
-    pub fn metrics_indexed(&self, index: usize, px: f32, offset_x: f32) -> Metrics {
+    pub fn metrics_indexed(&self, index: usize, px: f32) -> Metrics {
         let glyph = &self.glyphs[index];
         let scale = Font::scale_factor(px, self.units_per_em);
-        glyph.metrics(scale, offset_x)
+        glyph.metrics(scale)
     }
 
     /// Retrieves the layout rasterized bitmap for the given raster config. If the raster config's
@@ -255,21 +277,19 @@ impl Font {
     /// * `config` - The settings to render the character at.
     #[inline]
     pub fn rasterize_config(&self, config: GlyphRasterConfig) -> (Metrics, Vec<u8>) {
-        self.rasterize_indexed(self.lookup_glyph_index(config.c), config.px, config.offset_x as f32 / 256.0)
+        self.rasterize_indexed(self.lookup_glyph_index(config.c), config.px)
     }
 
-    /// Retrieves the layout metrics and rasterized bitmap for the given character. If the caracter
-    /// isn't present in the font, then the layout and bitmap for the font's default character is
-    /// returned instead.
+    /// Retrieves the layout metrics and rasterized bitmap for the given character. If the
+    /// character isn't present in the font, then the layout and bitmap for the font's default
+    /// character is returned instead.
     /// # Arguments
     ///
     /// * `character` - The character to rasterize.
     /// * `px` - The size to render the character at. Cannot be negative.
-    /// * `offset_x` - The horizontal offset to render the character at. An offset of 0.0 applies no
-    /// offsetting. Cannot be negative.
     #[inline]
-    pub fn rasterize(&self, character: char, px: f32, offset_x: f32) -> (Metrics, Vec<u8>) {
-        self.rasterize_indexed(self.lookup_glyph_index(character), px, offset_x)
+    pub fn rasterize(&self, character: char, px: f32) -> (Metrics, Vec<u8>) {
+        self.rasterize_indexed(self.lookup_glyph_index(character), px)
     }
 
     /// Retrieves the layout metrics and rasterized bitmap at the given index. You normally want to
@@ -278,27 +298,30 @@ impl Font {
     ///
     /// * `index` - The glyph index in the font to rasterize.
     /// * `px` - The size to render the character at. Cannot be negative.
-    /// * `offset_x` - The horizontal offset to render the glyph at. An offset of 0.0 applies no
-    /// offsetting. Cannot be negative.
-    pub fn rasterize_indexed(&self, index: usize, px: f32, offset_x: f32) -> (Metrics, Vec<u8>) {
+    pub fn rasterize_indexed(&self, index: usize, px: f32) -> (Metrics, Vec<u8>) {
         let glyph = &self.glyphs[index];
         let scale = Font::scale_factor(px, self.units_per_em);
         let bounds = glyph.bounds.scale(scale);
-        // Because the glyph output is flipped, this adjusts the offset to match the baseline.
-        let height = scale * glyph.height;
-        let mut diff = 1.0 - fract(height) - fract(bounds.ymin);
-        if is_negative(diff) {
-            diff += 1.0;
+
+        let mut offset_x = fract(bounds.xmin);
+        if is_negative(offset_x) {
+            offset_x += 1.0;
         }
+        let height = scale * glyph.height;
+        let mut offset_y = ceil(height) - height - fract(bounds.ymin);
+        if is_negative(offset_y) {
+            offset_y += 1.0;
+        }
+
         let metrics = Metrics {
             width: ceil(scale * glyph.width + offset_x) as usize,
-            height: ceil(height + diff) as usize,
+            height: ceil(height + offset_y) as usize,
             advance_width: scale * glyph.advance_width,
             advance_height: scale * glyph.advance_height,
             bounds,
         };
         let mut canvas = Raster::new(metrics.width, metrics.height);
-        canvas.draw(&glyph.geometry, scale, offset_x, diff);
+        canvas.draw(&glyph.geometry, scale, offset_x, offset_y);
         (metrics, canvas.get_bitmap())
     }
 

@@ -1,4 +1,4 @@
-// [See license/libm] Copyright (c) 2018 Jorge Aparicio
+// [See license/rust-lang/libm] Copyright (c) 2018 Jorge Aparicio
 pub fn trunc(x: f32) -> f32 {
     let mut i: u32 = x.to_bits();
     let mut e: i32 = (i >> 23 & 0xff) as i32 - 0x7f + 9;
@@ -17,13 +17,12 @@ pub fn trunc(x: f32) -> f32 {
     f32::from_bits(i)
 }
 
-
 #[inline(always)]
 pub fn fract(value: f32) -> f32 {
     value - trunc(value)
 }
 
-// [See license/libm] Copyright (c) 2018 Jorge Aparicio
+// [See license/rust-lang/libm] Copyright (c) 2018 Jorge Aparicio
 pub fn ceil(x: f32) -> f32 {
     let mut ui = x.to_bits();
     let e = (((ui >> 23) & 0xff).wrapping_sub(0x7f)) as i32;
@@ -49,7 +48,7 @@ pub fn ceil(x: f32) -> f32 {
     f32::from_bits(ui)
 }
 
-// [See license/libm] Copyright (c) 2018 Jorge Aparicio
+// [See license/rust-lang/libm] Copyright (c) 2018 Jorge Aparicio
 pub fn floor(x: f32) -> f32 {
     let mut ui = x.to_bits();
     let e = (((ui >> 23) as i32) & 0xff) - 0x7f;
