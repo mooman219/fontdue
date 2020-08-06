@@ -2,6 +2,7 @@ use crate::platform::{ceil, floor};
 use crate::unicode::{linebreak_property, read_utf8, wrap_mask};
 use crate::{Font, ZERO_METRICS};
 use alloc::vec::*;
+use core::borrow::Borrow;
 use core::hash::{Hash, Hasher};
 
 #[derive(Copy, Clone, PartialEq)]
@@ -168,9 +169,10 @@ impl Layout {
         }
     }
 
-    pub fn layout_horizontal(
+    /// Works with &[Font] or &[&Font].
+    pub fn layout_horizontal<T: Borrow<Font>>(
         &mut self,
-        fonts: &[Font],
+        fonts: &[T],
         styles: &[&TextStyle],
         settings: &LayoutSettings,
         output: &mut Vec<GlyphPosition>,
@@ -201,7 +203,7 @@ impl Layout {
         for style in styles {
             let mut byte_offset = 0;
             let font = &fonts[style.font_index];
-            if let Some(metrics) = font.horizontal_line_metrics(style.px) {
+            if let Some(metrics) = font.borrow().horizontal_line_metrics(style.px) {
                 current_ascent = ceil(metrics.ascent);
                 current_new_line_size = ceil(metrics.new_line_size);
                 if current_ascent > next_line.ascent {
@@ -215,7 +217,7 @@ impl Layout {
                 let character = read_utf8(style.text, &mut byte_offset);
                 let linebreak_state = linebreak_property(&mut state, character) & wrap_mask;
                 let metrics = if character as u32 > 0x1F {
-                    font.metrics(character, style.px)
+                    font.borrow().metrics(character, style.px)
                 } else {
                     ZERO_METRICS
                 };
