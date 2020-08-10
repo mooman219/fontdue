@@ -80,30 +80,32 @@ layout.layout_horizontal(fonts, styles, &settings, &mut output);
 
 ## Performance
 
-Strives to be the fastest.
+### Metrics + Rasterize
 
-### Fontdue
-
-Here are some benchmarks. They generate the layout metrics and bitmap for the letter 'g' are different sizes. This is going straight from the character 'g' to the metrics and bitmap, which is how the majority of people will interact with a font library and is the expected real world performance.
+This benchmark measures the time it takes to generate the glyph metrics and bitmap for the letter 'g' over a range of sizes. This is using the idiomatic APIs for both `rusttype` [(link)](https://gitlab.redox-os.org/redox-os/rusttype) and `fontdue`, and represents realworld performance. `rusttype` and `glyph_brush` [(link)](https://github.com/alexheretic/glyph-brush/tree/master/glyph-brush) uses `ab_glyph` [(link)](https://github.com/alexheretic/ab-glyph) as its rasterizer which is a clone of `font-rs` [(link)](https://github.com/raphlinus/font-rs). This benchmarks is also representative of `glyph_brush` performance. Older versions of `rusttype` use a naive rasterizer that's roughly 10x slower than `fontdue`.
 
 ```
-Fontdue: Metrics + Rasterize 'g'/20  time:   [993.07 ns 995.05 ns 997.21 ns]
-Fontdue: Metrics + Rasterize 'g'/40  time:   [1.4955 us 1.4969 us 1.4987 us]
-Fontdue: Metrics + Rasterize 'g'/60  time:   [2.1639 us 2.1653 us 2.1672 us]
-Fontdue: Metrics + Rasterize 'g'/80  time:   [3.0232 us 3.0256 us 3.0284 us]
+rusttype 0.9.2 Metrics + Rasterize 'g'/20 time: [2.6128 us 2.6150 us 2.6171 us]
+rusttype 0.9.2 Metrics + Rasterize 'g'/40 time: [4.3557 us 4.3595 us 4.3636 us]
+rusttype 0.9.2 Metrics + Rasterize 'g'/60 time: [6.7007 us 6.7073 us 6.7140 us]
+rusttype 0.9.2 Metrics + Rasterize 'g'/80 time: [10.021 us 10.031 us 10.040 us]
+
+fontdue Metrics + Rasterize 'g'/20 time:        [0.9505 us 0.9513 us 0.9520 us]
+fontdue Metrics + Rasterize 'g'/40 time:        [1.4412 us 1.4427 us 1.4446 us]
+fontdue Metrics + Rasterize 'g'/60 time:        [2.0558 us 2.0587 us 2.0623 us]
+fontdue Metrics + Rasterize 'g'/80 time:        [2.8313 us 2.8345 us 2.8384 us]
 ```
 
-### RustType
+### Rich Layout
 
-Other popular font library.
+This benchmark measures the time it takes to layout 300 characters of sample text with wrapping on word boundaries. This is using the idiomatic APIs for both `glyph_brush_layout` [(link)](https://github.com/alexheretic/glyph-brush/tree/master/layout) and `fontdue`, and represents realword performance.
 
 ```
-RustType: Metrics + Rasterize 'g'/20 time:   [11.701 us 11.719 us 11.738 us]
-RustType: Metrics + Rasterize 'g'/40 time:   [18.993 us 19.036 us 19.081 us]
-RustType: Metrics + Rasterize 'g'/60 time:   [27.106 us 27.188 us 27.276 us]
-RustType: Metrics + Rasterize 'g'/80 time:   [37.033 us 37.177 us 37.335 us]
+glyph_brush_layout 0.2.0 Layout time: [40.051 us 40.133 us 40.224 us]
+
+fontdue Layout time:                  [6.7636 us 6.7703 us 6.7769 us]
 ```
 
 ## Attribution
 
-`Fontdue` started as a slightly more production ready wrapper around `font-rs` because of how fast it made rasterization look ([link](https://github.com/raphlinus/font-rs)), and how simple the wonderful `rusttype` crate made font parsing look ([link](https://gitlab.redox-os.org/redox-os/rusttype)). Since then, I've done a few rewrites on the raster and it no longer shares any code or methodology to `font-rs`, but I feel like it still deservers some attribution. Instead of attempting to find the converage of a pixel, `fontdue` performs pseudo ray tracing collision detection on the geometry of the glyph with the pixel grid and estimates the shading.
+`Fontdue` started as a slightly more production ready wrapper around `font-rs` [(link)](https://github.com/raphlinus/font-rs) because of how fast it made rasterization look, and how simple the wonderful `rusttype` [(link)](https://gitlab.redox-os.org/redox-os/rusttype) crate made font parsing look. Since then, I've done a few rewrites on the raster and it no longer shares any code or methodology to `font-rs`, but I feel like it still deservers some attribution. Instead of attempting to find the converage of a pixel, `fontdue` performs pseudo ray tracing collision detection on the geometry of the glyph with the pixel grid and estimates the shading.
