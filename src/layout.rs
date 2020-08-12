@@ -157,15 +157,31 @@ impl Layout {
         wrap_mask(wrap, wrap_soft_breaks, wrap_hard_breaks)
     }
 
-    fn horizontal_padding(settings: &LayoutSettings, padding: f32) -> f32 {
+    fn horizontal_padding(settings: &LayoutSettings, remaining_width: f32) -> f32 {
         if settings.max_width.is_none() {
             0.0
         } else {
             match settings.horizontal_align {
                 HorizontalAlign::Left => 0.0,
-                HorizontalAlign::Center => floor(padding / 2.0),
-                HorizontalAlign::Right => floor(padding),
+                HorizontalAlign::Center => floor(remaining_width / 2.0),
+                HorizontalAlign::Right => floor(remaining_width),
             }
+        }
+    }
+
+    fn vertical_padding(settings: &LayoutSettings, height: f32) -> f32 {
+        if let Some(max_height) = settings.max_height {
+            if height >= max_height {
+                0.0
+            } else {
+                match settings.vertical_align {
+                    VerticalAlign::Top => 0.0,
+                    VerticalAlign::Middle => floor((max_height - height) / 2.0),
+                    VerticalAlign::Bottom => floor(max_height - height),
+                }
+            }
+        } else {
+            0.0
         }
     }
 
@@ -192,6 +208,7 @@ impl Layout {
         let mut last_linebreak_index = 0; // Glyph position of the last linebreak.
         let mut current_x = 0.0; // Starting x for the current line.
         let mut caret_x = 0.0; // Total x for the whole text.
+        let mut total_height = 0.0;
         let mut next_line = LineMetrics {
             padding: 0.0,
             ascent: 0.0,
@@ -228,6 +245,7 @@ impl Layout {
                     last_linebreak_index = output.len();
                 }
                 if caret_x - current_x + advance >= max_width || last_linebreak_state == 2 {
+                    total_height += next_line.new_line_size;
                     next_line.padding = max_width - (last_linebreak_x - current_x);
                     next_line.end_index = last_linebreak_index;
                     self.line_metrics.push(next_line);
@@ -252,6 +270,7 @@ impl Layout {
                 caret_x += advance;
             }
         }
+        total_height += next_line.new_line_size;
         next_line.padding = max_width - (caret_x - current_x);
         next_line.end_index = core::usize::MAX;
         self.line_metrics.push(next_line);
@@ -262,7 +281,7 @@ impl Layout {
         let mut current_ascent = 0.0;
         let mut current_new_line_size = 0.0;
         let mut x_base = settings.x;
-        let mut y_base = settings.y;
+        let mut y_base = settings.y - Self::vertical_padding(settings, total_height);
         if let Some(line) = line_metrics.next() {
             next_line_index = line.end_index;
             current_ascent = line.ascent;

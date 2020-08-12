@@ -21,7 +21,7 @@ fn fontdue_layout_benchmark(c: &mut Criterion) {
     let fonts = &[roboto_regular];
     let styles = &[&TextStyle::new(MESSAGE, 20.0, 0)];
 
-    let mut group = c.benchmark_group(format!("Fontdue Layout '{}'", MESSAGE));
+    let mut group = c.benchmark_group(format!("fontdue layout '{}'", MESSAGE));
     group.measurement_time(core::time::Duration::from_secs(5));
     group.sample_size(250);
     group.bench_function(BenchmarkId::from_parameter(MESSAGE), |b| {
@@ -49,7 +49,7 @@ fn glyph_brush_layout_benchmark(c: &mut Criterion) {
     }];
     let layout = glyph_brush_layout::Layout::default();
 
-    let mut group = c.benchmark_group(format!("Glyphbrush Layout '{}'", MESSAGE));
+    let mut group = c.benchmark_group(format!("glyph_brush_layout layout '{}'", MESSAGE));
     group.measurement_time(core::time::Duration::from_secs(5));
     group.sample_size(250);
     group.bench_function(BenchmarkId::from_parameter(MESSAGE), |b| {

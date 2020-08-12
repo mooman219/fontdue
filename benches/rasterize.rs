@@ -31,7 +31,7 @@ fn rusttype_benchmark(c: &mut Criterion) {
     let font = include_bytes!("../resources/Roboto-Regular.ttf") as &[u8];
     let font = rusttype::Font::try_from_bytes(font).unwrap();
 
-    let mut group = c.benchmark_group(format!("RustType Rasterize '{}'", CHARACTER));
+    let mut group = c.benchmark_group(format!("rusttype rasterize '{}'", CHARACTER));
     group.measurement_time(core::time::Duration::from_secs(5));
     group.sample_size(500);
     for size in SIZES.iter() {
@@ -47,7 +47,7 @@ fn fontdue_benchmark(c: &mut Criterion) {
     let font = include_bytes!("../resources/Roboto-Regular.ttf") as &[u8];
     let mut font = fontdue::Font::from_bytes(font, fontdue::FontSettings::default()).unwrap();
 
-    let mut group = c.benchmark_group(format!("Fontdue Rasterize '{}'", CHARACTER));
+    let mut group = c.benchmark_group(format!("fontdue rasterize '{}'", CHARACTER));
     group.measurement_time(core::time::Duration::from_secs(5));
     group.sample_size(500);
     for size in SIZES.iter() {
