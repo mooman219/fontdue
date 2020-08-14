@@ -252,6 +252,9 @@ impl Font {
     ///
     /// * `index` - The character in the font to to generate the layout metrics for.
     /// * `px` - The size to generate the layout metrics for the character at. Cannot be negative.
+    /// # Returns
+    ///
+    /// * `Metrics` - Sizing and positioning metadata for the glyph.
     #[inline]
     pub fn metrics(&self, character: char, px: f32) -> Metrics {
         self.metrics_indexed(self.lookup_glyph_index(character), px)
@@ -263,6 +266,9 @@ impl Font {
     ///
     /// * `index` - The glyph index in the font to to generate the layout metrics for.
     /// * `px` - The size to generate the layout metrics for the glyph at. Cannot be negative.
+    /// # Returns
+    ///
+    /// * `Metrics` - Sizing and positioning metadata for the glyph.
     pub fn metrics_indexed(&self, index: usize, px: f32) -> Metrics {
         let glyph = &self.glyphs[index];
         let scale = Font::scale_factor(px, self.units_per_em);
@@ -275,6 +281,12 @@ impl Font {
     /// # Arguments
     ///
     /// * `config` - The settings to render the character at.
+    /// # Returns
+    ///
+    /// * `Metrics` - Sizing and positioning metadata for the rasterized glyph.
+    /// * `Vec<u8>` - Coverage vector for the glyph. Coverage is a linear scale where 0 represents
+    /// 0% coverage of that pixel by the glyph and 255 represents 100% coverage. The vec starts at
+    /// the top left corner of the glyph.
     #[inline]
     pub fn rasterize_config(&self, config: GlyphRasterConfig) -> (Metrics, Vec<u8>) {
         self.rasterize_indexed(self.lookup_glyph_index(config.c), config.px)
@@ -287,6 +299,12 @@ impl Font {
     ///
     /// * `character` - The character to rasterize.
     /// * `px` - The size to render the character at. Cannot be negative.
+    /// # Returns
+    ///
+    /// * `Metrics` - Sizing and positioning metadata for the rasterized glyph.
+    /// * `Vec<u8>` - Coverage vector for the glyph. Coverage is a linear scale where 0 represents
+    /// 0% coverage of that pixel by the glyph and 255 represents 100% coverage. The vec starts at
+    /// the top left corner of the glyph.
     #[inline]
     pub fn rasterize(&self, character: char, px: f32) -> (Metrics, Vec<u8>) {
         self.rasterize_indexed(self.lookup_glyph_index(character), px)
@@ -298,6 +316,12 @@ impl Font {
     ///
     /// * `index` - The glyph index in the font to rasterize.
     /// * `px` - The size to render the character at. Cannot be negative.
+    /// # Returns
+    ///
+    /// * `Metrics` - Sizing and positioning metadata for the rasterized glyph.
+    /// * `Vec<u8>` - Coverage vector for the glyph. Coverage is a linear scale where 0 represents
+    /// 0% coverage of that pixel by the glyph and 255 represents 100% coverage. The vec starts at
+    /// the top left corner of the glyph.
     pub fn rasterize_indexed(&self, index: usize, px: f32) -> (Metrics, Vec<u8>) {
         let glyph = &self.glyphs[index];
         let scale = Font::scale_factor(px, self.units_per_em);
