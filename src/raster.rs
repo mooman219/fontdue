@@ -1,5 +1,5 @@
 use crate::math::{Geometry, Line};
-use crate::platform::{abs, copysign, f32x4, fract};
+use crate::platform::{abs, as_i32, copysign, f32x4, fract};
 use alloc::vec;
 use alloc::vec::*;
 
@@ -68,12 +68,12 @@ impl Raster {
         let tdy = abs(tdy);
         let mut x_prev = x0;
         let mut y_prev = y0;
-        let mut index = (start_x + start_y * self.w as f32) as isize;
-        let index_x_inc = sx as isize;
-        let index_y_inc = copysign(self.w as f32, sy) as isize;
+        let mut index = as_i32(start_x + start_y * self.w as f32);
+        let index_x_inc = as_i32(sx);
+        let index_y_inc = as_i32(copysign(self.w as f32, sy));
         // The (tmx < 1.0 || tmy < 1.0) condition does not work due to rounding errors in f32, so
         // dist is used instead to cap the iteration count.
-        let mut dist = (abs(start_x - end_x) + abs(start_y - end_y)) as u32;
+        let mut dist = as_i32(abs(start_x - end_x) + abs(start_y - end_y)) as u32;
         while dist > 0 {
             dist -= 1;
             let prev_index = index;
@@ -96,7 +96,7 @@ impl Raster {
             x_prev = x_next;
             y_prev = y_next;
         }
-        self.add((end_x + end_y * self.w as f32) as usize, y_prev - y1, (x_prev + x1) / 2.0);
+        self.add(as_i32(end_x + end_y * self.w as f32) as usize, y_prev - y1, (x_prev + x1) / 2.0);
     }
 
     #[cfg(not(any(target_arch = "x86", target_arch = "x86_64")))]

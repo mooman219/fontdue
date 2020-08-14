@@ -1,6 +1,6 @@
 use crate::layout::GlyphRasterConfig;
 use crate::math::Geometry;
-use crate::platform::{ceil, fract, is_negative};
+use crate::platform::{as_i32, ceil, fract, is_negative};
 use crate::raster::Raster;
 use crate::raw::RawFont;
 use crate::FontResult;
@@ -140,8 +140,8 @@ impl Glyph {
         }
 
         Metrics {
-            width: ceil(scale * self.width + offset_x) as usize,
-            height: ceil(height + offset_y) as usize,
+            width: as_i32(ceil(scale * self.width + offset_x)) as usize,
+            height: as_i32(ceil(height + offset_y)) as usize,
             advance_width: scale * self.advance_width,
             advance_height: scale * self.advance_height,
             bounds,
@@ -314,8 +314,8 @@ impl Font {
         }
 
         let metrics = Metrics {
-            width: ceil(scale * glyph.width + offset_x) as usize,
-            height: ceil(height + offset_y) as usize,
+            width: as_i32(ceil(scale * glyph.width + offset_x)) as usize,
+            height: as_i32(ceil(height + offset_y)) as usize,
             advance_width: scale * glyph.advance_width,
             advance_height: scale * glyph.advance_height,
             bounds,

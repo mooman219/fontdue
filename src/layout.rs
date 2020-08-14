@@ -5,17 +5,25 @@ use alloc::vec::*;
 use core::borrow::Borrow;
 use core::hash::{Hash, Hasher};
 
+/// Horizontal alignment options for text when a max_width is provided.
 #[derive(Copy, Clone, PartialEq)]
 pub enum HorizontalAlign {
+    /// Aligns text to the left of the region defined by the max_width.
     Left,
+    /// Aligns text to the center of the region defined by the max_width.
     Center,
+    /// Aligns text to the right of the region defined by the max_width.
     Right,
 }
 
+/// Vertical alignment options for text when a max_height is provided.
 #[derive(Copy, Clone, PartialEq)]
 pub enum VerticalAlign {
+    /// Aligns text to the top of the region defined by the max_height.
     Top,
+    /// Aligns text to the middle of the region defined by the max_height.
     Middle,
+    /// Aligns text to the bottom of the region defined by the max_height.
     Bottom,
 }
 
@@ -30,6 +38,8 @@ pub enum WrapStyle {
     Letter,
 }
 
+/// Settings to configure how text layout is constrained. Text layout is considered best effort and
+/// layout may violate the constraints defined here if they prevent text from being laid out.
 #[derive(Copy, Clone, PartialEq)]
 pub struct LayoutSettings {
     /// The leftmost boundary of the text region.
@@ -37,8 +47,13 @@ pub struct LayoutSettings {
     /// The topmost boundary of the text region.
     pub y: f32,
     /// An optional rightmost boundary on the text region. A line of text that exceeds the
-    /// max_width is wrapped to the line below.
+    /// max_width is wrapped to the line below. If the width of a glyph is larger than the
+    /// max_width, the glyph will overflow past the max_width. The application is responsible for
+    /// handling the overflow.
     pub max_width: Option<f32>,
+    /// An optional bottom boundary on the text region. This is used for positioning the
+    /// vertical_align option. Text that exceeds the defined max_height will overflow past it. The
+    /// application is responsible for handling the overflow.
     pub max_height: Option<f32>,
     /// The default is Left. This option does nothing if the max_width isn't set.
     pub horizontal_align: HorizontalAlign,
@@ -67,7 +82,8 @@ impl Default for LayoutSettings {
     }
 }
 
-/// Hashable key that can be used to uniquely identify a rasterized glyph.
+/// Configuration for rasterizing a glyph. This struct is also a hashable key that can be used to
+/// uniquely identify a rasterized glyph for applications that want to cache glyphs.
 #[derive(Debug, Copy, Clone)]
 pub struct GlyphRasterConfig {
     /// The character represented by the glyph being positioned.
@@ -139,6 +155,9 @@ struct LineMetrics {
     pub end_index: usize,
 }
 
+/// Text layout requires a small amount of heap usage which is contained in the Layout struct. This
+/// context is reused between layout calls. Reusing the Layout struct will greatly reduce memory
+/// allocations and is advisable for performance.
 pub struct Layout {
     line_metrics: Vec<LineMetrics>,
 }
@@ -185,7 +204,10 @@ impl Layout {
         }
     }
 
-    /// Works with &[Font] or &[&Font].
+    /// Performs layout for text horizontally, and wrapping vertically. This makes a best effort
+    /// attempt at laying out the text defined in the given styles with the provided layout
+    /// settings. Text may overflow out of the bounds defined in the layout settings and it's up
+    /// to the application to decide how to deal with this. Works with &[Font] or &[&Font].
     pub fn layout_horizontal<T: Borrow<Font>>(
         &mut self,
         fonts: &[T],
@@ -208,7 +230,7 @@ impl Layout {
         let mut last_linebreak_index = 0; // Glyph position of the last linebreak.
         let mut current_x = 0.0; // Starting x for the current line.
         let mut caret_x = 0.0; // Total x for the whole text.
-        let mut total_height = 0.0;
+        let mut total_height = 0.0; // Total y for the whole text.
         let mut next_line = LineMetrics {
             padding: 0.0,
             ascent: 0.0,
@@ -303,9 +325,5 @@ impl Layout {
             glyph.y += y_base - current_ascent;
             current_index += 1;
         }
-
-        // for line in &self.line_metrics {
-        //     println!("{:?} {}", line, line.ascent.floor());
-        // }
     }
 }

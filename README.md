@@ -90,10 +90,10 @@ rusttype 0.9.2 metrics + rasterize 'g'/40 time: [4.3557 us 4.3595 us 4.3636 us]
 rusttype 0.9.2 metrics + rasterize 'g'/60 time: [6.7007 us 6.7073 us 6.7140 us]
 rusttype 0.9.2 metrics + rasterize 'g'/80 time: [10.021 us 10.031 us 10.040 us]
 
-fontdue metrics + rasterize 'g'/20 time:        [0.9505 us 0.9513 us 0.9520 us]
-fontdue metrics + rasterize 'g'/40 time:        [1.4412 us 1.4427 us 1.4446 us]
-fontdue metrics + rasterize 'g'/60 time:        [2.0558 us 2.0587 us 2.0623 us]
-fontdue metrics + rasterize 'g'/80 time:        [2.8313 us 2.8345 us 2.8384 us]
+fontdue latest metrics + rasterize 'g'/20 time: [0.8983 us 0.8994 us 0.9007 us]
+fontdue latest metrics + rasterize 'g'/40 time: [1.3733 us 1.3750 us 1.3771 us]
+fontdue latest metrics + rasterize 'g'/60 time: [1.9720 us 1.9785 us 1.9862 us]
+fontdue latest metrics + rasterize 'g'/80 time: [2.7242 us 2.7303 us 2.7376 us]
 ```
 
 ### Rich Layout
@@ -103,7 +103,7 @@ This benchmark measures the time it takes to layout 300 characters of sample tex
 ```
 glyph_brush_layout 0.2.0 layout time: [40.051 us 40.133 us 40.224 us]
 
-fontdue layout time:                  [6.7636 us 6.7703 us 6.7769 us]
+fontdue latest layout time:           [6.7636 us 6.7703 us 6.7769 us]
 ```
 
 ## Attribution

@@ -18,6 +18,11 @@ pub fn trunc(x: f32) -> f32 {
 }
 
 #[inline(always)]
+pub fn as_i32(value: f32) -> i32 {
+    value as i32
+}
+
+#[inline(always)]
 pub fn fract(value: f32) -> f32 {
     value - trunc(value)
 }

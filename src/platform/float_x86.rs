@@ -12,6 +12,11 @@ pub fn trunc(value: f32) -> f32 {
 }
 
 #[inline(always)]
+pub fn as_i32(value: f32) -> i32 {
+    unsafe { _mm_cvtss_si32(_mm_set_ss(value)) }
+}
+
+#[inline(always)]
 pub fn fract(value: f32) -> f32 {
     unsafe {
         let packed = _mm_set_ss(value);
