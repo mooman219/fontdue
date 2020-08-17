@@ -1,6 +1,6 @@
-use alloc::vec::*;
 use crate::parse::*;
 use crate::FontResult;
+use alloc::vec::*;
 
 // Color pallete information used by the COLR and sometimes SVG tables
 // Microsoft: https://docs.microsoft.com/en-us/typography/opentype/spec/cpal
@@ -8,7 +8,7 @@ use crate::FontResult;
 #[derive(Debug)]
 pub struct TableCpal {
     pub header: Header,
-    pub color_records: Vec<BGRA8Color>
+    pub color_records: Vec<BGRA8Color>,
 }
 
 #[derive(Copy, Clone, Debug)]
@@ -40,7 +40,8 @@ impl TableCpal {
             _ => return Err("Font.cpal: Unsupported cpal table version."),
         }
 
-        let color_records = Self::read_color_records(&mut stream, header.offset_first_color_record, header.num_color_records);
+        let color_records =
+            Self::read_color_records(&mut stream, header.offset_first_color_record, header.num_color_records);
 
         Ok(TableCpal {
             header,
@@ -71,7 +72,11 @@ impl TableCpal {
         }
     }
 
-    fn read_color_records(stream: &mut Stream, offset_first_color_record: u32, num_color_records: u16) -> Vec<BGRA8Color> {
+    fn read_color_records(
+        stream: &mut Stream,
+        offset_first_color_record: u32,
+        num_color_records: u16,
+    ) -> Vec<BGRA8Color> {
         stream.seek(offset_first_color_record as usize);
         let mut color_records = Vec::with_capacity(num_color_records as usize);
         for _ in 0..num_color_records {

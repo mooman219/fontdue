@@ -1,4 +1,6 @@
 mod cmap;
+mod colr;
+mod cpal;
 mod directory;
 mod glyf;
 mod head;
@@ -9,10 +11,10 @@ mod loca;
 mod maxp;
 mod vhea;
 mod vmtx;
-mod colr;
-mod cpal;
 
 pub use self::cmap::*;
+pub use self::colr::*;
+pub use self::cpal::*;
 pub use self::directory::*;
 pub use self::glyf::*;
 pub use self::head::*;
@@ -23,5 +25,3 @@ pub use self::loca::*;
 pub use self::maxp::*;
 pub use self::vhea::*;
 pub use self::vmtx::*;
-pub use self::colr::*;
-pub use self::cpal::*;
