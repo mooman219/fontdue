@@ -103,7 +103,7 @@ This benchmark measures the time it takes to layout 300 characters of sample tex
 ```
 glyph_brush_layout 0.2.0 layout time: [40.051 us 40.133 us 40.224 us]
 
-fontdue latest layout time:           [6.7636 us 6.7703 us 6.7769 us]
+fontdue latest layout time:           [6.6665 us 6.6718 us 6.6777 us]
 ```
 
 ## Attribution

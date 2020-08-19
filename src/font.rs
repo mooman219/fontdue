@@ -128,7 +128,6 @@ impl Glyph {
     #[inline(always)]
     fn metrics(&self, scale: f32) -> Metrics {
         let bounds = self.bounds.scale(scale);
-
         let mut offset_x = fract(bounds.xmin);
         if is_negative(offset_x) {
             offset_x += 1.0;
@@ -138,7 +137,6 @@ impl Glyph {
         if is_negative(offset_y) {
             offset_y += 1.0;
         }
-
         Metrics {
             width: as_i32(ceil(scale * self.width + offset_x)) as usize,
             height: as_i32(ceil(height + offset_y)) as usize,
@@ -325,8 +323,10 @@ impl Font {
     pub fn rasterize_indexed(&self, index: usize, px: f32) -> (Metrics, Vec<u8>) {
         let glyph = &self.glyphs[index];
         let scale = Font::scale_factor(px, self.units_per_em);
-        let bounds = glyph.bounds.scale(scale);
 
+        // This is kinda lame, but I can't reuse Glyph.metrics() directly because I want the
+        // offset_x and offset_y too, and returning it gave a weird regression.
+        let bounds = glyph.bounds.scale(scale);
         let mut offset_x = fract(bounds.xmin);
         if is_negative(offset_x) {
             offset_x += 1.0;
@@ -336,7 +336,6 @@ impl Font {
         if is_negative(offset_y) {
             offset_y += 1.0;
         }
-
         let metrics = Metrics {
             width: as_i32(ceil(scale * glyph.width + offset_x)) as usize,
             height: as_i32(ceil(height + offset_y)) as usize,
@@ -344,9 +343,16 @@ impl Font {
             advance_height: scale * glyph.advance_height,
             bounds,
         };
-        let mut canvas = Raster::new(metrics.width, metrics.height);
-        canvas.draw(&glyph.geometry, scale, offset_x, offset_y);
-        (metrics, canvas.get_bitmap())
+
+        // Fast path for people rendering whitespace on accident.
+        let bitmap = if metrics.width > 0 {
+            let mut canvas = Raster::new(metrics.width, metrics.height);
+            canvas.draw(&glyph.geometry, scale, offset_x, offset_y);
+            canvas.get_bitmap()
+        } else {
+            Vec::new()
+        };
+        (metrics, bitmap)
     }
 
     /// Finds the internal glyph index for the given character. If the character is not present in

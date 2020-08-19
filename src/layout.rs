@@ -65,6 +65,11 @@ pub struct LayoutSettings {
     /// The default is true. This option enables hard breaks, like new line characters, to
     /// prematurely wrap lines. If false, hard breaks will not prematurely create a new line.
     pub wrap_hard_breaks: bool,
+    /// The default is false. This option sets whether or not to include whitespace in the layout
+    /// output. By default, whitespace is not included in the output as it's not renderable. You
+    /// may want this enabled if you care about the positioning of whitespace for an interactable
+    /// user interface.
+    pub include_whitespace: bool,
 }
 
 impl Default for LayoutSettings {
@@ -78,6 +83,7 @@ impl Default for LayoutSettings {
             vertical_align: VerticalAlign::Top,
             wrap_style: WrapStyle::Word,
             wrap_hard_breaks: true,
+            include_whitespace: false,
         }
     }
 }
@@ -90,21 +96,18 @@ pub struct GlyphRasterConfig {
     pub c: char,
     /// The scale of the glyph being positioned in px.
     pub px: f32,
-    /// The index of the font used in layout to raster the glyph.
-    pub font_index: usize,
 }
 
 impl Hash for GlyphRasterConfig {
     fn hash<H: Hasher>(&self, state: &mut H) {
         self.c.hash(state);
         self.px.to_bits().hash(state);
-        self.font_index.hash(state);
     }
 }
 
 impl PartialEq for GlyphRasterConfig {
     fn eq(&self, other: &Self) -> bool {
-        self.c == other.c && self.px == other.px && self.font_index == other.font_index
+        self.c == other.c && self.px == other.px
     }
 }
 
@@ -115,6 +118,8 @@ impl Eq for GlyphRasterConfig {}
 pub struct GlyphPosition {
     /// Hashable key that can be used to uniquely identify a rasterized glyph.
     pub key: GlyphRasterConfig,
+    /// The index of the font used in layout to raster the glyph.
+    pub font_index: usize,
     /// The left side of the glyph bounding box. Dimensions are in pixels, and are alawys whole
     /// numebrs.
     pub x: f32,
@@ -276,13 +281,13 @@ impl Layout {
                     last_linebreak_state = 0;
                     current_x = last_linebreak_x;
                 }
-                if metrics.width != 0 {
+                if settings.include_whitespace || metrics.width != 0 {
                     output.push(GlyphPosition {
                         key: GlyphRasterConfig {
                             c: character,
                             px: style.px,
-                            font_index: style.font_index,
                         },
+                        font_index: style.font_index,
                         x: caret_x + floor(metrics.bounds.xmin),
                         y: floor(metrics.bounds.ymin),
                         width: metrics.width,
@@ -297,29 +302,28 @@ impl Layout {
         next_line.end_index = core::usize::MAX;
         self.line_metrics.push(next_line);
 
-        let mut line_metrics = self.line_metrics.iter();
-        let mut next_line_index = core::usize::MAX;
+        let mut line_metrics_index = 0;
+        let mut next_line_index;
         let mut current_index = 0;
-        let mut current_ascent = 0.0;
-        let mut current_new_line_size = 0.0;
+        let mut current_ascent;
+        let mut current_new_line_size;
         let mut x_base = settings.x;
         let mut y_base = settings.y - Self::vertical_padding(settings, total_height);
-        if let Some(line) = line_metrics.next() {
-            next_line_index = line.end_index;
-            current_ascent = line.ascent;
-            current_new_line_size = line.new_line_size;
-            x_base += Self::horizontal_padding(settings, line.padding);
-        }
-        for glyph in output.iter_mut() {
+        let line = self.line_metrics[0];
+        next_line_index = line.end_index;
+        current_ascent = line.ascent;
+        current_new_line_size = line.new_line_size;
+        x_base += Self::horizontal_padding(settings, line.padding);
+        for glyph in output {
             if current_index == next_line_index {
-                if let Some(line) = line_metrics.next() {
-                    x_base = settings.x - glyph.x;
-                    y_base -= current_new_line_size;
-                    next_line_index = line.end_index;
-                    current_ascent = line.ascent;
-                    current_new_line_size = line.new_line_size;
-                    x_base += Self::horizontal_padding(settings, line.padding);
-                }
+                line_metrics_index += 1;
+                let line = self.line_metrics[line_metrics_index];
+                x_base = settings.x - glyph.x;
+                y_base -= current_new_line_size;
+                next_line_index = line.end_index;
+                current_ascent = line.ascent;
+                current_new_line_size = line.new_line_size;
+                x_base += Self::horizontal_padding(settings, line.padding);
             }
             glyph.x += x_base;
             glyph.y += y_base - current_ascent;
