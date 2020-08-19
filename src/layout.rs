@@ -213,6 +213,10 @@ impl Layout {
     /// attempt at laying out the text defined in the given styles with the provided layout
     /// settings. Text may overflow out of the bounds defined in the layout settings and it's up
     /// to the application to decide how to deal with this. Works with &[Font] or &[&Font].
+    ///
+    /// Characters from the input string can only be omitted from the output, they are never
+    /// reordered. The output buffer will always contain characters in the order they were defined
+    /// in the styles.
     pub fn layout_horizontal<T: Borrow<Font>>(
         &mut self,
         fonts: &[T],
