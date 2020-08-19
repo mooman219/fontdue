@@ -1,6 +1,6 @@
-use alloc::vec::*;
 use crate::parse::*;
 use crate::FontResult;
+use alloc::vec::*;
 
 // Multi-colored glyph layer information, requires the CPAL table to be present
 // Microsoft: https://docs.microsoft.com/en-us/typography/opentype/spec/colr
@@ -34,12 +34,17 @@ pub struct LayerRecord {
     pub palette_index: u16,
 }
 
-impl TableColr  {
+impl TableColr {
     pub fn new(colr: &[u8]) -> FontResult<TableColr> {
         let mut stream = Stream::new(colr);
         let header = Self::read_header(&mut stream);
-        let base_glyph_records = Self::read_base_glyph_records(&mut stream, header.base_glyph_records_offset, header.num_base_glyph_records);
-        let layer_records = Self::read_layer_records(&mut stream, header.layer_records_offset, header.num_layer_records);
+        let base_glyph_records = Self::read_base_glyph_records(
+            &mut stream,
+            header.base_glyph_records_offset,
+            header.num_base_glyph_records,
+        );
+        let layer_records =
+            Self::read_layer_records(&mut stream, header.layer_records_offset, header.num_layer_records);
         Ok(TableColr {
             header,
             base_glyph_records,
@@ -63,7 +68,11 @@ impl TableColr  {
         }
     }
 
-    fn read_base_glyph_records(stream: &mut Stream, base_glyph_records_offset: u32, num_base_glyph_records: u16) -> Vec<BaseGlyphRecord> {
+    fn read_base_glyph_records(
+        stream: &mut Stream,
+        base_glyph_records_offset: u32,
+        num_base_glyph_records: u16,
+    ) -> Vec<BaseGlyphRecord> {
         stream.seek(base_glyph_records_offset as usize);
         let mut result = Vec::with_capacity(num_base_glyph_records as usize);
         for _ in 0..num_base_glyph_records {
@@ -76,7 +85,11 @@ impl TableColr  {
         result
     }
 
-    fn read_layer_records(stream: &mut Stream, layer_records_offset: u32, num_layer_records: u16) -> Vec<LayerRecord> {
+    fn read_layer_records(
+        stream: &mut Stream,
+        layer_records_offset: u32,
+        num_layer_records: u16,
+    ) -> Vec<LayerRecord> {
         stream.seek(layer_records_offset as usize);
         let mut result = Vec::with_capacity(num_layer_records as usize);
         for _ in 0..num_layer_records {
