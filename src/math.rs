@@ -1,6 +1,6 @@
 use crate::platform::{abs, atan, f32x4};
 use crate::raw::RawPoint;
-use crate::AABB;
+use crate::{FontSettings, AABB};
 use alloc::vec::*;
 
 #[derive(Copy, Clone, Debug, PartialEq)]
@@ -140,7 +140,7 @@ pub struct Geometry {
 }
 
 impl Geometry {
-    pub fn new(points: &[RawPoint]) -> Geometry {
+    pub fn new(points: &[RawPoint], settings: &FontSettings) -> Geometry {
         let mut geometry = Geometry {
             lines: Vec::new(),
             effective_bounds: None,
@@ -152,24 +152,25 @@ impl Geometry {
         let mut current = RawPoint::default();
         let mut index = 0;
         for next in points {
+            let next = next.offset(settings.offset_x, settings.offset_y);
             match index {
                 0 => {
-                    first = *next;
-                    previous = *next;
+                    first = next;
+                    previous = next;
                 }
                 1 => {
-                    second = *next;
-                    current = *next;
+                    second = next;
+                    current = next;
                 }
                 _ => {
-                    geometry.populate_lines(&previous, &current, next);
+                    geometry.populate_lines(&previous, &current, &next);
                     if next.end_point {
-                        geometry.populate_lines(&current, next, &first);
-                        geometry.populate_lines(next, &first, &second);
+                        geometry.populate_lines(&current, &next, &first);
+                        geometry.populate_lines(&next, &first, &second);
                         index = -1;
                     } else {
                         previous = current;
-                        current = *next;
+                        current = next;
                     }
                 }
             }
@@ -228,6 +229,14 @@ impl Geometry {
         }
     }
 
+    fn push(&mut self, start: Point, end: Point) {
+        if start.y != end.y {
+            self.lines.push(Line::new(start, end));
+            self.recalculate_bounds(start);
+            self.recalculate_bounds(end);
+        }
+    }
+
     fn recalculate_bounds(&mut self, point: Point) {
         if let Some(bounds) = self.effective_bounds.as_mut() {
             if point.x < bounds.xmin {
@@ -244,14 +253,6 @@ impl Geometry {
             }
         } else {
             self.effective_bounds = Some(AABB::new(point.x, point.x, point.y, point.y))
-        }
-    }
-
-    fn push(&mut self, start: Point, end: Point) {
-        if start.y != end.y {
-            self.lines.push(Line::new(start, end));
-            self.recalculate_bounds(start);
-            self.recalculate_bounds(end);
         }
     }
 }

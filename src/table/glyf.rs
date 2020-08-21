@@ -62,11 +62,20 @@ impl RawPoint {
         flag_u8(self.flags, SimpleFlags::ON_CURVE)
     }
 
-    pub fn transform(&mut self, a: f32, b: f32, c: f32, d: f32, cx: f32, cy: f32) {
-        let px = self.x;
-        let py = self.y;
-        self.x = a * px + c * py + cx;
-        self.y = b * px + d * py + cy;
+    pub fn offset(&self, offset_x: f32, offset_y: f32) -> RawPoint {
+        let mut new = *self;
+        new.x += offset_x;
+        new.y += offset_y;
+        new
+    }
+
+    pub fn transform(&self, a: f32, b: f32, c: f32, d: f32, cx: f32, cy: f32) -> RawPoint {
+        let mut new = *self;
+        let px = new.x;
+        let py = new.y;
+        new.x = a * px + c * py + cx;
+        new.y = b * px + d * py + cy;
+        new
     }
 }
 
@@ -277,7 +286,7 @@ fn parse_glyph(glyf: &[u8], locations: &[GlyphLocation], index: usize) -> FontRe
             let mut compound_glyph_points =
                 parse_glyph(glyf, locations, compound_glyph_index as usize)?.points;
             for point in &mut compound_glyph_points {
-                point.transform(a, b, c, d, cx as f32, cy as f32);
+                *point = point.transform(a, b, c, d, cx as f32, cy as f32);
             }
             glyph.points.append(&mut compound_glyph_points);
         }

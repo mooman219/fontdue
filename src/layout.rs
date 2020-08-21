@@ -96,18 +96,21 @@ pub struct GlyphRasterConfig {
     pub c: char,
     /// The scale of the glyph being positioned in px.
     pub px: f32,
+    /// The index of the font used in layout to raster the glyph.
+    pub font_index: usize,
 }
 
 impl Hash for GlyphRasterConfig {
     fn hash<H: Hasher>(&self, state: &mut H) {
         self.c.hash(state);
         self.px.to_bits().hash(state);
+        self.font_index.hash(state);
     }
 }
 
 impl PartialEq for GlyphRasterConfig {
     fn eq(&self, other: &Self) -> bool {
-        self.c == other.c && self.px == other.px
+        self.c == other.c && self.px == other.px && self.font_index == other.font_index
     }
 }
 
@@ -118,8 +121,6 @@ impl Eq for GlyphRasterConfig {}
 pub struct GlyphPosition {
     /// Hashable key that can be used to uniquely identify a rasterized glyph.
     pub key: GlyphRasterConfig,
-    /// The index of the font used in layout to raster the glyph.
-    pub font_index: usize,
     /// The left side of the glyph bounding box. Dimensions are in pixels, and are alawys whole
     /// numebrs.
     pub x: f32,
@@ -290,8 +291,8 @@ impl Layout {
                         key: GlyphRasterConfig {
                             c: character,
                             px: style.px,
+                            font_index: style.font_index,
                         },
-                        font_index: style.font_index,
                         x: caret_x + floor(metrics.bounds.xmin),
                         y: floor(metrics.bounds.ymin),
                         width: metrics.width,

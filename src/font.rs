@@ -149,11 +149,23 @@ impl Glyph {
 
 /// Settings for controlling specific font and layout behavior.
 #[derive(Copy, Clone, PartialEq)]
-pub struct FontSettings {}
+pub struct FontSettings {
+    /// The default is 0.0. Offsets all glyphs in the font horizontally by the given offset. The
+    /// unit of the offset is font units and varies by font. This can be used to make a font
+    /// crisper at a specific scale, or correct a misaligned font.
+    pub offset_x: f32,
+    /// The default is 0.0. Offsets all glyphs in the font vertically by the given offset. The unit
+    /// of the offset is font units and varies by font. This can be used to make a font crisper at
+    /// a specific scale, or correct a misaligned font.
+    pub offset_y: f32,
+}
 
 impl Default for FontSettings {
     fn default() -> FontSettings {
-        FontSettings {}
+        FontSettings {
+            offset_x: 0.0,
+            offset_y: 0.0,
+        }
     }
 }
 
@@ -168,12 +180,12 @@ pub struct Font {
 
 impl Font {
     /// Constructs a font from an array of bytes.
-    pub fn from_bytes<Data: Deref<Target = [u8]>>(data: Data, _: FontSettings) -> FontResult<Font> {
+    pub fn from_bytes<Data: Deref<Target = [u8]>>(data: Data, settings: FontSettings) -> FontResult<Font> {
         let mut raw = RawFont::new(data)?;
 
         let mut glyphs = Vec::with_capacity(raw.glyf.glyphs.len());
         for glyph in &mut raw.glyf.glyphs {
-            let geometry = Geometry::new(&glyph.points);
+            let geometry = Geometry::new(&glyph.points, &settings);
             let advance_width = if let Some(hmtx) = &raw.hmtx {
                 let hmetric = hmtx.hmetrics[glyph.metrics];
                 hmetric.advance_width as f32
@@ -222,7 +234,7 @@ impl Font {
     /// metrics. None if unpopulated.
     pub fn horizontal_line_metrics(&self, px: f32) -> Option<LineMetrics> {
         if let Some(metrics) = self.horizontal_line_metrics {
-            Some(metrics.scale(Self::scale_factor(px, self.units_per_em)))
+            Some(metrics.scale(self.scale_factor(px)))
         } else {
             None
         }
@@ -232,7 +244,7 @@ impl Font {
     /// metrics. None if unpopulated.
     pub fn vertical_line_metrics(&self, px: f32) -> Option<LineMetrics> {
         if let Some(metrics) = self.vertical_line_metrics {
-            Some(metrics.scale(Self::scale_factor(px, self.units_per_em)))
+            Some(metrics.scale(self.scale_factor(px)))
         } else {
             None
         }
@@ -240,8 +252,8 @@ impl Font {
 
     /// Calculates the glyph scale factor for a given px size.
     #[inline(always)]
-    fn scale_factor(px: f32, units_per_em: f32) -> f32 {
-        px / units_per_em
+    fn scale_factor(&self, px: f32) -> f32 {
+        px / self.units_per_em
     }
 
     /// Retrieves the layout metrics for the given character. If the character isn't present in the
@@ -269,7 +281,7 @@ impl Font {
     /// * `Metrics` - Sizing and positioning metadata for the glyph.
     pub fn metrics_indexed(&self, index: usize, px: f32) -> Metrics {
         let glyph = &self.glyphs[index];
-        let scale = Font::scale_factor(px, self.units_per_em);
+        let scale = self.scale_factor(px);
         glyph.metrics(scale)
     }
 
@@ -322,7 +334,7 @@ impl Font {
     /// the top left corner of the glyph.
     pub fn rasterize_indexed(&self, index: usize, px: f32) -> (Metrics, Vec<u8>) {
         let glyph = &self.glyphs[index];
-        let scale = Font::scale_factor(px, self.units_per_em);
+        let scale = self.scale_factor(px);
 
         // This is kinda lame, but I can't reuse Glyph.metrics() directly because I want the
         // offset_x and offset_y too, and returning it gave a weird regression.
