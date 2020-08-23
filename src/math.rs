@@ -81,6 +81,8 @@ pub struct Line {
     pub nudge: f32x4,
     /// x_first_adj, y_first_adj, none, none.
     pub adjustment: f32x4,
+    /// tdx, tdy, dx, dy.
+    pub params: f32x4,
 }
 
 impl Line {
@@ -112,10 +114,20 @@ impl Line {
             FLOOR_NUDGE
         };
 
+        let dx = end.x - start.x;
+        let dy = end.y - start.y;
+        let tdx = if dx == 0.0 {
+            8388608.0 // 2^23, doesn't really matter.
+        } else {
+            1.0 / dx
+        };
+        let tdy = 1.0 / dy;
+
         Line {
             coords: f32x4::new(start.x, start.y, end.x, end.y),
             nudge: f32x4::new_u32(x_start_nudge, y_start_nudge, x_end_nudge, y_end_nudge),
             adjustment: f32x4::new(x_first_adj, y_first_adj, 0.0, 0.0),
+            params: f32x4::new(tdx, tdy, dx, dy),
         }
     }
 

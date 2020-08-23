@@ -126,17 +126,22 @@ struct Glyph {
 
 impl Glyph {
     #[inline(always)]
-    fn metrics(&self, scale: f32) -> Metrics {
+    fn metrics(&self, scale: f32, enable_offset_bounding_box: bool) -> Metrics {
         let bounds = self.bounds.scale(scale);
-        let mut offset_x = fract(bounds.xmin);
-        if is_negative(offset_x) {
-            offset_x += 1.0;
-        }
         let height = scale * self.height;
-        let mut offset_y = ceil(height) - height - fract(bounds.ymin);
-        if is_negative(offset_y) {
-            offset_y += 1.0;
-        }
+        let (offset_x, offset_y) = if enable_offset_bounding_box {
+            let mut offset_x = fract(bounds.xmin);
+            if is_negative(offset_x) {
+                offset_x += 1.0;
+            }
+            let mut offset_y = ceil(height) - height - fract(bounds.ymin);
+            if is_negative(offset_y) {
+                offset_y += 1.0;
+            }
+            (offset_x, offset_y)
+        } else {
+            (0.0, 0.0)
+        };
         Metrics {
             width: as_i32(ceil(scale * self.width + offset_x)) as usize,
             height: as_i32(ceil(height + offset_y)) as usize,
@@ -158,6 +163,10 @@ pub struct FontSettings {
     /// of the offset is font units and varies by font. This can be used to make a font crisper at
     /// a specific scale, or correct a misaligned font.
     pub offset_y: f32,
+    /// The default is true. This offsets glyphs relative to their position in their scaled
+    /// bounding box. This is required for laying out glyphs correctly, but can be disabled to make
+    /// some incorrect fonts crisper.
+    pub enable_offset_bounding_box: bool,
 }
 
 impl Default for FontSettings {
@@ -165,6 +174,7 @@ impl Default for FontSettings {
         FontSettings {
             offset_x: 0.0,
             offset_y: 0.0,
+            enable_offset_bounding_box: true,
         }
     }
 }
@@ -176,6 +186,7 @@ pub struct Font {
     char_to_glyph: HashMap<u32, NonZeroU32>,
     horizontal_line_metrics: Option<LineMetrics>,
     vertical_line_metrics: Option<LineMetrics>,
+    settings: FontSettings,
 }
 
 impl Font {
@@ -227,6 +238,7 @@ impl Font {
             units_per_em: raw.head.units_per_em as f32,
             horizontal_line_metrics,
             vertical_line_metrics,
+            settings,
         })
     }
 
@@ -282,7 +294,7 @@ impl Font {
     pub fn metrics_indexed(&self, index: usize, px: f32) -> Metrics {
         let glyph = &self.glyphs[index];
         let scale = self.scale_factor(px);
-        glyph.metrics(scale)
+        glyph.metrics(scale, self.settings.enable_offset_bounding_box)
     }
 
     /// Retrieves the layout rasterized bitmap for the given raster config. If the raster config's
@@ -339,15 +351,20 @@ impl Font {
         // This is kinda lame, but I can't reuse Glyph.metrics() directly because I want the
         // offset_x and offset_y too, and returning it gave a weird regression.
         let bounds = glyph.bounds.scale(scale);
-        let mut offset_x = fract(bounds.xmin);
-        if is_negative(offset_x) {
-            offset_x += 1.0;
-        }
         let height = scale * glyph.height;
-        let mut offset_y = ceil(height) - height - fract(bounds.ymin);
-        if is_negative(offset_y) {
-            offset_y += 1.0;
-        }
+        let (offset_x, offset_y) = if self.settings.enable_offset_bounding_box {
+            let mut offset_x = fract(bounds.xmin);
+            if is_negative(offset_x) {
+                offset_x += 1.0;
+            }
+            let mut offset_y = ceil(height) - height - fract(bounds.ymin);
+            if is_negative(offset_y) {
+                offset_y += 1.0;
+            }
+            (offset_x, offset_y)
+        } else {
+            (0.0, 0.0)
+        };
         let metrics = Metrics {
             width: as_i32(ceil(scale * glyph.width + offset_x)) as usize,
             height: as_i32(ceil(height + offset_y)) as usize,
@@ -356,15 +373,9 @@ impl Font {
             bounds,
         };
 
-        // Fast path for people rendering whitespace on accident.
-        let bitmap = if metrics.width > 0 {
-            let mut canvas = Raster::new(metrics.width, metrics.height);
-            canvas.draw(&glyph.geometry, scale, offset_x, offset_y);
-            canvas.get_bitmap()
-        } else {
-            Vec::new()
-        };
-        (metrics, bitmap)
+        let mut canvas = Raster::new(metrics.width, metrics.height);
+        canvas.draw(&glyph.geometry, scale, offset_x, offset_y);
+        (metrics, canvas.get_bitmap())
     }
 
     /// Finds the internal glyph index for the given character. If the character is not present in

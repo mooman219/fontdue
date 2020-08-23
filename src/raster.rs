@@ -24,10 +24,11 @@ impl Raster {
     }
 
     pub fn draw(&mut self, geometry: &Geometry, scale: f32, offset_x: f32, offset_y: f32) {
+        let params = f32x4::new(1.0 / scale, 1.0 / scale, scale, scale);
         let scale = f32x4::splat(scale);
         let offset = f32x4::new(offset_x, offset_y, offset_x, offset_y);
         for line in &geometry.lines {
-            self.line(line, line.coords * scale + offset);
+            self.line(line, line.coords * scale + offset, line.params * params);
         }
     }
 
@@ -47,21 +48,14 @@ impl Raster {
     }
 
     #[inline(always)]
-    fn line(&mut self, line: &Line, coords: f32x4) {
+    fn line(&mut self, line: &Line, coords: f32x4, params: f32x4) {
         let (x0, y0, x1, y1) = coords.copied();
         let (start_x, start_y, end_x, end_y) = coords.sub_integer(line.nudge).trunc().copied();
         let (mut target_x, mut target_y, _, _) =
             (coords + line.adjustment).sub_integer(line.nudge).trunc().copied();
-        let dx = x1 - x0;
-        let dy = y1 - y0;
-        let sx = copysign(1f32, dx);
-        let sy = copysign(1f32, dy);
-        let tdx = if dx == 0.0 {
-            1048576.0 // 2^20, doesn't really matter.
-        } else {
-            1.0 / dx
-        };
-        let tdy = 1.0 / dy;
+        let (tdx, tdy, dx, dy) = params.copied();
+        let sx = copysign(1f32, tdx);
+        let sy = copysign(1f32, tdy);
         let mut tmx = tdx * (target_x - x0);
         let mut tmy = tdy * (target_y - y0);
         let tdx = abs(tdx);
@@ -73,7 +67,7 @@ impl Raster {
         let index_y_inc = as_i32(copysign(self.w as f32, sy));
         // The (tmx < 1.0 || tmy < 1.0) condition does not work due to rounding errors in f32, so
         // dist is used instead to cap the iteration count.
-        let mut dist = as_i32(abs(start_x - end_x) + abs(start_y - end_y)) as u32;
+        let mut dist = as_i32(abs(start_x - end_x) + abs(start_y - end_y));
         while dist > 0 {
             dist -= 1;
             let prev_index = index;
