@@ -90,10 +90,10 @@ rusttype 0.9.2 metrics + rasterize 'g'/40 time: [4.3557 us 4.3595 us 4.3636 us]
 rusttype 0.9.2 metrics + rasterize 'g'/60 time: [6.7007 us 6.7073 us 6.7140 us]
 rusttype 0.9.2 metrics + rasterize 'g'/80 time: [10.021 us 10.031 us 10.040 us]
 
-fontdue latest metrics + rasterize 'g'/20 time: [0.8983 us 0.8994 us 0.9007 us]
-fontdue latest metrics + rasterize 'g'/40 time: [1.3733 us 1.3750 us 1.3771 us]
-fontdue latest metrics + rasterize 'g'/60 time: [1.9720 us 1.9785 us 1.9862 us]
-fontdue latest metrics + rasterize 'g'/80 time: [2.7242 us 2.7303 us 2.7376 us]
+fontdue latest metrics + rasterize 'g'/20 time: [0.8599 us 0.8608 us 0.8619 us]
+fontdue latest metrics + rasterize 'g'/40 time: [1.3236 us 1.3254 us 1.3277 us]
+fontdue latest metrics + rasterize 'g'/60 time: [1.9306 us 1.9342 us 1.9385 us]
+fontdue latest metrics + rasterize 'g'/80 time: [2.6937 us 2.6988 us 2.7051 us]
 ```
 
 ### Rich Layout
