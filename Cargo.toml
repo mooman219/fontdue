@@ -1,6 +1,6 @@
 [package]
 name = "fontdue"
-version = "0.2.0"
+version = "0.2.1"
 authors = ["Joe Cumbo <mooman219@gmail.com>"]
 license = "MIT"
 documentation = "https://docs.rs/fontdue"
