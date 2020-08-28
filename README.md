@@ -5,11 +5,9 @@
 [![Crates.io](https://img.shields.io/crates/v/fontdue.svg)](https://crates.io/crates/fontdue)
 [![License](https://img.shields.io/crates/l/fontdue.svg)](https://github.com/mooman219/fontdue/blob/master/LICENSE)
 
-Fontdue is a simple, `no_std`, pure Rust, truetype font parser and rasterizer. It aims to support all valid (unicode encoded) TrueType fonts correctly, and strives to make interacting with fonts as fast as possible. This includes: layout and rasterization.
+Fontdue is a simple, `no_std`, pure Rust, TrueType & OpenType font rasterizer and layout tool. It strives to make interacting with fonts as fast as possible.
 
 A non-goal of this library is to be allocation free and have a fast, "zero cost" initial load. This library _does_ make allocations and depends on the `alloc` crate. Fonts are fully parsed on creation and relevant information is stored in a more convenient to access format. Unlike other font libraries, the font structures have no lifetime dependencies since it allocates its own space.
-
-Ideally, font loading should be faster in the future, but making the loading process correct and readable was the initial priority.
 
 ## Important Notices
 
@@ -19,26 +17,11 @@ Please bear with me on new features or quirks that you find. I will definitely g
 
 ### Reusing Fontdue code
 
-Please don't reuse `Fontdue`'s raster code directly in your project. `Fontdue` uses **unsafe** code in the rasterizer, and the rasterizer itself is **very not safe** to use on its own with un-sanitized input.
+Please don't reuse `fontdue`'s raster code directly in your project. `fontdue` uses **unsafe** code in the rasterizer, and the rasterizer itself is **very not safe** to use on its own with un-sanitized input.
 
-If you're looking to reuse that code in your project (with the appropriate licensing and attribution), please be aware of the effort that went into making it safe. `Fontdue` itself does not expose the raw raster in its API because it performs the necessary sanitization to use it safely for you, and has been fuzzed for bugs in the process.
+## TrueType & OpenType Table Support
 
-## TrueType Table Support
-- `cmap` Character to glyph mapping (Unicode only)
-  - Supported formats: 0, 4, 6, 10, 12, 13
-  - Unsupported formats: 2, 8, 14
-- `glyf` Glyph outlining
-  - Unsupported features: Compound glyph matched points, compound glyph scaled offset
-- `head` General font information
-- `hhea` General horizontal layout (Optional)
-- `hmtx` Glyph horizontal layout (Optional)
-- `vhea` General vertical layout (Optional)
-- `vmtx` Glyph vertical layout (Optional)
-- `loca` Glyph outline offsets and lengths
-- `maxp` Maximum values used for the font
-- `kern` Kerning pair layout (Optional)
-  - Supported formats: 0
-  - Unsupported formats: 1, 2, 3
+Fontdue now depends on `ttf-parser` ([link](https://github.com/RazrFalcon/ttf-parser)). There is a lot of work involved in parsing font tables, and I only had the resolve to write a parser for TypeType. The wonderful developer on `ttf-parser` has done a lot of great work and supports some OpenType tables, so I opted to use that library.
 
 ## Example
 
@@ -82,7 +65,9 @@ layout.layout_horizontal(fonts, styles, &settings, &mut output);
 
 ### Metrics + Rasterize
 
-This benchmark measures the time it takes to generate the glyph metrics and bitmap for the letter 'g' over a range of sizes. This is using the idiomatic APIs for both `rusttype` [(link)](https://gitlab.redox-os.org/redox-os/rusttype) and `fontdue`, and represents realworld performance. `rusttype` and `glyph_brush` [(link)](https://github.com/alexheretic/glyph-brush/tree/master/glyph-brush) uses `ab_glyph` [(link)](https://github.com/alexheretic/ab-glyph) as its rasterizer which is a clone of `font-rs` [(link)](https://github.com/raphlinus/font-rs). This benchmarks is also representative of `glyph_brush` performance. Older versions of `rusttype` use a naive rasterizer that's roughly 10x slower than `fontdue`.
+This benchmark measures the time it takes to generate the glyph metrics and bitmap for the letter 'g' over a range of sizes. This is using the idiomatic APIs for both `rusttype` [(link)](https://gitlab.redox-os.org/redox-os/rusttype) and `fontdue`, and represents realworld performance.
+
+This benchmarks is also representative of `glyph_brush` [(link)](https://github.com/alexheretic/glyph-brush/tree/master/glyph-brush) and `ab_glyph` [(link)](https://github.com/alexheretic/ab-glyph), as `rusttype`, `glyph_brush`, and `ab_glyph` use the same rasterizer from `font-rs` [(link)](https://github.com/raphlinus/font-rs). Older versions of `rusttype` use a naive rasterizer that's roughly 10x slower than `fontdue`.
 
 ```
 rusttype 0.9.2 metrics + rasterize 'g'/20 time: [2.6128 us 2.6150 us 2.6171 us]

@@ -1,5 +1,4 @@
 use crate::platform::{abs, atan, f32x4};
-use crate::raw::RawPoint;
 use crate::{FontSettings, AABB};
 use alloc::vec::*;
 
@@ -50,6 +49,15 @@ pub struct Point {
     pub y: f32,
 }
 
+impl Default for Point {
+    fn default() -> Self {
+        Point {
+            x: 0.0,
+            y: 0.0,
+        }
+    }
+}
+
 impl Point {
     pub fn new(x: f32, y: f32) -> Point {
         Point {
@@ -58,18 +66,11 @@ impl Point {
         }
     }
 
-    pub fn raw(p: &RawPoint) -> Point {
-        Point {
-            x: p.x,
-            y: p.y,
-        }
-    }
-
-    pub fn midpoint_raw(a: &RawPoint, b: &RawPoint) -> Point {
-        Point {
-            x: (a.x + b.x) / 2.0,
-            y: (a.y + b.y) / 2.0,
-        }
+    pub fn offset(&self, settings: &FontSettings) -> Point {
+        let mut new = *self;
+        new.x += settings.offset_x;
+        new.y += settings.offset_y;
+        new
     }
 }
 
@@ -146,98 +147,72 @@ impl Line {
     }
 }
 
+#[derive(Clone)]
 pub struct Geometry {
     pub lines: Vec<Line>,
     pub effective_bounds: Option<AABB>,
+    pub previous: Point,
+    pub settings: FontSettings,
 }
 
-impl Geometry {
-    pub fn new(points: &[RawPoint], settings: &FontSettings) -> Geometry {
-        let mut geometry = Geometry {
-            lines: Vec::new(),
-            effective_bounds: None,
-        };
-
-        let mut first = RawPoint::default();
-        let mut second = RawPoint::default();
-        let mut previous = RawPoint::default();
-        let mut current = RawPoint::default();
-        let mut index = 0;
-        for next in points {
-            let next = next.offset(settings.offset_x, settings.offset_y);
-            match index {
-                0 => {
-                    first = next;
-                    previous = next;
-                }
-                1 => {
-                    second = next;
-                    current = next;
-                }
-                _ => {
-                    geometry.populate_lines(&previous, &current, &next);
-                    if next.end_point {
-                        geometry.populate_lines(&current, &next, &first);
-                        geometry.populate_lines(&next, &first, &second);
-                        index = -1;
-                    } else {
-                        previous = current;
-                        current = next;
-                    }
-                }
-            }
-            index += 1;
-        }
-
-        // Repositioning.
-        if let Some(bounds) = geometry.effective_bounds {
-            for line in &mut geometry.lines {
-                line.reposition(bounds);
-            }
-        }
-
-        geometry
+impl ttf_parser::OutlineBuilder for Geometry {
+    fn move_to(&mut self, x0: f32, y0: f32) {
+        self.previous = Point::new(x0, y0).offset(&self.settings);
     }
 
-    fn populate_lines(&mut self, previous: &RawPoint, current: &RawPoint, next: &RawPoint) {
+    fn line_to(&mut self, x0: f32, y0: f32) {
+        let current = Point::new(x0, y0).offset(&self.settings);
+        self.push(self.previous, current);
+        self.previous = current;
+    }
+
+    fn quad_to(&mut self, x0: f32, y0: f32, x1: f32, y1: f32) {
+        let current = Point::new(x0, y0).offset(&self.settings);
+        let next = Point::new(x1, y1).offset(&self.settings);
+
         const MAX_ANGLE: f32 = 17.0;
         const SUBDIVISIONS: u32 = 20;
         const INCREMENT: f32 = 1.0 / (1.0 + SUBDIVISIONS as f32);
-
-        if !current.on_curve() {
-            // Curve. We're off the curve, find the on-curve positions for the previous and next points
-            // then make a curve out of that.
-            let previous = if previous.on_curve() {
-                Point::raw(&previous)
-            } else {
-                Point::midpoint_raw(&previous, current)
-            };
-            let next = if next.on_curve() {
-                Point::raw(&next)
-            } else {
-                Point::midpoint_raw(current, &next)
-            };
-            let current = Point::raw(current);
-            let curve = Curve::new(previous, current, next);
-            let mut previous_point = previous;
-            let mut previous_angle = curve.angle(0.0);
-            for x in 1..=SUBDIVISIONS {
-                let t = INCREMENT * x as f32;
-                let temp_angle = curve.angle(t);
-                if abs(previous_angle - temp_angle) > MAX_ANGLE {
-                    previous_angle = temp_angle;
-                    let temp_point = curve.point(t);
-                    self.push(previous_point, temp_point);
-                    previous_point = temp_point;
-                }
+        let curve = Curve::new(self.previous, current, next);
+        let mut previous_point = self.previous;
+        let mut previous_angle = curve.angle(0.0);
+        for x in 1..=SUBDIVISIONS {
+            let t = INCREMENT * x as f32;
+            let temp_angle = curve.angle(t);
+            if abs(previous_angle - temp_angle) > MAX_ANGLE {
+                previous_angle = temp_angle;
+                let temp_point = curve.point(t);
+                self.push(previous_point, temp_point);
+                previous_point = temp_point;
             }
-            self.push(previous_point, next);
-        } else if next.on_curve() {
-            // Line. Both the current and the next point are on the curve, it's a line.
-            self.push(Point::raw(current), Point::raw(next));
-        } else {
-            // Do nothing. The current point is on the curve but the next one isn't, so the next point
-            // will end up drawing the curve that the current point is on.
+        }
+        self.push(previous_point, next);
+
+        self.previous = next;
+    }
+
+    fn curve_to(&mut self, _: f32, _: f32, _: f32, _: f32, x2: f32, y2: f32) {
+        self.previous = Point::new(x2, y2).offset(&self.settings);
+    }
+
+    fn close(&mut self) {}
+}
+
+impl Geometry {
+    pub fn new(settings: FontSettings) -> Geometry {
+        Geometry {
+            lines: Vec::new(),
+            effective_bounds: None,
+            previous: Point::default(),
+            settings,
+        }
+    }
+
+    pub fn reposition(&mut self) {
+        if let Some(bounds) = self.effective_bounds {
+            for line in &mut self.lines {
+                line.reposition(bounds);
+            }
         }
     }
 

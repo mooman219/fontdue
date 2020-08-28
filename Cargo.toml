@@ -1,6 +1,6 @@
 [package]
 name = "fontdue"
-version = "0.2.1"
+version = "0.2.2"
 authors = ["Joe Cumbo <mooman219@gmail.com>"]
 license = "MIT"
 documentation = "https://docs.rs/fontdue"
@@ -17,6 +17,7 @@ exclude = ["resources/**", "examples/**", "fontdue.pgm"]
 maintenance = { status = "experimental" }
 
 [dependencies]
+ttf-parser = {version = "0.8", default-features = false}
 hashbrown = "0.8"
 
 [dev-dependencies]

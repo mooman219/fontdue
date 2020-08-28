@@ -1,12 +1,12 @@
 use crate::layout::GlyphRasterConfig;
-use crate::math::Geometry;
+use crate::math::{Geometry, Line};
 use crate::platform::{as_i32, ceil, fract, is_negative};
 use crate::raster::Raster;
-use crate::raw::RawFont;
 use crate::FontResult;
+use alloc::vec;
 use alloc::vec::*;
 use core::mem;
-use core::num::NonZeroU32;
+use core::num::NonZeroU16;
 use core::ops::Deref;
 use hashbrown::HashMap;
 
@@ -21,6 +21,17 @@ pub struct AABB {
     pub ymin: f32,
     /// Coordinate of the top-most edge.
     pub ymax: f32,
+}
+
+impl Default for AABB {
+    fn default() -> Self {
+        AABB {
+            xmin: 0.0,
+            xmax: 0.0,
+            ymin: 0.0,
+            ymax: 0.0,
+        }
+    }
 }
 
 impl AABB {
@@ -115,13 +126,27 @@ impl LineMetrics {
     }
 }
 
+#[derive(Clone)]
 struct Glyph {
-    geometry: Geometry,
+    lines: Vec<Line>,
     width: f32,
     height: f32,
     advance_width: f32,
     advance_height: f32,
     bounds: AABB,
+}
+
+impl Default for Glyph {
+    fn default() -> Self {
+        Glyph {
+            lines: Vec::new(),
+            width: 0.0,
+            height: 0.0,
+            advance_width: 0.0,
+            advance_height: 0.0,
+            bounds: AABB::default(),
+        }
+    }
 }
 
 impl Glyph {
@@ -167,6 +192,8 @@ pub struct FontSettings {
     /// bounding box. This is required for laying out glyphs correctly, but can be disabled to make
     /// some incorrect fonts crisper.
     pub enable_offset_bounding_box: bool,
+    /// The default is 0. The index of the font to use if parsing a font collection.
+    pub collection_index: u32,
 }
 
 impl Default for FontSettings {
@@ -175,6 +202,7 @@ impl Default for FontSettings {
             offset_x: 0.0,
             offset_y: 0.0,
             enable_offset_bounding_box: true,
+            collection_index: 0,
         }
     }
 }
@@ -183,7 +211,7 @@ impl Default for FontSettings {
 pub struct Font {
     units_per_em: f32,
     glyphs: Vec<Glyph>,
-    char_to_glyph: HashMap<u32, NonZeroU32>,
+    char_to_glyph: HashMap<u32, NonZeroU16>,
     horizontal_line_metrics: Option<LineMetrics>,
     vertical_line_metrics: Option<LineMetrics>,
     settings: FontSettings,
@@ -192,50 +220,66 @@ pub struct Font {
 impl Font {
     /// Constructs a font from an array of bytes.
     pub fn from_bytes<Data: Deref<Target = [u8]>>(data: Data, settings: FontSettings) -> FontResult<Font> {
-        let mut raw = RawFont::new(data)?;
+        let face = match ttf_parser::Face::from_slice(&data, settings.collection_index) {
+            Ok(f) => f,
+            Err(_) => return Err("Malformed font."),
+        };
 
-        let mut glyphs = Vec::with_capacity(raw.glyf.glyphs.len());
-        for glyph in &mut raw.glyf.glyphs {
-            let geometry = Geometry::new(&glyph.points, &settings);
-            let advance_width = if let Some(hmtx) = &raw.hmtx {
-                let hmetric = hmtx.hmetrics[glyph.metrics];
-                hmetric.advance_width as f32
-            } else {
-                0.0
-            };
-            let advance_height = if let Some(vmtx) = &raw.vmtx {
-                let vmetric = vmtx.vmetrics[glyph.metrics];
-                vmetric.advance_height as f32
-            } else {
-                0.0
-            };
-            let bounds = geometry.effective_bounds.unwrap_or(AABB::new(0.0, 0.0, 0.0, 0.0));
-            glyphs.push(Glyph {
-                geometry,
-                width: bounds.xmax - bounds.xmin,
-                height: bounds.ymax - bounds.ymin,
-                advance_width,
-                advance_height,
-                bounds,
+        // Collect all the unique codepoint to glyph mappings.
+        let mut char_to_glyph = HashMap::new();
+        for subtable in face.character_mapping_subtables() {
+            subtable.codepoints(|codepoint| {
+                let mapping = match subtable.glyph_index(codepoint) {
+                    Some(id) => id.0,
+                    None => 0,
+                };
+                char_to_glyph.insert(codepoint, unsafe { NonZeroU16::new_unchecked(mapping) });
             });
         }
 
+        // Parse and store all unique codepoints.
+        let glyph_count = face.number_of_glyphs() as usize;
+        let mut glyphs: Vec<Glyph> = vec::from_elem(Glyph::default(), glyph_count);
+        for (_, mapping) in &char_to_glyph {
+            let mapping = unsafe { mem::transmute::<NonZeroU16, u16>(*mapping) as usize };
+            let glyph_id = ttf_parser::GlyphId(mapping as u16);
+            let glyph = &mut glyphs[mapping];
+            if let Some(advance_width) = face.glyph_hor_advance(glyph_id) {
+                glyph.advance_width = advance_width as f32;
+            }
+            if let Some(advance_height) = face.glyph_ver_advance(glyph_id) {
+                glyph.advance_height = advance_height as f32;
+            }
+
+            let mut geometry = Geometry::new(settings);
+            face.outline_glyph(glyph_id, &mut geometry);
+            geometry.reposition();
+            let bounds = geometry.effective_bounds.unwrap_or(AABB::default());
+            glyph.width = bounds.xmax - bounds.xmin;
+            glyph.height = bounds.ymax - bounds.ymin;
+            glyph.bounds = bounds;
+            glyph.lines = geometry.lines;
+        }
+
         // New line metrics.
-        let horizontal_line_metrics = if let Some(hhea) = &raw.hhea {
-            Some(LineMetrics::new(hhea.ascent, hhea.descent, hhea.line_gap))
-        } else {
-            None
-        };
-        let vertical_line_metrics = if let Some(vhea) = &raw.vhea {
-            Some(LineMetrics::new(vhea.ascent, vhea.descent, vhea.line_gap))
+        let horizontal_line_metrics =
+            Some(LineMetrics::new(face.ascender(), face.descender(), face.line_gap()));
+        let vertical_line_metrics = if let Some(ascender) = face.vertical_ascender() {
+            Some(LineMetrics::new(
+                ascender,
+                face.vertical_descender().unwrap_or(0),
+                face.vertical_line_gap().unwrap_or(0),
+            ))
         } else {
             None
         };
 
+        let units_per_em = face.units_per_em().unwrap_or(1000) as f32;
+
         Ok(Font {
             glyphs,
-            char_to_glyph: raw.cmap.map.clone(),
-            units_per_em: raw.head.units_per_em as f32,
+            char_to_glyph,
+            units_per_em,
             horizontal_line_metrics,
             vertical_line_metrics,
             settings,
@@ -374,7 +418,7 @@ impl Font {
         };
 
         let mut canvas = Raster::new(metrics.width, metrics.height);
-        canvas.draw(&glyph.geometry, scale, offset_x, offset_y);
+        canvas.draw(&glyph.lines, scale, offset_x, offset_y);
         (metrics, canvas.get_bitmap())
     }
 
@@ -383,7 +427,7 @@ impl Font {
     #[inline]
     pub fn lookup_glyph_index(&self, character: char) -> usize {
         unsafe {
-            mem::transmute::<Option<NonZeroU32>, u32>(self.char_to_glyph.get(&(character as u32)).copied())
+            mem::transmute::<Option<NonZeroU16>, u16>(self.char_to_glyph.get(&(character as u32)).copied())
                 as usize
         }
     }

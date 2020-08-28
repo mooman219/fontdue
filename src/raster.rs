@@ -1,4 +1,4 @@
-use crate::math::{Geometry, Line};
+use crate::math::Line;
 use crate::platform::{abs, as_i32, copysign, f32x4, fract};
 use alloc::vec;
 use alloc::vec::*;
@@ -23,11 +23,11 @@ impl Raster {
         }
     }
 
-    pub fn draw(&mut self, geometry: &Geometry, scale: f32, offset_x: f32, offset_y: f32) {
+    pub fn draw(&mut self, lines: &Vec<Line>, scale: f32, offset_x: f32, offset_y: f32) {
         let params = f32x4::new(1.0 / scale, 1.0 / scale, scale, scale);
         let scale = f32x4::splat(scale);
         let offset = f32x4::new(offset_x, offset_y, offset_x, offset_y);
-        for line in &geometry.lines {
+        for line in lines {
             self.line(line, line.coords * scale + offset, line.params * params);
         }
     }
