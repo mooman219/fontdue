@@ -5,23 +5,9 @@
 [![Crates.io](https://img.shields.io/crates/v/fontdue.svg)](https://crates.io/crates/fontdue)
 [![License](https://img.shields.io/crates/l/fontdue.svg)](https://github.com/mooman219/fontdue/blob/master/LICENSE)
 
-Fontdue is a simple, `no_std`, pure Rust, TrueType & OpenType font rasterizer and layout tool. It strives to make interacting with fonts as fast as possible.
+Fontdue is a simple, `no_std`, pure Rust, TrueType (`.ttf/.ttc`) & OpenType (`.otf`) font rasterizer and layout tool. It strives to make interacting with fonts as fast as possible. 
 
 A non-goal of this library is to be allocation free and have a fast, "zero cost" initial load. This library _does_ make allocations and depends on the `alloc` crate. Fonts are fully parsed on creation and relevant information is stored in a more convenient to access format. Unlike other font libraries, the font structures have no lifetime dependencies since it allocates its own space.
-
-## Important Notices
-
-### Maintenance
-
-Please bear with me on new features or quirks that you find. I will definitely get to issues you open (also thank you for opening them), but I don't have as much time as I would like to work on fontdue so please be paitent, this is a mostly solo project <3.
-
-### Reusing Fontdue code
-
-Please don't reuse `fontdue`'s raster code directly in your project. `fontdue` uses **unsafe** code in the rasterizer, and the rasterizer itself is **very not safe** to use on its own with un-sanitized input.
-
-## TrueType & OpenType Table Support
-
-Fontdue now depends on `ttf-parser` ([link](https://github.com/RazrFalcon/ttf-parser)). There is a lot of work involved in parsing font tables, and I only had the resolve to write a parser for TypeType. The wonderful developer on `ttf-parser` has done a lot of great work and supports some OpenType tables, so I opted to use that library.
 
 ## Example
 
@@ -76,6 +62,20 @@ Older versions of `rusttype` use a naive rasterizer that's roughly 10x slower th
 This benchmark measures the time it takes to layout latin characters of sample text with wrapping on word boundaries. This is using the idiomatic APIs for both `glyph_brush_layout` [(link)](https://github.com/alexheretic/glyph-brush/tree/master/layout) and `fontdue`.
 
 ![Layout benchmarks](/images/layout.png)
+
+## Important Notices
+
+### Maintenance
+
+Please bear with me on new features or quirks that you find. I will definitely get to issues you open (also thank you for opening them), but I don't have as much time as I would like to work on fontdue so please be paitent, this is a mostly solo project <3.
+
+### Reusing Fontdue code
+
+Please don't reuse `fontdue`'s raster code directly in your project. `fontdue` uses **unsafe** code in the rasterizer, and the rasterizer itself is **very not safe** to use on its own with un-sanitized input.
+
+## TrueType & OpenType Table Support
+
+Fontdue now depends on `ttf-parser` ([link](https://github.com/RazrFalcon/ttf-parser)). There is a lot of work involved in parsing font tables, and I only had the resolve to write a parser for TypeType. The wonderful developer on `ttf-parser` has done a lot of great work and supports some OpenType tables, so I opted to use that library.
 
 ## Attribution
 
