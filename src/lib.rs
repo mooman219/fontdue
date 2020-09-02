@@ -11,7 +11,6 @@ mod font;
 /// Tools for laying out strings of text.
 pub mod layout;
 mod math;
-mod parse;
 mod platform;
 mod raster;
 mod unicode;

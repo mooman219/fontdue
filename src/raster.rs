@@ -3,11 +3,6 @@ use crate::platform::{abs, as_i32, copysign, f32x4, fract};
 use alloc::vec;
 use alloc::vec::*;
 
-#[cfg(target_arch = "x86")]
-use core::arch::x86::*;
-#[cfg(target_arch = "x86_64")]
-use core::arch::x86_64::*;
-
 pub struct Raster {
     w: usize,
     h: usize,
@@ -93,59 +88,8 @@ impl Raster {
         self.add(as_i32(end_x + end_y * self.w as f32) as usize, y_prev - y1, (x_prev + x1) / 2.0);
     }
 
-    #[cfg(not(any(target_arch = "x86", target_arch = "x86_64")))]
+    #[inline(always)]
     pub fn get_bitmap(&self) -> Vec<u8> {
-        let length = self.w * self.h;
-        let mut height = 0.0;
-        assert!(length <= self.a.len());
-        let mut output = vec![0; length];
-        for i in 0..length {
-            unsafe {
-                height += self.a.get_unchecked(i);
-                *(output.get_unchecked_mut(i)) = ((height) * 255.9) as u8;
-            }
-        }
-        output
-    }
-
-    #[cfg(any(target_arch = "x86", target_arch = "x86_64"))]
-    pub fn get_bitmap(&self) -> Vec<u8> {
-        let length = self.w * self.h;
-        let aligned_length = (length + 3) & !3;
-        assert!(aligned_length <= self.a.len());
-        // Turns out zeroing takes a while on very large sizes.
-        let mut output = Vec::with_capacity(aligned_length);
-        unsafe {
-            output.set_len(aligned_length);
-            // offset = Zeroed out lanes
-            let mut offset = _mm_setzero_ps();
-            // lookup = The 4 bytes (12, 8, 4, 0) in all lanes
-            let lookup = _mm_set1_epi32(0x0c_08_04_00);
-            for i in (0..aligned_length).step_by(4) {
-                // x = Read 4 floats from self.a
-                let mut x = _mm_loadu_ps(self.a.get_unchecked(i));
-                // x += (0.0, x[0], x[1], x[2])
-                x = _mm_add_ps(x, _mm_castsi128_ps(_mm_slli_si128(_mm_castps_si128(x), 4)));
-                // x += (0.0, 0.0, x[0], x[1])
-                x = _mm_add_ps(x, _mm_castsi128_ps(_mm_slli_si128(_mm_castps_si128(x), 8)));
-                // x += offset
-                x = _mm_add_ps(x, offset);
-
-                // y = x * 255.9
-                let y = _mm_mul_ps(x, _mm_set1_ps(255.9));
-                // y = Convert y to i32s and truncate
-                let mut y = _mm_cvttps_epi32(y);
-                // (SSSE3) y = Take the first byte of each of the 4 values in y and pack them into
-                // the first 4 bytes of y. This produces the same value in all 4 lanes.
-                y = _mm_shuffle_epi8(y, lookup);
-
-                // Store the first 4 u8s from y in output. The cast again is a nop.
-                _mm_store_ss(core::mem::transmute(output.get_unchecked_mut(i)), _mm_castsi128_ps(y));
-                // offset = (x[3], x[3], x[3], x[3])
-                offset = _mm_set1_ps(core::mem::transmute::<__m128, [f32; 4]>(x)[3]);
-            }
-        }
-        output.truncate(length);
-        output
+        crate::platform::get_bitmap(&self.a, self.w * self.h)
     }
 }

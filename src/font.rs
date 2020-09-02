@@ -194,6 +194,11 @@ pub struct FontSettings {
     pub enable_offset_bounding_box: bool,
     /// The default is 0. The index of the font to use if parsing a font collection.
     pub collection_index: u32,
+    /// The default is 40. The scale in px the font geometry is optimized for. Fonts rendered at
+    /// the scale defined here will be the most optimal in terms of looks and performance. Glyphs
+    /// rendered smaller than this scale will look the same but perform slightly worse, while
+    /// glyphs rendered larger than this will looks worse but perform slightly better.
+    pub scale: f32,
 }
 
 impl Default for FontSettings {
@@ -203,6 +208,7 @@ impl Default for FontSettings {
             offset_y: 0.0,
             enable_offset_bounding_box: true,
             collection_index: 0,
+            scale: 40.0,
         }
     }
 }
@@ -220,10 +226,18 @@ pub struct Font {
 impl Font {
     /// Constructs a font from an array of bytes.
     pub fn from_bytes<Data: Deref<Target = [u8]>>(data: Data, settings: FontSettings) -> FontResult<Font> {
-        let face = match ttf_parser::Face::from_slice(&data, settings.collection_index) {
+        use ttf_parser::{Face, GlyphId, TableName};
+        let face = match Face::from_slice(&data, settings.collection_index) {
             Ok(f) => f,
             Err(_) => return Err("Malformed font."),
         };
+        let reverse_points =
+            if face.has_table(TableName::GlyphVariations) || face.has_table(TableName::GlyphData) {
+                false
+            } else {
+                true
+            };
+        let units_per_em = face.units_per_em().unwrap_or(1000) as f32;
 
         // Collect all the unique codepoint to glyph mappings.
         let mut char_to_glyph = HashMap::new();
@@ -242,7 +256,7 @@ impl Font {
         let mut glyphs: Vec<Glyph> = vec::from_elem(Glyph::default(), glyph_count);
         for (_, mapping) in &char_to_glyph {
             let mapping = unsafe { mem::transmute::<NonZeroU16, u16>(*mapping) as usize };
-            let glyph_id = ttf_parser::GlyphId(mapping as u16);
+            let glyph_id = GlyphId(mapping as u16);
             let glyph = &mut glyphs[mapping];
             if let Some(advance_width) = face.glyph_hor_advance(glyph_id) {
                 glyph.advance_width = advance_width as f32;
@@ -251,7 +265,7 @@ impl Font {
                 glyph.advance_height = advance_height as f32;
             }
 
-            let mut geometry = Geometry::new(settings);
+            let mut geometry = Geometry::new(settings, reverse_points);
             face.outline_glyph(glyph_id, &mut geometry);
             geometry.reposition();
             let bounds = geometry.effective_bounds.unwrap_or(AABB::default());
@@ -273,8 +287,6 @@ impl Font {
         } else {
             None
         };
-
-        let units_per_em = face.units_per_em().unwrap_or(1000) as f32;
 
         Ok(Font {
             glyphs,

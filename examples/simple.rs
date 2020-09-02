@@ -2,13 +2,18 @@ use std::fs::File;
 use std::io::Write;
 
 // Scratch pad for glyphs: ⅞ g
-const CHARACTER: char = 'g';
-const SIZE: f32 = 50.0;
+const CHARACTER: char = 'd';
+const SIZE: f32 = 500.0;
 
+// cargo run --example simple --release
 pub fn main() {
     // Loading and rasterization
     let font = include_bytes!("../resources/Roboto-Regular.ttf") as &[u8];
-    let font = fontdue::Font::from_bytes(font, fontdue::FontSettings::default()).unwrap();
+    let settings = fontdue::FontSettings {
+        scale: SIZE,
+        ..fontdue::FontSettings::default()
+    };
+    let font = fontdue::Font::from_bytes(font, settings).unwrap();
     let (metrics, bitmap) = font.rasterize(CHARACTER, SIZE);
 
     // Output

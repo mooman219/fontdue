@@ -5,8 +5,9 @@ use criterion::{BenchmarkId, Criterion};
 use fontdue::layout::{Layout, LayoutSettings, TextStyle};
 use glyph_brush_layout::{ab_glyph::*, *};
 
-const MESSAGE: &str = "Lorem ipsum is a pseudo-Latin text used in web design, typography, layout, and printing in place of English to emphasise design elements over content. Lorem ipsum is a pseudo-Latin text used in web design, typography, layout, and printing in place of English to emphasise design elements over content.\n:D";
-// const MESSAGE: &str = "This is a short ASCII string.";
+const MESSAGES: [&str; 3] = ["Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore ", "Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Tempor orci eu lobortis elementum nibh tellus. Mi tempus imperdiet nulla malesuada pellentesque elit eget gravida cum. Non nisi est sit amet facilisis magna etiam tempor. In fermentum et sollicitudin ac. Nunc consequat interdum varius sit amet mattis. Est velit egestas dui id ornare arcu odio ut. Venenatis lectus magna fringilla urna porttitor rhoncus dolor purus non. Lobor", "Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Feugiat nibh sed pulvinar proin gravida hendrerit. Duis ut diam quam nulla porttitor massa id neque. Lacus viverra vitae congue eu consequat ac felis. Etiam non quam lacus suspendisse faucibus. Eget mauris pharetra et ultrices neque ornare. Libero id faucibus nisl tincidunt eget nullam non. Justo laoreet sit amet cursus sit amet. Velit laoreet id donec ultrices tincidunt arcu non sodales neque.
+
+Aliquet nibh praesent tristique magna sit. Purus viverra accumsan in nisl nisi scelerisque. Tortor vitae purus faucibus ornare suspendisse sed nisi. Dolor sit amet consectetur adipiscing elit pellentesque habitant. Egestas purus viverra accumsan in nisl. Amet venenatis urna cursus eget nunc scelerisque. Dictumst quisque sagittis purus sit amet volutpat. Vel risus commodo viverra maecenas. Imperdiet nulla malesuada pellentesque elit eget gravida cum sociis natoque. Nibh ips"];
 
 fn fontdue_layout_benchmark(c: &mut Criterion) {
     // Loading
@@ -19,17 +20,19 @@ fn fontdue_layout_benchmark(c: &mut Criterion) {
         ..LayoutSettings::default()
     };
     let fonts = &[roboto_regular];
-    let styles = &[&TextStyle::new(MESSAGE, 20.0, 0)];
 
-    let mut group = c.benchmark_group(format!("fontdue layout '{}'", MESSAGE));
-    group.measurement_time(core::time::Duration::from_secs(5));
+    let mut group = c.benchmark_group("fontdue layout");
+    group.measurement_time(core::time::Duration::from_secs(4));
     group.sample_size(250);
-    group.bench_function(BenchmarkId::from_parameter(MESSAGE), |b| {
-        b.iter(|| {
-            layout.layout_horizontal(fonts, styles, &settings, &mut output);
-            output.len()
+    for message in MESSAGES.iter() {
+        let styles = &[&TextStyle::new(message, 20.0, 0)];
+        group.bench_with_input(BenchmarkId::from_parameter(message.len()), &message, |b, _| {
+            b.iter(|| {
+                layout.layout_horizontal(fonts, styles, &settings, &mut output);
+                output.len()
+            });
         });
-    });
+    }
     group.finish();
 }
 
@@ -42,22 +45,24 @@ fn glyph_brush_layout_benchmark(c: &mut Criterion) {
         screen_position: (0.0, 0.0),
         bounds: (200.0, f32::INFINITY),
     };
-    let styles = &[SectionText {
-        text: MESSAGE,
-        scale: PxScale::from(20.0),
-        font_id: FontId(0),
-    }];
     let layout = glyph_brush_layout::Layout::default();
 
-    let mut group = c.benchmark_group(format!("glyph_brush_layout layout '{}'", MESSAGE));
-    group.measurement_time(core::time::Duration::from_secs(5));
+    let mut group = c.benchmark_group("glyph_brush_layout layout");
+    group.measurement_time(core::time::Duration::from_secs(4));
     group.sample_size(250);
-    group.bench_function(BenchmarkId::from_parameter(MESSAGE), |b| {
-        b.iter(|| {
-            let output = layout.calculate_glyphs(fonts, settings, styles);
-            output.len()
+    for message in MESSAGES.iter() {
+        let styles = &[SectionText {
+            text: message,
+            scale: PxScale::from(20.0),
+            font_id: FontId(0),
+        }];
+        group.bench_with_input(BenchmarkId::from_parameter(message.len()), &message, |b, _| {
+            b.iter(|| {
+                let output = layout.calculate_glyphs(fonts, settings, styles);
+                output.len()
+            });
         });
-    });
+    }
     group.finish();
 }
 

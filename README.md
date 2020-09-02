@@ -25,7 +25,7 @@ Fontdue now depends on `ttf-parser` ([link](https://github.com/RazrFalcon/ttf-pa
 
 ## Example
 
-### Glyph Rasterization
+### Rasterization
 ```rust
 // Read the font data.
 let font = include_bytes!("../resources/Roboto-Regular.ttf") as &[u8];
@@ -63,33 +63,19 @@ layout.layout_horizontal(fonts, styles, &settings, &mut output);
 
 ## Performance
 
-### Metrics + Rasterize
+### Rasterization
 
-This benchmark measures the time it takes to generate the glyph metrics and bitmap for the letter 'g' over a range of sizes. This is using the idiomatic APIs for both `rusttype` [(link)](https://gitlab.redox-os.org/redox-os/rusttype) and `fontdue`, and represents realworld performance.
+This benchmark measures the time it takes to generate the glyph metrics and bitmap for the letter 'g' over a range of sizes. Lower is better. This is using the idiomatic APIs for `rusttype` [(link)](https://gitlab.redox-os.org/redox-os/rusttype), `ab_glyph` [(link)](https://github.com/alexheretic/ab-glyph), and `fontdue`.
 
-This benchmarks is also representative of `glyph_brush` [(link)](https://github.com/alexheretic/glyph-brush/tree/master/glyph-brush) and `ab_glyph` [(link)](https://github.com/alexheretic/ab-glyph), as `rusttype`, `glyph_brush`, and `ab_glyph` use the same rasterizer from `font-rs` [(link)](https://github.com/raphlinus/font-rs). Older versions of `rusttype` use a naive rasterizer that's roughly 10x slower than `fontdue`.
+![Rasterize benchmarks](/images/rasterize.png)
 
-```
-rusttype 0.9.2 metrics + rasterize 'g'/20 time: [2.6128 us 2.6150 us 2.6171 us]
-rusttype 0.9.2 metrics + rasterize 'g'/40 time: [4.3557 us 4.3595 us 4.3636 us]
-rusttype 0.9.2 metrics + rasterize 'g'/60 time: [6.7007 us 6.7073 us 6.7140 us]
-rusttype 0.9.2 metrics + rasterize 'g'/80 time: [10.021 us 10.031 us 10.040 us]
+Older versions of `rusttype` use a naive rasterizer that's roughly 10x slower than `fontdue`. The newer `rusttype` shares the same rasterizer as `ab_glyph` and `glyph_brush` [(link)](https://github.com/alexheretic/glyph-brush/tree/master/glyph-brush).
 
-fontdue latest metrics + rasterize 'g'/20 time: [0.8599 us 0.8608 us 0.8619 us]
-fontdue latest metrics + rasterize 'g'/40 time: [1.3236 us 1.3254 us 1.3277 us]
-fontdue latest metrics + rasterize 'g'/60 time: [1.9306 us 1.9342 us 1.9385 us]
-fontdue latest metrics + rasterize 'g'/80 time: [2.6937 us 2.6988 us 2.7051 us]
-```
+### Layout
 
-### Rich Layout
+This benchmark measures the time it takes to layout latin characters of sample text with wrapping on word boundaries. This is using the idiomatic APIs for both `glyph_brush_layout` [(link)](https://github.com/alexheretic/glyph-brush/tree/master/layout) and `fontdue`.
 
-This benchmark measures the time it takes to layout 300 characters of sample text with wrapping on word boundaries. This is using the idiomatic APIs for both `glyph_brush_layout` [(link)](https://github.com/alexheretic/glyph-brush/tree/master/layout) and `fontdue`, and represents realword performance.
-
-```
-glyph_brush_layout 0.2.0 layout time: [40.051 us 40.133 us 40.224 us]
-
-fontdue latest layout time:           [6.6665 us 6.6718 us 6.6777 us]
-```
+![Layout benchmarks](/images/layout.png)
 
 ## Attribution
 
