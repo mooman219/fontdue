@@ -5,7 +5,7 @@
 [![Crates.io](https://img.shields.io/crates/v/fontdue.svg)](https://crates.io/crates/fontdue)
 [![License](https://img.shields.io/crates/l/fontdue.svg)](https://github.com/mooman219/fontdue/blob/master/LICENSE)
 
-Fontdue is a simple, `no_std`, pure Rust, TrueType (`.ttf/.ttc`) & OpenType (`.otf`) font rasterizer and layout tool. It strives to make interacting with fonts as fast as possible. 
+Fontdue is a simple, `no_std`, pure Rust, TrueType (`.ttf/.ttc`) & OpenType (`.otf`) font rasterizer and layout tool. It strives to make interacting with fonts as fast as possible. This library is designed to be a replacement for `rusttype`, `ab_glyph`, and parts of `glyph_brush`.
 
 A non-goal of this library is to be allocation free and have a fast, "zero cost" initial load. This library _does_ make allocations and depends on the `alloc` crate. Fonts are fully parsed on creation and relevant information is stored in a more convenient to access format. Unlike other font libraries, the font structures have no lifetime dependencies since it allocates its own space.
 
@@ -63,7 +63,7 @@ This benchmark measures the time it takes to layout latin characters of sample t
 
 ![Layout benchmarks](/images/layout.png)
 
-## Important Notices
+## Notices
 
 ### Maintenance
 
@@ -73,10 +73,10 @@ Please bear with me on new features or quirks that you find. I will definitely g
 
 Please don't reuse `fontdue`'s raster code directly in your project. `fontdue` uses **unsafe** code in the rasterizer, and the rasterizer itself is **very not safe** to use on its own with un-sanitized input.
 
-## TrueType & OpenType Table Support
+### TrueType & OpenType Table Support
 
-Fontdue now depends on `ttf-parser` ([link](https://github.com/RazrFalcon/ttf-parser)). There is a lot of work involved in parsing font tables, and I only had the resolve to write a parser for TypeType. The wonderful developer on `ttf-parser` has done a lot of great work and supports some OpenType tables, so I opted to use that library.
+Fontdue depends on `ttf-parser` ([link](https://github.com/RazrFalcon/ttf-parser)) for parsing fonts, which supports a wide range of TrueType and OpenType features.
 
-## Attribution
+### Attribution
 
-`Fontdue` started as a slightly more production ready wrapper around `font-rs` [(link)](https://github.com/raphlinus/font-rs) because of how fast it made rasterization look, and how simple the wonderful `rusttype` [(link)](https://gitlab.redox-os.org/redox-os/rusttype) crate made font parsing look. Since then, I've done a few rewrites on the raster and it no longer shares any code or methodology to `font-rs`, but I feel like it still deservers some attribution. Instead of attempting to find the converage of a pixel, `fontdue` performs pseudo ray tracing collision detection on the geometry of the glyph with the pixel grid and estimates the shading.
+`Fontdue` started as a slightly more production ready wrapper around `font-rs` [(link)](https://github.com/raphlinus/font-rs) because of how fast it made rasterization look, and how simple the wonderful `rusttype` [(link)](https://gitlab.redox-os.org/redox-os/rusttype) crate made font parsing look. Since then, I've rewritten fontdue from the ground up, but I feel like it still deservers some attribution.
