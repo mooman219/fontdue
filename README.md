@@ -11,7 +11,7 @@ Fontdue is a simple, `no_std` (does not use the standard library for portability
 
 **Version 1.0:** `fontdue` is designed to be a replacement for `rusttype`, `ab_glyph`, and parts of `glyph_brush`. This is a class of font libraries that don't tackle shaping.
 
-**Version 2.0:** Shaping - the complex layout of text such as Arabic and Devanagari - will be added. There are two potential pure Rust libraries that are candidates for providing a shaping backend to Fontdue, but are relatively immature right now.
+**Version 2.0:** Shaping - the complex layout of text such as Arabic and Devanagari - will be added. There are two potential pure Rust libraries (allsorts or rustybuzz) that are candidates for providing a shaping backend to Fontdue, but are relatively immature right now.
 
 A **non-goal** of this library is to be allocation free and have a fast, "zero cost" initial load. This library _does_ make allocations and depends on the `alloc` crate. Fonts are fully parsed on creation and relevant information is stored in a more convenient to access format. Unlike other font libraries, the font structures have no lifetime dependencies since it allocates its own space.
 
