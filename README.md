@@ -73,11 +73,7 @@ This benchmark measures the time it takes to layout latin characters of sample t
 
 ### Maintenance
 
-Please bear with me on new features or quirks that you find. I will definitely get to issues you open (also thank you for opening them), but I don't have as much time as I would like to work on fontdue so please be paitent, this is a mostly solo project <3.
-
-### Reusing Fontdue code
-
-Please don't reuse `fontdue`'s raster code directly in your project. `fontdue` uses **unsafe** code in the rasterizer, and the rasterizer itself is **very not safe** to use on its own with un-sanitized input.
+Please bear with me on new features or quirks that you find. I will definitely get to issues you open (also thank you for opening them), but I don't have as much time as I would like to work on fontdue so please be patient, this is a mostly solo project <3.
 
 ### TrueType & OpenType Table Support
 

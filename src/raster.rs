@@ -1,3 +1,9 @@
+/* Notice to anyone that wants to repurpose the raster for your library:
+ * Please don't reuse this raster. Fontdue's raster is very unsafe, with nuanced invariants that
+ * need to be accounted for. Fontdue sanitizes the input that the raster will consume to ensure it
+ * is safe. Please be aware of this.
+ */
+
 use crate::math::Line;
 use crate::platform::{abs, as_i32, copysign, f32x4, fract};
 use alloc::vec;
