@@ -5,7 +5,7 @@
 [![Crates.io](https://img.shields.io/crates/v/fontdue.svg)](https://crates.io/crates/fontdue)
 [![License](https://img.shields.io/crates/l/fontdue.svg)](https://github.com/mooman219/fontdue/blob/master/LICENSE)
 
-Fontdue is a simple, `no_std`, pure Rust, TrueType (`.ttf/.ttc`) & OpenType (`.otf`) font rasterizer and layout tool. It strives to make interacting with fonts as fast as possible, and currently has the fastest rasterizer.
+Fontdue is a simple, `no_std` (does not use the standard library for portability), pure Rust, TrueType (`.ttf/.ttc`) & OpenType (`.otf`) font rasterizer and layout tool. It strives to make interacting with fonts as fast as possible, and currently has the fastest rasterizer.
 
 ## Roadmap
 
