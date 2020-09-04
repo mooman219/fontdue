@@ -159,7 +159,7 @@ impl Glyph {
             if is_negative(offset_x) {
                 offset_x += 1.0;
             }
-            let mut offset_y = ceil(height) - height - fract(bounds.ymin);
+            let mut offset_y = fract(1.0 - fract(height) - fract(bounds.ymin));
             if is_negative(offset_y) {
                 offset_y += 1.0;
             }
@@ -413,7 +413,7 @@ impl Font {
             if is_negative(offset_x) {
                 offset_x += 1.0;
             }
-            let mut offset_y = ceil(height) - height - fract(bounds.ymin);
+            let mut offset_y = fract(1.0 - fract(height) - fract(bounds.ymin));
             if is_negative(offset_y) {
                 offset_y += 1.0;
             }
