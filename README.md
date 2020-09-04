@@ -55,7 +55,11 @@ layout.layout_horizontal(fonts, styles, &settings, &mut output);
 
 ## Performance
 
+**NOTICE: I'm adding a live site to compare Fontdue (wasm build) output against your browser. Pleast standby.**
+
 ### Rasterization
+
+**NOTICE: I'm adding more libraries in this section and also including a CFF comparison. Please standby.**
 
 This benchmark measures the time it takes to generate the glyph metrics and bitmap for the letter 'g' over a range of sizes. Lower is better. This is using the idiomatic APIs for `rusttype` [(link)](https://gitlab.redox-os.org/redox-os/rusttype), `ab_glyph` [(link)](https://github.com/alexheretic/ab-glyph), and `fontdue`.
 
