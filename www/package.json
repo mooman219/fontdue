@@ -1,0 +1,29 @@
+{
+  "name": "fontdue-you-see-it",
+  "version": "0.1.0",
+  "description": "compare fontdue and the native rasterizer side by side",
+  "main": "index.js",
+  "scripts": {
+    "build": "webpack --config webpack.config.js",
+    "start": "webpack-dev-server"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/weswigham/fontdue-you-see-it.git"
+  },
+  "keywords": [
+    "webassembly",
+    "wasm",
+    "rust",
+    "font"
+  ],
+  "author": "Wesley Wigham <wwigham@gmail.com>",
+  "license": "MIT",
+  "devDependencies": {
+    "fontdue-you-see-it": "file:../pkg",
+    "webpack": "^4.29.3",
+    "webpack-cli": "^3.1.0",
+    "webpack-dev-server": "^3.1.5",
+    "copy-webpack-plugin": "^5.0.0"
+  }
+}

@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8">
+    <title>fontdue you see it</title>
+    <style>
+@font-face {
+  font-family: 'Roboto Mono';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url('./RobotoMono-Regular.ttf') format('truetype');
+}
+
+.flex {
+  display: flex;
+}
+
+.col {
+  flex: none;
+  display: flex;
+  flex-direction: column;
+  flex-wrap: wrap;
+}
+
+label {
+  flex: 1;
+  text-align: center;
+}
+
+canvas {
+  flex: none;
+}
+    </style>
+  </head>
+  <body style="font-family: 'Roboto Mono';">
+    <noscript>This page contains webassembly and javascript content, please enable javascript in your browser.</noscript>
+    <script src="./bootstrap.js"></script>
+    <div class="flex" style=" flex-direction: column;">
+      <div style="flex: 1 0 auto; text-align: center;">
+        <label for="input">enter a character:</label>
+        <input type="text" placeholder="¾" id="input">
+      </div>
+      <div class="flex">
+        <div style="flex: auto"></div>
+        <div class="col">
+          <canvas id="canvas-a"></canvas>
+          <label for="canvas-a">fontdue</label>
+        </div>
+        <div class="col">
+          <canvas id="canvas-b"></canvas>
+          <label for="canvas-b">native</label>
+        </div>
+        <div style="flex: auto"></div>
+      </div>
+    </div>
+  </body>
+</html>
