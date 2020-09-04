@@ -106,6 +106,8 @@ pub struct LineMetrics {
 impl LineMetrics {
     /// Creates a new line metrics struct and computes the new line size.
     pub fn new(ascent: i16, descent: i16, line_gap: i16) -> LineMetrics {
+        // Operations between this values can exceed i16, so we extend to i32 here.
+        let (ascent, descent, line_gap) = (ascent as i32, descent as i32, line_gap as i32);
         LineMetrics {
             ascent: ascent as f32,
             descent: descent as f32,
@@ -231,12 +233,15 @@ impl Font {
             Ok(f) => f,
             Err(_) => return Err("Malformed font."),
         };
+        // TrueType and OpenType define their point order opposite of eachother.
         let reverse_points =
             if face.has_table(TableName::GlyphVariations) || face.has_table(TableName::GlyphData) {
                 false
             } else {
                 true
             };
+        // This is fairly degenerate, but fonts without a units per em will be assumed to have the
+        // common default for compatibility.
         let units_per_em = face.units_per_em().unwrap_or(1000) as f32;
 
         // Collect all the unique codepoint to glyph mappings.
