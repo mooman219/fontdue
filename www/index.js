@@ -76,10 +76,19 @@ function renderBuiltinCharacter(char = "¾", xmin, ymin, height = 200, width = 2
     ctx.fillText(char, 10 - xmin, height + ymin - 10);
 }
 
-const input = /** @type {HTMLInputElement} */(document.getElementById("input"));
-input.addEventListener("change", function () {
-    const [height, width, xmin, ymin] = renderFontdueCharacter(this.value);
-    renderBuiltinCharacter(this.value, xmin, ymin, height, width);
-});
-const [height, width, xmin, ymin] = renderFontdueCharacter();
-renderBuiltinCharacter(undefined, xmin, ymin, height, width);
+function init() {
+    const input = /** @type {HTMLInputElement} */(document.getElementById("input"));
+    input.addEventListener("change", function () {
+        const [height, width, xmin, ymin] = renderFontdueCharacter(this.value);
+        renderBuiltinCharacter(this.value, xmin, ymin, height, width);
+    });
+    const [height, width, xmin, ymin] = renderFontdueCharacter();
+    renderBuiltinCharacter(undefined, xmin, ymin, height, width);
+}
+
+if (/** @type {*} */(document).fonts && /** @type {*} */(document).fonts.ready) {
+    /** @type {*} */(document).fonts.ready.then(init);
+}
+else {
+    init();
+}
