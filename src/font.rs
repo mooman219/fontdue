@@ -9,6 +9,7 @@ use core::mem;
 use core::num::NonZeroU16;
 use core::ops::Deref;
 use hashbrown::HashMap;
+use ttf_parser::FaceParsingError;
 
 /// Axis aligned bounding box.
 #[derive(Copy, Clone, PartialEq, Debug)]
@@ -225,13 +226,26 @@ pub struct Font {
     settings: FontSettings,
 }
 
+/// Converts a ttf-parser FaceParsingError into a string.
+fn convert_error(error: FaceParsingError) -> &'static str {
+    use FaceParsingError::*;
+    match error {
+        MalformedFont => "An attempt to read out of bounds detected.",
+        UnknownMagic => "Face data must start with 0x00010000, 0x74727565, 0x4F54544F or 0x74746366.",
+        FaceIndexOutOfBounds => "The face index is larger than the number of faces in the font.",
+        NoHeadTable => "The head table is missing or malformed.",
+        NoHheaTable => "The hhea  table is missing or malformed.",
+        NoMaxpTable => "The maxp table is missing or malformed.",
+    }
+}
+
 impl Font {
     /// Constructs a font from an array of bytes.
     pub fn from_bytes<Data: Deref<Target = [u8]>>(data: Data, settings: FontSettings) -> FontResult<Font> {
         use ttf_parser::{Face, GlyphId, TableName};
         let face = match Face::from_slice(&data, settings.collection_index) {
             Ok(f) => f,
-            Err(_) => return Err("Malformed font."),
+            Err(e) => return Err(convert_error(e)),
         };
         // TrueType and OpenType define their point order opposite of eachother.
         let reverse_points =
@@ -240,9 +254,6 @@ impl Font {
             } else {
                 true
             };
-        // This is fairly degenerate, but fonts without a units per em will be assumed to have the
-        // common default for compatibility.
-        let units_per_em = face.units_per_em().unwrap_or(1000) as f32;
 
         // Collect all the unique codepoint to glyph mappings.
         let mut char_to_glyph = HashMap::new();
@@ -261,6 +272,10 @@ impl Font {
         let mut glyphs: Vec<Glyph> = vec::from_elem(Glyph::default(), glyph_count);
         for (_, mapping) in &char_to_glyph {
             let mapping = unsafe { mem::transmute::<NonZeroU16, u16>(*mapping) as usize };
+            if mapping as usize >= glyph_count {
+                return Err("Attempted to map a codepoint out of bounds.");
+            }
+
             let glyph_id = GlyphId(mapping as u16);
             let glyph = &mut glyphs[mapping];
             if let Some(advance_width) = face.glyph_hor_advance(glyph_id) {
@@ -292,6 +307,10 @@ impl Font {
         } else {
             None
         };
+
+        // This is fairly degenerate, but fonts without a units per em will be assumed to have the
+        // common default for compatibility.
+        let units_per_em = face.units_per_em().unwrap_or(1000) as f32;
 
         Ok(Font {
             glyphs,
