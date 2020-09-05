@@ -16,9 +16,17 @@ exclude = ["resources/**", "examples/**", "fontdue.pgm"]
 [badges]
 maintenance = { status = "experimental" }
 
+[features]
+# Enable this flag to include the freetype benchmark in the benches.
+freetype_benchmark = ["freetype-rs"]
+
 [dependencies]
 ttf-parser = {version = "0.8", default-features = false}
 hashbrown = "0.8"
+
+# This is a dev-dependency, but those cannot be optional, so it's included here and not built by
+# default.
+freetype-rs = { version = "0.26.0", optional = true }
 
 [dev-dependencies]
 criterion = "0.3"

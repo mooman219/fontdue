@@ -13,7 +13,7 @@ const FONTS: [(&str, &[u8]); 2] = [
     ("opentype", include_bytes!("../resources/fonts/Exo2-Regular.otf")),
 ];
 const SIZES: [f32; 4] = [20.0, 40.0, 60.0, 80.0];
-const FUNCTIONS: [SetupFunction; 3] = [setup_rusttype, setup_ab_glyph, setup_fontdue];
+const FUNCTIONS: [SetupFunction; 4] = [setup_rusttype, setup_ab_glyph, setup_fontdue, setup_freetype];
 
 fn setup(c: &mut Criterion) {
     let mut group = c.benchmark_group("rasterize");
@@ -99,6 +99,32 @@ fn setup_fontdue(group: &mut BenchmarkGroup<WallTime>, font_label: &str, font: &
         })
     });
 }
+
+#[cfg(feature = "freetype_benchmark")]
+fn setup_freetype(group: &mut BenchmarkGroup<WallTime>, font_label: &str, font: &[u8], size: f32) {
+    use freetype::Library;
+    let lib = Library::init().unwrap();
+    let font = font.to_vec();
+    let face = lib.new_memory_face(font, 0).unwrap();
+
+    let parameter = format!("freetype {} '{}' at {}", font_label, MESSAGE, size);
+    group.bench_function(BenchmarkId::from_parameter(parameter), |b| {
+        b.iter(|| {
+            let mut len = 0;
+            face.set_char_size(0, (size * 0.75 * 64.0) as isize, 96, 96).unwrap();
+            for character in MESSAGE.chars() {
+                face.load_char(character as usize, freetype::face::LoadFlag::RENDER).unwrap();
+                let glyph = face.glyph();
+                let bitmap = glyph.bitmap();
+                len += bitmap.width() * bitmap.rows();
+            }
+            len
+        })
+    });
+}
+
+#[cfg(not(feature = "freetype_benchmark"))]
+fn setup_freetype(_: &mut BenchmarkGroup<WallTime>, _: &str, _: &[u8], _: f32) {}
 
 criterion_group!(benches, setup);
 criterion_main!(benches);
