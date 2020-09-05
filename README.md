@@ -61,7 +61,7 @@ layout.layout_horizontal(fonts, styles, &settings, &mut output);
 
 **NOTICE: I'm adding more libraries. Please standby.**
 
-These benchmarks measure the time it takes to generate the glyph metrics and bitmap for the text "Sphinx of black quartz, judge my vow." over a range of sizes. The lower the bar in the graph the better.
+These benchmarks measure the time it takes to generate the glyph metrics and bitmap for the text "Sphinx of black quartz, judge my vow." over a range of sizes. The lower the line in the graph the better.
 
 ![Rasterize benchmarks](/images/rasterize_glyf.png)
 
