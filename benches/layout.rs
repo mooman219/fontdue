@@ -11,7 +11,7 @@ Aliquet nibh praesent tristique magna sit. Purus viverra accumsan in nisl nisi s
 
 fn fontdue_layout_benchmark(c: &mut Criterion) {
     // Loading
-    let font = include_bytes!("../resources/Roboto-Regular.ttf") as &[u8];
+    let font = include_bytes!("../resources/fonts/Roboto-Regular.ttf") as &[u8];
     let roboto_regular = fontdue::Font::from_bytes(font, fontdue::FontSettings::default()).unwrap();
     let mut layout = Layout::new();
     let mut output = Vec::new();
@@ -38,7 +38,7 @@ fn fontdue_layout_benchmark(c: &mut Criterion) {
 
 fn glyph_brush_layout_benchmark(c: &mut Criterion) {
     // Loading
-    let font = include_bytes!("../resources/Roboto-Regular.ttf") as &[u8];
+    let font = include_bytes!("../resources/fonts/Roboto-Regular.ttf") as &[u8];
     let font = FontRef::try_from_slice(font).unwrap();
     let fonts = &[font];
     let settings = &SectionGeometry {

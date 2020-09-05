@@ -9,7 +9,7 @@ Fontdue is a simple, `no_std` (does not use the standard library for portability
 
 ## Roadmap
 
-**Version 1.0:** `fontdue` is designed to be a replacement for `rusttype`, `ab_glyph`, and parts of `glyph_brush`. This is a class of font libraries that don't tackle shaping.
+**Version 1.0:** `fontdue` is designed to be a replacement for `rusttype` [(link)](https://gitlab.redox-os.org/redox-os/rusttype), `ab_glyph` [(link)](https://github.com/alexheretic/ab-glyph), parts of `glyph_brush` [(link)](https://github.com/alexheretic/glyph-brush/tree/master/glyph-brush), and `glyph_brush_layout` [(link)](https://github.com/alexheretic/glyph-brush/tree/master/layout). This is a class of font libraries that don't tackle shaping.
 
 **Version 2.0:** Shaping - the complex layout of text such as Arabic and Devanagari - will be added. There are two potential pure Rust libraries (allsorts or rustybuzz) that are candidates for providing a shaping backend to Fontdue, but are relatively immature right now.
 
@@ -59,17 +59,17 @@ layout.layout_horizontal(fonts, styles, &settings, &mut output);
 
 ### Rasterization
 
-**NOTICE: I'm adding more libraries in this section and also including a CFF comparison. Please standby.**
+**NOTICE: I'm adding more libraries. Please standby.**
 
-This benchmark measures the time it takes to generate the glyph metrics and bitmap for the letter 'g' over a range of sizes. Lower is better. This is using the idiomatic APIs for `rusttype` [(link)](https://gitlab.redox-os.org/redox-os/rusttype), `ab_glyph` [(link)](https://github.com/alexheretic/ab-glyph), and `fontdue`.
+These benchmarks measure the time it takes to generate the glyph metrics and bitmap for the text "Sphinx of black quartz, judge my vow." over a range of sizes. The lower the bar in the graph the better.
 
-![Rasterize benchmarks](/images/rasterize.png)
+![Rasterize benchmarks](/images/rasterize_glyf.png)
 
-Older versions of `rusttype` use a naive rasterizer that's roughly 10x slower than `fontdue`. The newer `rusttype` shares the same rasterizer as `ab_glyph` and `glyph_brush` [(link)](https://github.com/alexheretic/glyph-brush/tree/master/glyph-brush).
+![Rasterize benchmarks](/images/rasterize_cff.png)
 
 ### Layout
 
-This benchmark measures the time it takes to layout latin characters of sample text with wrapping on word boundaries. This is using the idiomatic APIs for both `glyph_brush_layout` [(link)](https://github.com/alexheretic/glyph-brush/tree/master/layout) and `fontdue`.
+This benchmark measures the time it takes to layout latin characters of sample text with wrapping on word boundaries.
 
 ![Layout benchmarks](/images/layout.png)
 

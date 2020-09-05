@@ -263,6 +263,8 @@ impl Font {
                     Some(id) => id.0,
                     None => 0,
                 };
+                // Zero is a valid value for missing glyphs, so even if a mapping is zero, the
+                // result is desireable.
                 char_to_glyph.insert(codepoint, unsafe { NonZeroU16::new_unchecked(mapping) });
             });
         }

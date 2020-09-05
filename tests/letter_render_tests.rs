@@ -10,11 +10,10 @@ const CHARACTERS: [char; 94] = [
     '@', '#', '$', '%', '^', '&', '*', '(', ')', '_', '+', '-', '=', '`', '~', '[', ']', '\\', ';', '\'',
     ',', '.', '/', '{', '}', '|', ':', '"', '<', '>', '?',
 ];
-static FONTS: [&[u8]; 4] = [
-    include_bytes!("../resources/LiuJianMaoCao-Regular.ttf"),
-    include_bytes!("../resources/OpenSans-Regular.ttf"),
-    include_bytes!("../resources/Roboto-Regular.ttf"),
-    include_bytes!("../resources/RobotoMono-Regular.ttf"),
+static FONTS: [&[u8]; 3] = [
+    include_bytes!("../resources/fonts/Roboto-Regular.ttf"),
+    include_bytes!("../resources/fonts/RobotoMono-Regular.ttf"),
+    include_bytes!("../resources/fonts/Exo2-Regular.otf"),
 ];
 
 // Performs some basic asserts on the rasterization output.

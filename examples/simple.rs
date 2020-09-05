@@ -8,7 +8,7 @@ const SIZE: f32 = 500.0;
 // cargo run --example simple --release
 pub fn main() {
     // Loading and rasterization
-    let font = include_bytes!("../resources/Roboto-Regular.ttf") as &[u8];
+    let font = include_bytes!("../resources/fonts/Roboto-Regular.ttf") as &[u8];
     let settings = fontdue::FontSettings {
         scale: SIZE,
         ..fontdue::FontSettings::default()

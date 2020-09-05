@@ -2,7 +2,7 @@ use fontdue::layout::{Layout, LayoutSettings, TextStyle};
 
 // cargo run --example layout --release
 pub fn main() {
-    let font = include_bytes!("../resources/Roboto-Regular.ttf") as &[u8];
+    let font = include_bytes!("../resources/fonts/Roboto-Regular.ttf") as &[u8];
     let roboto_regular = fontdue::Font::from_bytes(font, fontdue::FontSettings::default()).unwrap();
     let mut layout = Layout::new();
     let mut output = Vec::new();
