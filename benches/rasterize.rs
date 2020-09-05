@@ -12,7 +12,7 @@ const FONTS: [(&str, &[u8]); 2] = [
     ("truetype", include_bytes!("../resources/fonts/Exo2-Regular.ttf")),
     ("opentype", include_bytes!("../resources/fonts/Exo2-Regular.otf")),
 ];
-const SIZES: [f32; 4] = [20.0, 40.0, 60.0, 80.0];
+const SIZES: [f32; 6] = [10.0, 20.0, 40.0, 80.0, 160.0, 200.0];
 const FUNCTIONS: [SetupFunction; 4] = [setup_rusttype, setup_ab_glyph, setup_fontdue, setup_freetype];
 
 fn setup(c: &mut Criterion) {
@@ -31,7 +31,7 @@ fn setup(c: &mut Criterion) {
 fn setup_rusttype(group: &mut BenchmarkGroup<WallTime>, font_label: &str, font: &[u8], size: f32) {
     use rusttype::{Font, Scale};
     let font = Font::try_from_bytes(font).unwrap();
-    let parameter = format!("rusttype {} '{}' at {}", font_label, MESSAGE, size);
+    let parameter = format!("rusttype {} {}px", font_label, size);
     group.bench_function(BenchmarkId::from_parameter(parameter), |b| {
         b.iter(|| {
             let mut len = 0;
@@ -57,7 +57,7 @@ fn setup_rusttype(group: &mut BenchmarkGroup<WallTime>, font_label: &str, font: 
 fn setup_ab_glyph(group: &mut BenchmarkGroup<WallTime>, font_label: &str, font: &[u8], size: f32) {
     use ab_glyph::{point, Font, FontRef, Glyph};
     let font = FontRef::try_from_slice(font).unwrap();
-    let parameter = format!("ab_glyph {} '{}' at {}", font_label, MESSAGE, size);
+    let parameter = format!("ab_glyph {} {}px", font_label, size);
     group.bench_function(BenchmarkId::from_parameter(parameter), |b| {
         b.iter(|| {
             let mut len = 0;
@@ -87,7 +87,7 @@ fn setup_fontdue(group: &mut BenchmarkGroup<WallTime>, font_label: &str, font: &
         ..FontSettings::default()
     };
     let font = Font::from_bytes(font, settings).unwrap();
-    let parameter = format!("fontdue {} '{}' at {}", font_label, MESSAGE, size);
+    let parameter = format!("fontdue {} {}px", font_label, size);
     group.bench_function(BenchmarkId::from_parameter(parameter), |b| {
         b.iter(|| {
             let mut len = 0;
@@ -107,7 +107,7 @@ fn setup_freetype(group: &mut BenchmarkGroup<WallTime>, font_label: &str, font: 
     let font = font.to_vec();
     let face = lib.new_memory_face(font, 0).unwrap();
 
-    let parameter = format!("freetype {} '{}' at {}", font_label, MESSAGE, size);
+    let parameter = format!("freetype {} {}px", font_label, size);
     group.bench_function(BenchmarkId::from_parameter(parameter), |b| {
         b.iter(|| {
             let mut len = 0;
