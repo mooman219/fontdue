@@ -41,3 +41,7 @@ harness = false
 [[bench]]
 name = "layout"
 harness = false
+
+[[bench]]
+name = "load"
+harness = false

@@ -75,9 +75,9 @@ pub const ZERO_METRICS: Metrics = Metrics {
 /// Encapsulates all layout information associated with a glyph for a fixed scale.
 #[derive(Copy, Clone, PartialEq, Debug)]
 pub struct Metrics {
-    /// The width of the associated glyph in pixels.
+    /// The width of the associated glyph in whole pixels.
     pub width: usize,
-    /// The height of the associated glyph in pixels.
+    /// The height of the associated glyph in whole pixels.
     pub height: usize,
     /// Advance width of the glyph. Used in horizontal fonts.
     pub advance_width: f32,
@@ -269,6 +269,10 @@ impl Font {
             });
         }
 
+        // This is fairly degenerate, but fonts without a units per em will be assumed to have the
+        // common default for compatibility.
+        let units_per_em = face.units_per_em().unwrap_or(1000) as f32;
+
         // Parse and store all unique codepoints.
         let glyph_count = face.number_of_glyphs() as usize;
         let mut glyphs: Vec<Glyph> = vec::from_elem(Glyph::default(), glyph_count);
@@ -289,8 +293,8 @@ impl Font {
 
             let mut geometry = Geometry::new(settings, reverse_points);
             face.outline_glyph(glyph_id, &mut geometry);
-            geometry.reposition();
-            let bounds = geometry.effective_bounds.unwrap_or(AABB::default());
+            geometry.finalize();
+            let bounds = geometry.effective_bounds;
             glyph.width = bounds.xmax - bounds.xmin;
             glyph.height = bounds.ymax - bounds.ymin;
             glyph.bounds = bounds;
@@ -309,10 +313,6 @@ impl Font {
         } else {
             None
         };
-
-        // This is fairly degenerate, but fonts without a units per em will be assumed to have the
-        // common default for compatibility.
-        let units_per_em = face.units_per_em().unwrap_or(1000) as f32;
 
         Ok(Font {
             glyphs,

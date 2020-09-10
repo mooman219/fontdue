@@ -1,4 +1,4 @@
-use crate::platform::{abs, atan, clamp, f32x4};
+use crate::platform::{abs, atan2, clamp, f32x4};
 use crate::{FontSettings, AABB};
 use alloc::vec::*;
 
@@ -43,7 +43,7 @@ impl CubeCurve {
     }
 
     /// The slope of the tangent line at time t.
-    fn slope(&self, t: f32) -> f32 {
+    fn slope(&self, t: f32) -> (f32, f32) {
         let tm = 1.0 - t;
         let a = 3.0 * (tm * tm);
         let b = 6.0 * tm * t;
@@ -51,13 +51,13 @@ impl CubeCurve {
 
         let x = a * (self.b.x - self.a.x) + b * (self.c.x - self.b.x) + c * (self.d.x - self.c.x);
         let y = a * (self.b.y - self.a.y) + b * (self.c.y - self.b.y) + c * (self.d.y - self.c.y);
-        y / x
+        (x, y)
     }
 
-    /// The angle of the tangent line at time t.
+    /// The angle of the tangent line at time t in rads.
     fn angle(&self, t: f32) -> f32 {
-        const PI: f32 = 3.14159265359;
-        abs(atan(self.slope(t))) * 180.0 / PI
+        let (x, y) = self.slope(t);
+        abs(atan2(x, y))
     }
 }
 
@@ -98,20 +98,20 @@ impl QuadCurve {
     }
 
     /// The slope of the tangent line at time t.
-    fn slope(&self, t: f32) -> f32 {
+    fn slope(&self, t: f32) -> (f32, f32) {
         let tm = 1.0 - t;
         let a = 2.0 * tm;
         let b = 2.0 * t;
 
         let x = a * (self.b.x - self.a.x) + b * (self.c.x - self.b.x);
         let y = a * (self.b.y - self.a.y) + b * (self.c.y - self.b.y);
-        y / x
+        (x, y)
     }
 
-    /// The angle of the tangent line at time t.
+    /// The angle of the tangent line at time t in rads.
     fn angle(&self, t: f32) -> f32 {
-        const PI: f32 = 3.14159265359;
-        abs(atan(self.slope(t))) * 180.0 / PI
+        let (x, y) = self.slope(t);
+        abs(atan2(x, y))
     }
 }
 
@@ -152,11 +152,6 @@ impl Point {
             x: self.x + settings.offset_x,
             y: self.y + settings.offset_y,
         }
-    }
-
-    pub fn angle_to(&self, other: Point) -> f32 {
-        const PI: f32 = 3.14159265359;
-        atan((other.y - self.y) / (other.x - self.x)) * 180.0 / PI
     }
 }
 
@@ -236,7 +231,7 @@ impl Line {
 #[derive(Clone)]
 pub struct Geometry {
     pub lines: Vec<Line>,
-    pub effective_bounds: Option<AABB>,
+    pub effective_bounds: AABB,
     pub start_point: Point,
     pub previous_point: Point,
     pub settings: FontSettings,
@@ -314,6 +309,7 @@ impl ttf_parser::OutlineBuilder for Geometry {
 
 impl Geometry {
     pub fn new(settings: FontSettings, reverse_points: bool) -> Geometry {
+        const PI: f32 = 3.14159265359;
         const LOW_SIZE: f32 = 20.0;
         const LOW_ANGLE: f32 = 17.0;
         const HIGH_SIZE: f32 = 125.0;
@@ -323,9 +319,10 @@ impl Geometry {
         const YINT: f32 = SLOPE * -HIGH_SIZE + HIGH_ANGLE;
         let max_angle = settings.scale * SLOPE + YINT;
         let max_angle = clamp(MAX_ANGLE, LOW_ANGLE, max_angle);
+        let max_angle = max_angle * PI / 180.0; // Convert into rads
         Geometry {
             lines: Vec::new(),
-            effective_bounds: None,
+            effective_bounds: AABB::new(core::f32::MAX, core::f32::MIN, core::f32::MAX, core::f32::MIN),
             start_point: Point::default(),
             previous_point: Point::default(),
             settings,
@@ -334,10 +331,13 @@ impl Geometry {
         }
     }
 
-    pub fn reposition(&mut self) {
-        if let Some(bounds) = self.effective_bounds {
+    pub fn finalize(&mut self) {
+        if self.lines.is_empty() {
+            self.effective_bounds = AABB::default();
+        } else {
+            self.lines.shrink_to_fit();
             for line in &mut self.lines {
-                line.reposition(bounds);
+                line.reposition(self.effective_bounds);
             }
         }
     }
@@ -356,21 +356,18 @@ impl Geometry {
     }
 
     fn recalculate_bounds(&mut self, point: Point) {
-        if let Some(bounds) = self.effective_bounds.as_mut() {
-            if point.x < bounds.xmin {
-                bounds.xmin = point.x;
-            }
-            if point.x > bounds.xmax {
-                bounds.xmax = point.x;
-            }
-            if point.y < bounds.ymin {
-                bounds.ymin = point.y;
-            }
-            if point.y > bounds.ymax {
-                bounds.ymax = point.y;
-            }
-        } else {
-            self.effective_bounds = Some(AABB::new(point.x, point.x, point.y, point.y))
+        let bounds = &mut self.effective_bounds;
+        if point.x < bounds.xmin {
+            bounds.xmin = point.x;
+        }
+        if point.x > bounds.xmax {
+            bounds.xmax = point.x;
+        }
+        if point.y < bounds.ymin {
+            bounds.ymin = point.y;
+        }
+        if point.y > bounds.ymax {
+            bounds.ymax = point.y;
         }
     }
 }

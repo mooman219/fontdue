@@ -1,5 +1,6 @@
 mod as_i32;
 mod atan;
+mod atan2;
 mod ceil;
 mod floor;
 mod fract;
@@ -9,6 +10,7 @@ mod trunc;
 
 pub use as_i32::*;
 pub use atan::*;
+pub use atan2::*;
 pub use ceil::*;
 pub use floor::*;
 pub use fract::*;

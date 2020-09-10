@@ -1,5 +1,3 @@
-pub use crate::platform::abs;
-
 /*
  * origin: FreeBSD /usr/src/lib/msun/src/s_atanf.c
  *
@@ -59,7 +57,7 @@ pub fn atan(mut x: f32) -> f32 {
         }
         -1
     } else {
-        x = abs(x);
+        x = super::abs(x);
         if ix < 0x3f980000 {
             /* |x| < 1.1875 */
             if ix < 0x3f300000 {

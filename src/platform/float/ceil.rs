@@ -1,8 +1,3 @@
-#[cfg(target_arch = "x86")]
-use core::arch::x86::*;
-#[cfg(target_arch = "x86_64")]
-use core::arch::x86_64::*;
-
 // [See license/rust-lang/libm] Copyright (c) 2018 Jorge Aparicio
 #[cfg(not(any(target_arch = "x86", target_arch = "x86_64")))]
 pub fn ceil(x: f32) -> f32 {
@@ -33,12 +28,15 @@ pub fn ceil(x: f32) -> f32 {
 #[cfg(any(target_arch = "x86", target_arch = "x86_64"))]
 #[inline(always)]
 pub fn ceil(mut value: f32) -> f32 {
-    use crate::platform::is_positive;
+    #[cfg(target_arch = "x86")]
+    use core::arch::x86::*;
+    #[cfg(target_arch = "x86_64")]
+    use core::arch::x86_64::*;
     use core::mem::transmute;
 
     unsafe {
         // The gist: add 1, subtract epsilon, then truncate. If negative, just truncate.
-        if is_positive(value) {
+        if super::is_positive(value) {
             value = transmute::<u32, f32>(transmute::<f32, u32>(value + 1.0) - 1);
         }
         _mm_cvtss_f32(_mm_cvtepi32_ps(_mm_cvttps_epi32(_mm_set_ss(value))))
