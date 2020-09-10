@@ -8,7 +8,7 @@ use core::arch::x86_64::*;
 pub fn get_bitmap(a: &Vec<f32>, length: usize) -> Vec<u8> {
     use alloc::vec;
     let mut height = 0.0;
-    assert!(length <= a.len());
+    debug_assert!(length <= a.len());
     let mut output = vec![0; length];
     for i in 0..length {
         unsafe {
@@ -22,14 +22,14 @@ pub fn get_bitmap(a: &Vec<f32>, length: usize) -> Vec<u8> {
 #[cfg(any(target_arch = "x86", target_arch = "x86_64"))]
 pub fn get_bitmap(a: &Vec<f32>, length: usize) -> Vec<u8> {
     let aligned_length = (length + 3) & !3;
-    assert!(aligned_length <= a.len());
+    debug_assert!(aligned_length <= a.len());
     // Turns out zeroing takes a while on very large sizes.
     let mut output = Vec::with_capacity(aligned_length);
     unsafe {
-        output.set_len(aligned_length);
+        output.set_len(length);
         // offset = Zeroed out lanes
         let mut offset = _mm_setzero_ps();
-        let zero = _mm_castps_si128(_mm_setzero_ps());
+        let zero = _mm_setzero_si128();
         for i in (0..aligned_length).step_by(4) {
             // x = Read 4 floats from self.a
             let mut x = _mm_loadu_ps(a.get_unchecked(i));
@@ -50,12 +50,11 @@ pub fn get_bitmap(a: &Vec<f32>, length: usize) -> Vec<u8> {
 
             // Store the first 4 u8s from y in output.
             let pointer: &mut i32 = core::mem::transmute(output.get_unchecked_mut(i));
-            *pointer = core::mem::transmute::<__m128i, [i32; 4]>(y)[0];
+            *pointer = _mm_cvtsi128_si32(y);
             // offset = (x[3], x[3], x[3], x[3])
-            offset = _mm_set1_ps(core::mem::transmute::<__m128, [f32; 4]>(x)[3]);
+            offset = _mm_castsi128_ps(_mm_shuffle_epi32(_mm_castps_si128(x), !0));
         }
     }
-    output.truncate(length);
     output
 }
 
