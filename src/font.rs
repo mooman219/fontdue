@@ -183,14 +183,6 @@ impl Glyph {
 /// Settings for controlling specific font and layout behavior.
 #[derive(Copy, Clone, PartialEq)]
 pub struct FontSettings {
-    /// The default is 0.0. Offsets all glyphs in the font horizontally by the given offset. The
-    /// unit of the offset is font units and varies by font. This can be used to make a font
-    /// crisper at a specific scale, or correct a misaligned font.
-    pub offset_x: f32,
-    /// The default is 0.0. Offsets all glyphs in the font vertically by the given offset. The unit
-    /// of the offset is font units and varies by font. This can be used to make a font crisper at
-    /// a specific scale, or correct a misaligned font.
-    pub offset_y: f32,
     /// The default is true. This offsets glyphs relative to their position in their scaled
     /// bounding box. This is required for laying out glyphs correctly, but can be disabled to make
     /// some incorrect fonts crisper.
@@ -207,8 +199,6 @@ pub struct FontSettings {
 impl Default for FontSettings {
     fn default() -> FontSettings {
         FontSettings {
-            offset_x: 0.0,
-            offset_y: 0.0,
             enable_offset_bounding_box: true,
             collection_index: 0,
             scale: 40.0,

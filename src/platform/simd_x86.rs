@@ -52,6 +52,11 @@ impl f32x4 {
     pub fn trunc(self) -> Self {
         unsafe { f32x4(_mm_cvtepi32_ps(_mm_cvttps_epi32(self.0))) }
     }
+
+    #[inline(always)]
+    pub fn sqrt(self) -> Self {
+        unsafe { f32x4(_mm_sqrt_ps(self.0)) }
+    }
 }
 
 impl Add for f32x4 {

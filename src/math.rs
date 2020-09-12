@@ -29,6 +29,28 @@ impl CubeCurve {
         }
     }
 
+    fn is_flat(&self, threshold: f32) -> bool {
+        let (d1, d2, d3, d4) = f32x4::new(
+            self.a.squared_distance(self.b),
+            self.b.squared_distance(self.c),
+            self.c.squared_distance(self.d),
+            self.a.squared_distance(self.d),
+        )
+        .sqrt()
+        .copied();
+        (d1 + d2 + d3) < threshold * d4
+    }
+
+    fn split(&self) -> (CubeCurve, CubeCurve) {
+        let q0 = self.a.midpoint(self.b);
+        let q1 = self.b.midpoint(self.c);
+        let q2 = self.c.midpoint(self.d);
+        let r0 = q0.midpoint(q1);
+        let r1 = q1.midpoint(q2);
+        let s0 = r0.midpoint(r1);
+        (CubeCurve::new(self.a, q0, r0, s0), CubeCurve::new(s0, r1, q2, self.d))
+    }
+
     /// The point at time t in the curve.
     fn point(&self, t: f32) -> Point {
         let tm = 1.0 - t;
@@ -83,6 +105,25 @@ impl QuadCurve {
             b: self.b.scale(scale),
             c: self.c.scale(scale),
         }
+    }
+
+    fn is_flat(&self, threshold: f32) -> bool {
+        let (d1, d2, d3, _) = f32x4::new(
+            self.a.squared_distance(self.b),
+            self.b.squared_distance(self.c),
+            self.a.squared_distance(self.c),
+            1.0,
+        )
+        .sqrt()
+        .copied();
+        (d1 + d2) < threshold * d3
+    }
+
+    fn split(&self) -> (QuadCurve, QuadCurve) {
+        let q0 = self.a.midpoint(self.b);
+        let q1 = self.b.midpoint(self.c);
+        let r0 = q0.midpoint(q1);
+        (QuadCurve::new(self.a, q0, r0), QuadCurve::new(r0, q1, self.c))
     }
 
     /// The point at time t in the curve.
@@ -147,10 +188,16 @@ impl Point {
         }
     }
 
-    pub fn offset(&self, settings: &FontSettings) -> Point {
+    pub fn squared_distance(&self, other: Point) -> f32 {
+        let x = self.x - other.x;
+        let y = self.y - other.y;
+        x * x + y * y
+    }
+
+    pub fn midpoint(&self, other: Point) -> Point {
         Point {
-            x: self.x + settings.offset_x,
-            y: self.y + settings.offset_y,
+            x: (self.x + other.x) / 2.0,
+            y: (self.y + other.y) / 2.0,
         }
     }
 }
@@ -241,20 +288,20 @@ pub struct Geometry {
 
 impl ttf_parser::OutlineBuilder for Geometry {
     fn move_to(&mut self, x0: f32, y0: f32) {
-        let next_point = Point::new(x0, y0).offset(&self.settings);
+        let next_point = Point::new(x0, y0);
         self.start_point = next_point;
         self.previous_point = next_point;
     }
 
     fn line_to(&mut self, x0: f32, y0: f32) {
-        let next_point = Point::new(x0, y0).offset(&self.settings);
+        let next_point = Point::new(x0, y0);
         self.push(self.previous_point, next_point);
         self.previous_point = next_point;
     }
 
     fn quad_to(&mut self, x0: f32, y0: f32, x1: f32, y1: f32) {
-        let control_point = Point::new(x0, y0).offset(&self.settings);
-        let next_point = Point::new(x1, y1).offset(&self.settings);
+        let control_point = Point::new(x0, y0);
+        let next_point = Point::new(x1, y1);
 
         const STEPS: u32 = 20;
         const INCREMENT: f32 = 1.0 / (STEPS as f32);
@@ -276,9 +323,9 @@ impl ttf_parser::OutlineBuilder for Geometry {
     }
 
     fn curve_to(&mut self, x0: f32, y0: f32, x1: f32, y1: f32, x2: f32, y2: f32) {
-        let first_control = Point::new(x0, y0).offset(&self.settings);
-        let second_control = Point::new(x1, y1).offset(&self.settings);
-        let next_point = Point::new(x2, y2).offset(&self.settings);
+        let first_control = Point::new(x0, y0);
+        let second_control = Point::new(x1, y1);
+        let next_point = Point::new(x2, y2);
 
         const STEPS: u32 = 20;
         const INCREMENT: f32 = 1.0 / (STEPS as f32);
@@ -331,43 +378,45 @@ impl Geometry {
         }
     }
 
+    fn push(&mut self, start: Point, end: Point) {
+        if start.y != end.y {
+            let (a, b) = if self.reverse_points {
+                (end, start)
+            } else {
+                (start, end)
+            };
+            self.lines.push(Line::new(a, b));
+        }
+    }
+
     pub fn finalize(&mut self) {
         if self.lines.is_empty() {
             self.effective_bounds = AABB::default();
         } else {
             self.lines.shrink_to_fit();
+            for line in &self.lines {
+                let (x0, y0, x1, y1) = line.coords.copied();
+                Self::recalculate_bounds(&mut self.effective_bounds, x0, y0);
+                Self::recalculate_bounds(&mut self.effective_bounds, x1, y1);
+            }
             for line in &mut self.lines {
                 line.reposition(self.effective_bounds);
             }
         }
     }
 
-    fn push(&mut self, start: Point, end: Point) {
-        let (a, b) = if self.reverse_points {
-            (end, start)
-        } else {
-            (start, end)
-        };
-        if a.y != b.y {
-            self.lines.push(Line::new(a, b));
-            self.recalculate_bounds(a);
-            self.recalculate_bounds(b);
+    fn recalculate_bounds(bounds: &mut AABB, x: f32, y: f32) {
+        if x < bounds.xmin {
+            bounds.xmin = x;
         }
-    }
-
-    fn recalculate_bounds(&mut self, point: Point) {
-        let bounds = &mut self.effective_bounds;
-        if point.x < bounds.xmin {
-            bounds.xmin = point.x;
+        if x > bounds.xmax {
+            bounds.xmax = x;
         }
-        if point.x > bounds.xmax {
-            bounds.xmax = point.x;
+        if y < bounds.ymin {
+            bounds.ymin = y;
         }
-        if point.y < bounds.ymin {
-            bounds.ymin = point.y;
-        }
-        if point.y > bounds.ymax {
-            bounds.ymax = point.y;
+        if y > bounds.ymax {
+            bounds.ymax = y;
         }
     }
 }
