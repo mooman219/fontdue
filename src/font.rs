@@ -1,6 +1,6 @@
 use crate::layout::GlyphRasterConfig;
 use crate::math::{Geometry, Line};
-use crate::platform::{as_i32, ceil, fract, is_negative};
+use crate::platform::{as_i32, ceil, floor, fract, is_negative};
 use crate::raster::Raster;
 use crate::FontResult;
 use alloc::vec;
@@ -11,49 +11,40 @@ use core::ops::Deref;
 use hashbrown::HashMap;
 use ttf_parser::FaceParsingError;
 
-/// Axis aligned bounding box.
+/// Defines the bounds for a glyph's outline in subpixels. A glyph's outline is always contained in
+/// its bitmap.
 #[derive(Copy, Clone, PartialEq, Debug)]
-pub struct AABB {
-    /// Coordinate of the left-most edge.
+pub struct OutlineBounds {
+    /// Subpixel offset of the left-most edge of the glyph's outline.
     pub xmin: f32,
-    /// Coordinate of the right-most edge.
-    pub xmax: f32,
-    /// Coordinate of the bottom-most edge.
+    /// Subpixel offset of the bottom-most edge of the glyph's outline.
     pub ymin: f32,
-    /// Coordinate of the top-most edge.
-    pub ymax: f32,
+    /// The width of the outline in subpixels.
+    pub width: f32,
+    /// The height of the outline in subpixels.
+    pub height: f32,
 }
 
-impl Default for AABB {
+impl Default for OutlineBounds {
     fn default() -> Self {
-        AABB {
+        Self {
             xmin: 0.0,
-            xmax: 0.0,
             ymin: 0.0,
-            ymax: 0.0,
+            width: 0.0,
+            height: 0.0,
         }
     }
 }
 
-impl AABB {
-    /// Creates a new axis aligned bounding box
-    pub fn new(xmin: f32, xmax: f32, ymin: f32, ymax: f32) -> AABB {
-        AABB {
-            xmin,
-            xmax,
-            ymin,
-            ymax,
-        }
-    }
-
+impl OutlineBounds {
     /// Scales the bounding box by the given factor.
     #[inline(always)]
-    pub fn scale(&self, scale: f32) -> AABB {
-        AABB {
+    pub fn scale(&self, scale: f32) -> OutlineBounds {
+        OutlineBounds {
             xmin: self.xmin * scale,
-            xmax: self.xmax * scale,
             ymin: self.ymin * scale,
-            ymax: self.ymax * scale,
+            width: self.width * scale,
+            height: self.height * scale,
         }
     }
 }
@@ -61,31 +52,35 @@ impl AABB {
 /// Encapsulates all layout information associated with a glyph for a fixed scale.
 #[derive(Copy, Clone, PartialEq, Debug)]
 pub struct Metrics {
-    /// The width of the associated glyph in whole pixels.
+    /// Whole pixel offset of the left-most edge of the bitmap. This may be negative to reflect the
+    /// glyph is positioned to the left of the origin.
+    pub xmin: i32,
+    /// Whole pixel offset of the bottom-most edge of the bitmap. This may be negative to refelct
+    /// the glyph is positioned below the baseline.
+    pub ymin: i32,
+    /// The width of the bitmap in whole pixels.
     pub width: usize,
-    /// The height of the associated glyph in whole pixels.
+    /// The height of the bitmap in whole pixels.
     pub height: usize,
-    /// Advance width of the glyph. Used in horizontal fonts.
+    /// Advance width of the glyph in subpixels. Used in horizontal fonts.
     pub advance_width: f32,
-    /// Advance height of the glyph. Used in vertical fonts.
+    /// Advance height of the glyph in subpixels. Used in vertical fonts.
     pub advance_height: f32,
-    /// Inner bounds of the glyph at the offsets specified by the font.
-    pub bounds: AABB,
+    /// The bounding box that contains the glyph's outline at the offsets specified by the font.
+    /// This is always a smaller box than the bitmap bounds.
+    pub bounds: OutlineBounds,
 }
 
 impl Default for Metrics {
     fn default() -> Self {
         Metrics {
+            xmin: 0,
+            ymin: 0,
             width: 0,
             height: 0,
             advance_width: 0.0,
             advance_height: 0.0,
-            bounds: AABB {
-                xmin: 0.0,
-                xmax: 0.0,
-                ymin: 0.0,
-                ymax: 0.0,
-            },
+            bounds: OutlineBounds::default(),
         }
     }
 }
@@ -136,11 +131,9 @@ impl LineMetrics {
 pub(crate) struct Glyph {
     pub v_lines: Vec<Line>,
     pub m_lines: Vec<Line>,
-    width: f32,
-    height: f32,
     advance_width: f32,
     advance_height: f32,
-    bounds: AABB,
+    pub bounds: OutlineBounds,
 }
 
 impl Default for Glyph {
@@ -148,39 +141,9 @@ impl Default for Glyph {
         Glyph {
             v_lines: Vec::new(),
             m_lines: Vec::new(),
-            width: 0.0,
-            height: 0.0,
             advance_width: 0.0,
             advance_height: 0.0,
-            bounds: AABB::default(),
-        }
-    }
-}
-
-impl Glyph {
-    #[inline(always)]
-    fn metrics(&self, scale: f32, enable_offset_bounding_box: bool) -> Metrics {
-        let bounds = self.bounds.scale(scale);
-        let height = scale * self.height;
-        let (offset_x, offset_y) = if enable_offset_bounding_box {
-            let mut offset_x = fract(bounds.xmin);
-            if is_negative(offset_x) {
-                offset_x += 1.0;
-            }
-            let mut offset_y = fract(1.0 - fract(height) - fract(bounds.ymin));
-            if is_negative(offset_y) {
-                offset_y += 1.0;
-            }
-            (offset_x, offset_y)
-        } else {
-            (0.0, 0.0)
-        };
-        Metrics {
-            width: as_i32(ceil(scale * self.width + offset_x)) as usize,
-            height: as_i32(ceil(height + offset_y)) as usize,
-            advance_width: scale * self.advance_width,
-            advance_height: scale * self.advance_height,
-            bounds,
+            bounds: OutlineBounds::default(),
         }
     }
 }
@@ -286,15 +249,9 @@ impl Font {
                 glyph.advance_height = advance_height as f32;
             }
 
-            let mut geometry = Geometry::new(settings, reverse_points);
+            let mut geometry = Geometry::new(settings.scale, reverse_points);
             face.outline_glyph(glyph_id, &mut geometry);
-            geometry.finalize();
-            let bounds = geometry.effective_bounds;
-            glyph.width = bounds.xmax - bounds.xmin;
-            glyph.height = bounds.ymax - bounds.ymin;
-            glyph.bounds = bounds;
-            glyph.v_lines = geometry.v_lines;
-            glyph.m_lines = geometry.m_lines;
+            geometry.finalize(glyph);
         }
 
         // New line metrics.
@@ -340,9 +297,15 @@ impl Font {
         }
     }
 
-    /// Calculates the glyph scale factor for a given px size.
+    /// Gets the font's units per em.
     #[inline(always)]
-    fn scale_factor(&self, px: f32) -> f32 {
+    pub fn units_per_em(&self) -> f32 {
+        self.units_per_em
+    }
+
+    /// Calculates the glyph's outline scale factor for a given px size.
+    #[inline(always)]
+    pub fn scale_factor(&self, px: f32) -> f32 {
         px / self.units_per_em
     }
 
@@ -372,7 +335,39 @@ impl Font {
     pub fn metrics_indexed(&self, index: usize, px: f32) -> Metrics {
         let glyph = &self.glyphs[index];
         let scale = self.scale_factor(px);
-        glyph.metrics(scale, self.settings.enable_offset_bounding_box)
+        let (metrics, _, _) = self.metrics_raw(scale, glyph);
+        metrics
+    }
+
+    /// Internal function to generate the metrics, offset_x, and offset_y of the glyph.
+    fn metrics_raw(&self, scale: f32, glyph: &Glyph) -> (Metrics, f32, f32) {
+        // This is kinda lame, but I can't reuse Glyph.metrics() directly because I want the
+        // offset_x and offset_y too, and returning it gave a weird regression.
+        let bounds = glyph.bounds.scale(scale);
+        let height = scale * glyph.bounds.height;
+        let (offset_x, offset_y) = if self.settings.enable_offset_bounding_box {
+            let mut offset_x = fract(bounds.xmin);
+            if is_negative(offset_x) {
+                offset_x += 1.0;
+            }
+            let mut offset_y = fract(1.0 - fract(height) - fract(bounds.ymin));
+            if is_negative(offset_y) {
+                offset_y += 1.0;
+            }
+            (offset_x, offset_y)
+        } else {
+            (0.0, 0.0)
+        };
+        let metrics = Metrics {
+            xmin: as_i32(floor(bounds.xmin)),
+            ymin: as_i32(floor(bounds.ymin)),
+            width: as_i32(ceil(bounds.width + offset_x)) as usize,
+            height: as_i32(ceil(bounds.height + offset_y)) as usize,
+            advance_width: scale * glyph.advance_width,
+            advance_height: scale * glyph.advance_height,
+            bounds,
+        };
+        (metrics, offset_y, offset_y)
     }
 
     /// Retrieves the layout rasterized bitmap for the given raster config. If the raster config's
@@ -425,32 +420,7 @@ impl Font {
     pub fn rasterize_indexed(&self, index: usize, px: f32) -> (Metrics, Vec<u8>) {
         let glyph = &self.glyphs[index];
         let scale = self.scale_factor(px);
-
-        // This is kinda lame, but I can't reuse Glyph.metrics() directly because I want the
-        // offset_x and offset_y too, and returning it gave a weird regression.
-        let bounds = glyph.bounds.scale(scale);
-        let height = scale * glyph.height;
-        let (offset_x, offset_y) = if self.settings.enable_offset_bounding_box {
-            let mut offset_x = fract(bounds.xmin);
-            if is_negative(offset_x) {
-                offset_x += 1.0;
-            }
-            let mut offset_y = fract(1.0 - fract(height) - fract(bounds.ymin));
-            if is_negative(offset_y) {
-                offset_y += 1.0;
-            }
-            (offset_x, offset_y)
-        } else {
-            (0.0, 0.0)
-        };
-        let metrics = Metrics {
-            width: as_i32(ceil(scale * glyph.width + offset_x)) as usize,
-            height: as_i32(ceil(height + offset_y)) as usize,
-            advance_width: scale * glyph.advance_width,
-            advance_height: scale * glyph.advance_height,
-            bounds,
-        };
-
+        let (metrics, offset_x, offset_y) = self.metrics_raw(scale, glyph);
         let mut canvas = Raster::new(metrics.width, metrics.height);
         canvas.draw(&glyph, scale, offset_x, offset_y);
         (metrics, canvas.get_bitmap())

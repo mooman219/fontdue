@@ -1,6 +1,29 @@
 use crate::platform::{abs, atan2, clamp, f32x4};
-use crate::{FontSettings, AABB};
+use crate::{Glyph, OutlineBounds};
 use alloc::vec::*;
+
+#[derive(Copy, Clone, PartialEq, Debug)]
+struct AABB {
+    /// Coordinate of the left-most edge.
+    xmin: f32,
+    /// Coordinate of the right-most edge.
+    xmax: f32,
+    /// Coordinate of the bottom-most edge.
+    ymin: f32,
+    /// Coordinate of the top-most edge.
+    ymax: f32,
+}
+
+impl Default for AABB {
+    fn default() -> Self {
+        AABB {
+            xmin: 0.0,
+            xmax: 0.0,
+            ymin: 0.0,
+            ymax: 0.0,
+        }
+    }
+}
 
 #[derive(Copy, Clone, Debug, PartialEq)]
 struct CubeCurve {
@@ -277,14 +300,13 @@ impl Line {
 
 #[derive(Clone)]
 pub struct Geometry {
-    pub v_lines: Vec<Line>,
-    pub m_lines: Vec<Line>,
-    pub effective_bounds: AABB,
-    pub start_point: Point,
-    pub previous_point: Point,
-    pub settings: FontSettings,
-    pub max_angle: f32,
-    pub reverse_points: bool,
+    v_lines: Vec<Line>,
+    m_lines: Vec<Line>,
+    effective_bounds: AABB,
+    start_point: Point,
+    previous_point: Point,
+    max_angle: f32,
+    reverse_points: bool,
 }
 
 impl ttf_parser::OutlineBuilder for Geometry {
@@ -356,7 +378,7 @@ impl ttf_parser::OutlineBuilder for Geometry {
 }
 
 impl Geometry {
-    pub fn new(settings: FontSettings, reverse_points: bool) -> Geometry {
+    pub fn new(scale: f32, reverse_points: bool) -> Geometry {
         const PI: f32 = 3.14159265359;
         const LOW_SIZE: f32 = 20.0;
         const LOW_ANGLE: f32 = 17.0;
@@ -365,16 +387,20 @@ impl Geometry {
         const MAX_ANGLE: f32 = 3.0;
         const SLOPE: f32 = (HIGH_ANGLE - LOW_ANGLE) / (HIGH_SIZE - LOW_SIZE);
         const YINT: f32 = SLOPE * -HIGH_SIZE + HIGH_ANGLE;
-        let max_angle = settings.scale * SLOPE + YINT;
+        let max_angle = scale * SLOPE + YINT;
         let max_angle = clamp(MAX_ANGLE, LOW_ANGLE, max_angle);
         let max_angle = max_angle * PI / 180.0; // Convert into rads
         Geometry {
             v_lines: Vec::new(),
             m_lines: Vec::new(),
-            effective_bounds: AABB::new(core::f32::MAX, core::f32::MIN, core::f32::MAX, core::f32::MIN),
+            effective_bounds: AABB {
+                xmin: core::f32::MAX,
+                xmax: core::f32::MIN,
+                ymin: core::f32::MAX,
+                ymax: core::f32::MIN,
+            },
             start_point: Point::default(),
             previous_point: Point::default(),
-            settings,
             max_angle,
             reverse_points,
         }
@@ -395,7 +421,7 @@ impl Geometry {
         }
     }
 
-    pub fn finalize(&mut self) {
+    pub(crate) fn finalize(mut self, glyph: &mut Glyph) {
         if self.v_lines.is_empty() && self.m_lines.is_empty() {
             self.effective_bounds = AABB::default();
         } else {
@@ -410,6 +436,14 @@ impl Geometry {
             self.v_lines.shrink_to_fit();
             self.m_lines.shrink_to_fit();
         }
+        glyph.v_lines = self.v_lines;
+        glyph.m_lines = self.m_lines;
+        glyph.bounds = OutlineBounds {
+            xmin: self.effective_bounds.xmin,
+            ymin: self.effective_bounds.ymin,
+            width: self.effective_bounds.xmax - self.effective_bounds.xmin,
+            height: self.effective_bounds.ymax - self.effective_bounds.ymin,
+        };
     }
 
     fn recalculate_bounds(bounds: &mut AABB, x: f32, y: f32) {
