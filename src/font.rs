@@ -58,20 +58,6 @@ impl AABB {
     }
 }
 
-/// Metric representing a glyph that has no geometry and positional metrics.
-pub const ZERO_METRICS: Metrics = Metrics {
-    width: 0,
-    height: 0,
-    advance_width: 0.0,
-    advance_height: 0.0,
-    bounds: AABB {
-        xmin: 0.0,
-        xmax: 0.0,
-        ymin: 0.0,
-        ymax: 0.0,
-    },
-};
-
 /// Encapsulates all layout information associated with a glyph for a fixed scale.
 #[derive(Copy, Clone, PartialEq, Debug)]
 pub struct Metrics {
@@ -85,6 +71,23 @@ pub struct Metrics {
     pub advance_height: f32,
     /// Inner bounds of the glyph at the offsets specified by the font.
     pub bounds: AABB,
+}
+
+impl Default for Metrics {
+    fn default() -> Self {
+        Metrics {
+            width: 0,
+            height: 0,
+            advance_width: 0.0,
+            advance_height: 0.0,
+            bounds: AABB {
+                xmin: 0.0,
+                xmax: 0.0,
+                ymin: 0.0,
+                ymax: 0.0,
+            },
+        }
+    }
 }
 
 /// Metrics associated with line positioning.
@@ -106,7 +109,7 @@ pub struct LineMetrics {
 
 impl LineMetrics {
     /// Creates a new line metrics struct and computes the new line size.
-    pub fn new(ascent: i16, descent: i16, line_gap: i16) -> LineMetrics {
+    fn new(ascent: i16, descent: i16, line_gap: i16) -> LineMetrics {
         // Operations between this values can exceed i16, so we extend to i32 here.
         let (ascent, descent, line_gap) = (ascent as i32, descent as i32, line_gap as i32);
         LineMetrics {
@@ -119,7 +122,7 @@ impl LineMetrics {
 
     /// Scales the line metrics by the given factor.
     #[inline(always)]
-    pub fn scale(&self, scale: f32) -> LineMetrics {
+    fn scale(&self, scale: f32) -> LineMetrics {
         LineMetrics {
             ascent: self.ascent * scale,
             descent: self.descent * scale,
@@ -130,8 +133,9 @@ impl LineMetrics {
 }
 
 #[derive(Clone)]
-struct Glyph {
-    lines: Vec<Line>,
+pub(crate) struct Glyph {
+    pub v_lines: Vec<Line>,
+    pub m_lines: Vec<Line>,
     width: f32,
     height: f32,
     advance_width: f32,
@@ -142,7 +146,8 @@ struct Glyph {
 impl Default for Glyph {
     fn default() -> Self {
         Glyph {
-            lines: Vec::new(),
+            v_lines: Vec::new(),
+            m_lines: Vec::new(),
             width: 0.0,
             height: 0.0,
             advance_width: 0.0,
@@ -288,7 +293,8 @@ impl Font {
             glyph.width = bounds.xmax - bounds.xmin;
             glyph.height = bounds.ymax - bounds.ymin;
             glyph.bounds = bounds;
-            glyph.lines = geometry.lines;
+            glyph.v_lines = geometry.v_lines;
+            glyph.m_lines = geometry.m_lines;
         }
 
         // New line metrics.
@@ -446,7 +452,7 @@ impl Font {
         };
 
         let mut canvas = Raster::new(metrics.width, metrics.height);
-        canvas.draw(&glyph.lines, scale, offset_x, offset_y);
+        canvas.draw(&glyph, scale, offset_x, offset_y);
         (metrics, canvas.get_bitmap())
     }
 

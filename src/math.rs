@@ -246,7 +246,7 @@ impl Line {
         let dx = end.x - start.x;
         let dy = end.y - start.y;
         let tdx = if dx == 0.0 {
-            8388608.0 // 2^23, doesn't really matter.
+            core::f32::MAX
         } else {
             1.0 / dx
         };
@@ -277,7 +277,8 @@ impl Line {
 
 #[derive(Clone)]
 pub struct Geometry {
-    pub lines: Vec<Line>,
+    pub v_lines: Vec<Line>,
+    pub m_lines: Vec<Line>,
     pub effective_bounds: AABB,
     pub start_point: Point,
     pub previous_point: Point,
@@ -368,7 +369,8 @@ impl Geometry {
         let max_angle = clamp(MAX_ANGLE, LOW_ANGLE, max_angle);
         let max_angle = max_angle * PI / 180.0; // Convert into rads
         Geometry {
-            lines: Vec::new(),
+            v_lines: Vec::new(),
+            m_lines: Vec::new(),
             effective_bounds: AABB::new(core::f32::MAX, core::f32::MIN, core::f32::MAX, core::f32::MIN),
             start_point: Point::default(),
             previous_point: Point::default(),
@@ -380,28 +382,33 @@ impl Geometry {
 
     fn push(&mut self, start: Point, end: Point) {
         if start.y != end.y {
-            let (a, b) = if self.reverse_points {
+            let (start, end) = if self.reverse_points {
                 (end, start)
             } else {
                 (start, end)
             };
-            self.lines.push(Line::new(a, b));
+            if start.x == end.x {
+                self.v_lines.push(Line::new(start, end));
+            } else {
+                self.m_lines.push(Line::new(start, end));
+            }
         }
     }
 
     pub fn finalize(&mut self) {
-        if self.lines.is_empty() {
+        if self.v_lines.is_empty() && self.m_lines.is_empty() {
             self.effective_bounds = AABB::default();
         } else {
-            self.lines.shrink_to_fit();
-            for line in &self.lines {
+            for line in self.v_lines.iter().chain(self.m_lines.iter()) {
                 let (x0, y0, x1, y1) = line.coords.copied();
                 Self::recalculate_bounds(&mut self.effective_bounds, x0, y0);
                 Self::recalculate_bounds(&mut self.effective_bounds, x1, y1);
             }
-            for line in &mut self.lines {
+            for line in self.v_lines.iter_mut().chain(self.m_lines.iter_mut()) {
                 line.reposition(self.effective_bounds);
             }
+            self.v_lines.shrink_to_fit();
+            self.m_lines.shrink_to_fit();
         }
     }
 

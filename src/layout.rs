@@ -1,6 +1,9 @@
-use crate::platform::{ceil, floor};
 use crate::unicode::{linebreak_property, read_utf8, wrap_mask};
-use crate::{Font, ZERO_METRICS};
+use crate::Font;
+use crate::{
+    platform::{ceil, floor},
+    Metrics,
+};
 use alloc::vec::*;
 use core::borrow::Borrow;
 use core::hash::{Hash, Hasher};
@@ -268,7 +271,7 @@ impl Layout {
                 let metrics = if character as u32 > 0x1F {
                     font.borrow().metrics(character, style.px)
                 } else {
-                    ZERO_METRICS
+                    Metrics::default()
                 };
                 let advance = ceil(metrics.advance_width);
                 if linebreak_state >= last_linebreak_state {
