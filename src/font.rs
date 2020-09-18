@@ -341,16 +341,13 @@ impl Font {
 
     /// Internal function to generate the metrics, offset_x, and offset_y of the glyph.
     fn metrics_raw(&self, scale: f32, glyph: &Glyph) -> (Metrics, f32, f32) {
-        // This is kinda lame, but I can't reuse Glyph.metrics() directly because I want the
-        // offset_x and offset_y too, and returning it gave a weird regression.
         let bounds = glyph.bounds.scale(scale);
-        let height = scale * glyph.bounds.height;
         let (offset_x, offset_y) = if self.settings.enable_offset_bounding_box {
             let mut offset_x = fract(bounds.xmin);
             if is_negative(offset_x) {
                 offset_x += 1.0;
             }
-            let mut offset_y = fract(1.0 - fract(height) - fract(bounds.ymin));
+            let mut offset_y = fract(1.0 - fract(bounds.height) - fract(bounds.ymin));
             if is_negative(offset_y) {
                 offset_y += 1.0;
             }
@@ -367,7 +364,7 @@ impl Font {
             advance_height: scale * glyph.advance_height,
             bounds,
         };
-        (metrics, offset_y, offset_y)
+        (metrics, offset_x, offset_y)
     }
 
     /// Retrieves the layout rasterized bitmap for the given raster config. If the raster config's
