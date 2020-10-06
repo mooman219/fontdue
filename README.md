@@ -55,11 +55,7 @@ layout.layout_horizontal(fonts, styles, &settings, &mut output);
 
 ## Performance
 
-**NOTICE: I'm adding a live site to compare Fontdue (wasm build) output against your browser. Pleast standby.**
-
 ### Rasterization
-
-**NOTICE: I'm adding more libraries. Please standby.**
 
 These benchmarks measure the time it takes to generate the glyph metrics and bitmap for the text "Sphinx of black quartz, judge my vow." over a range of sizes. The lower the line in the graph the better.
 

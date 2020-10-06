@@ -41,6 +41,18 @@ pub enum WrapStyle {
     Letter,
 }
 
+/// The direction that the Y coordinate increases in. Layout needs to be aware of your coordinate
+/// system to place the glyphs correctly.
+#[derive(Copy, Clone, PartialEq)]
+pub enum PositiveYDirection {
+    /// The Y coordinate increases up relative to the window. The higher up on the window, the more
+    /// positive Y becomes.
+    Up,
+    /// The Y coordinate increases down relative to the window. The lower down on the window, the
+    /// more positive Y becomes.
+    Down,
+}
+
 /// Settings to configure how text layout is constrained. Text layout is considered best effort and
 /// layout may violate the constraints defined here if they prevent text from being laid out.
 #[derive(Copy, Clone, PartialEq)]
@@ -73,6 +85,9 @@ pub struct LayoutSettings {
     /// may want this enabled if you care about the positioning of whitespace for an interactable
     /// user interface.
     pub include_whitespace: bool,
+    /// The default is Up. The direction that the Y coordinate increases in. Layout needs to be
+    /// aware of your coordinate system to place the glyphs correctly.
+    pub coordinate_system: PositiveYDirection,
 }
 
 impl Default for LayoutSettings {
@@ -87,6 +102,7 @@ impl Default for LayoutSettings {
             wrap_style: WrapStyle::Word,
             wrap_hard_breaks: true,
             include_whitespace: false,
+            coordinate_system: PositiveYDirection::Up,
         }
     }
 }
@@ -235,6 +251,11 @@ impl Layout {
         }
 
         // There is a lot of context.
+        let y_direction_modifier = if settings.coordinate_system == PositiveYDirection::Up {
+            1.0
+        } else {
+            -1.0
+        };
         let wrap_mask = Self::wrap_mask_from_settings(settings); // Wrap mask based on settings.
         let max_width = settings.max_width.unwrap_or(core::f32::MAX); // The max width of the bounding box.
         let mut state: u8 = 0; // Current linebreak state.
@@ -297,7 +318,7 @@ impl Layout {
                             font_index: style.font_index,
                         },
                         x: caret_x + floor(metrics.bounds.xmin),
-                        y: floor(metrics.bounds.ymin),
+                        y: floor(y_direction_modifier * metrics.bounds.ymin),
                         width: metrics.width,
                         height: metrics.height,
                     });
@@ -319,8 +340,8 @@ impl Layout {
         let mut y_base = settings.y - Self::vertical_padding(settings, total_height);
         let line = self.line_metrics[0];
         next_line_index = line.end_index;
-        current_ascent = line.ascent;
-        current_new_line_size = line.new_line_size;
+        current_ascent = y_direction_modifier * line.ascent;
+        current_new_line_size = y_direction_modifier * line.new_line_size;
         x_base += Self::horizontal_padding(settings, line.padding);
         for glyph in output {
             if current_index == next_line_index {
@@ -329,8 +350,8 @@ impl Layout {
                 x_base = settings.x - glyph.x;
                 y_base -= current_new_line_size;
                 next_line_index = line.end_index;
-                current_ascent = line.ascent;
-                current_new_line_size = line.new_line_size;
+                current_ascent = y_direction_modifier * line.ascent;
+                current_new_line_size = y_direction_modifier * line.new_line_size;
                 x_base += Self::horizontal_padding(settings, line.padding);
             }
             glyph.x += x_base;
