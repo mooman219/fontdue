@@ -2,7 +2,7 @@
 extern crate criterion;
 
 use criterion::{BenchmarkId, Criterion};
-use fontdue::layout::{Layout, LayoutSettings, TextStyle};
+use fontdue::layout::{CoordinateSystem, Layout, LayoutSettings, TextStyle};
 use glyph_brush_layout::{ab_glyph::*, *};
 
 const MESSAGES: [&str; 3] = ["Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore ", "Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Tempor orci eu lobortis elementum nibh tellus. Mi tempus imperdiet nulla malesuada pellentesque elit eget gravida cum. Non nisi est sit amet facilisis magna etiam tempor. In fermentum et sollicitudin ac. Nunc consequat interdum varius sit amet mattis. Est velit egestas dui id ornare arcu odio ut. Venenatis lectus magna fringilla urna porttitor rhoncus dolor purus non. Lobor", "Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Feugiat nibh sed pulvinar proin gravida hendrerit. Duis ut diam quam nulla porttitor massa id neque. Lacus viverra vitae congue eu consequat ac felis. Etiam non quam lacus suspendisse faucibus. Eget mauris pharetra et ultrices neque ornare. Libero id faucibus nisl tincidunt eget nullam non. Justo laoreet sit amet cursus sit amet. Velit laoreet id donec ultrices tincidunt arcu non sodales neque.
@@ -13,7 +13,7 @@ fn fontdue_layout_benchmark(c: &mut Criterion) {
     // Loading
     let font = include_bytes!("../resources/fonts/Roboto-Regular.ttf") as &[u8];
     let roboto_regular = fontdue::Font::from_bytes(font, fontdue::FontSettings::default()).unwrap();
-    let mut layout = Layout::new();
+    let mut layout = Layout::new(CoordinateSystem::PositiveYUp);
     let mut output = Vec::new();
     let settings = LayoutSettings {
         max_width: Some(200.0),
