@@ -1,4 +1,4 @@
-#[cfg(not(any(target_arch = "x86", target_arch = "x86_64")))]
+#[cfg(any(not(any(target_arch = "x86", target_arch = "x86_64")), not(feature = "simd")))]
 // [See license/rust-lang/libm] Copyright (c) 2018 Jorge Aparicio
 pub fn floor(x: f32) -> f32 {
     let mut ui = x.to_bits();
@@ -26,7 +26,7 @@ pub fn floor(x: f32) -> f32 {
     f32::from_bits(ui)
 }
 
-#[cfg(any(target_arch = "x86", target_arch = "x86_64"))]
+#[cfg(all(any(target_arch = "x86", target_arch = "x86_64"), feature = "simd"))]
 #[inline(always)]
 pub fn floor(mut value: f32) -> f32 {
     #[cfg(target_arch = "x86")]

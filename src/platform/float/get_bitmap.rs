@@ -1,10 +1,10 @@
 use alloc::vec::*;
-#[cfg(target_arch = "x86")]
+#[cfg(all(target_arch = "x86", feature = "simd"))]
 use core::arch::x86::*;
-#[cfg(target_arch = "x86_64")]
+#[cfg(all(target_arch = "x86_64", feature = "simd"))]
 use core::arch::x86_64::*;
 
-#[cfg(not(any(target_arch = "x86", target_arch = "x86_64")))]
+#[cfg(any(not(any(target_arch = "x86", target_arch = "x86_64")), not(feature = "simd")))]
 pub fn get_bitmap(a: &Vec<f32>, length: usize) -> Vec<u8> {
     use alloc::vec;
     let mut height = 0.0;
@@ -19,7 +19,7 @@ pub fn get_bitmap(a: &Vec<f32>, length: usize) -> Vec<u8> {
     output
 }
 
-#[cfg(any(target_arch = "x86", target_arch = "x86_64"))]
+#[cfg(all(any(target_arch = "x86", target_arch = "x86_64"), feature = "simd"))]
 pub fn get_bitmap(a: &Vec<f32>, length: usize) -> Vec<u8> {
     let aligned_length = (length + 3) & !3;
     assert!(aligned_length <= a.len());
@@ -60,7 +60,7 @@ pub fn get_bitmap(a: &Vec<f32>, length: usize) -> Vec<u8> {
 }
 
 // AVX is just slower, likely a bad impl.
-// #[cfg(any(target_arch = "x86", target_arch = "x86_64"))]
+// #[cfg(all(any(target_arch = "x86", target_arch = "x86_64"), feature = "simd"))]
 // pub fn get_bitmap(a: &Vec<f32>, length: usize) -> Vec<u8> {
 //     let aligned_length = (length + 7) & !7;
 //     assert!(aligned_length <= a.len());

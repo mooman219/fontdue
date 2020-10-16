@@ -17,6 +17,8 @@ exclude = ["resources/**", "examples/**", "fontdue.pgm"]
 maintenance = { status = "experimental" }
 
 [features]
+default = ["simd"]
+simd = []
 # Enable this flag to include the freetype benchmark in the benches.
 freetype_benchmark = ["freetype-rs"]
 
