@@ -133,7 +133,7 @@ impl Eq for GlyphRasterConfig {}
 
 /// A positioned scaled glyph.
 #[derive(Debug, Copy, Clone, PartialEq)]
-pub struct GlyphPosition {
+pub struct GlyphPosition<U> {
     /// Hashable key that can be used to uniquely identify a rasterized glyph.
     pub key: GlyphRasterConfig,
     /// The left side of the glyph bounding box. Dimensions are in pixels, and are alawys whole
@@ -146,16 +146,22 @@ pub struct GlyphPosition {
     pub width: usize,
     /// The height of the glyph. Dimensions are in pixels.
     pub height: usize,
+    /// The index of the TextStyle used for this glyph's layout.
+    pub text_style_index: usize,
+    /// Custom user data attached to the TextStyle used for this glyph.
+    pub user_data: U,
 }
 
 /// A style description for a segment of text.
-pub struct TextStyle<'a> {
+pub struct TextStyle<'a, U = ()> {
     /// The text to layout.
     pub text: &'a str,
     /// The scale of the text in pixel units.
     pub px: f32,
     /// The font to layout the text in.
     pub font_index: usize,
+    /// Custom user data to reference later in the `GlyphPosition` struct.
+    pub user_data: U,
 }
 
 impl<'a> TextStyle<'a> {
@@ -164,6 +170,18 @@ impl<'a> TextStyle<'a> {
             text,
             px,
             font_index,
+            user_data: (),
+        }
+    }
+}
+
+impl<'a, U> TextStyle<'a, U> {
+    pub fn with_user_data(text: &'a str, px: f32, font_index: usize, user_data: U) -> TextStyle<'a, U> {
+        TextStyle {
+            text,
+            px,
+            font_index,
+            user_data,
         }
     }
 }
@@ -237,12 +255,12 @@ impl Layout {
     /// Characters from the input string can only be omitted from the output, they are never
     /// reordered. The output buffer will always contain characters in the order they were defined
     /// in the styles.
-    pub fn layout_horizontal<T: Borrow<Font>>(
+    pub fn layout_horizontal<'a, T: Borrow<Font>, U>(
         &mut self,
         fonts: &[T],
-        styles: &[&TextStyle],
+        styles: &'a [&TextStyle<U>],
         settings: &LayoutSettings,
-        output: &mut Vec<GlyphPosition>,
+        output: &mut Vec<GlyphPosition<&'a U>>,
     ) {
         // Reset internal buffers.
         unsafe {
@@ -268,7 +286,7 @@ impl Layout {
         };
         let mut current_ascent = 0.0; // Ascent for the current style.
         let mut current_new_line_size = 0.0; // New line height for the current style.
-        for style in styles {
+        for (index, style) in styles.iter().enumerate() {
             let mut byte_offset = 0;
             let font = &fonts[style.font_index];
             if let Some(metrics) = font.borrow().horizontal_line_metrics(style.px) {
@@ -281,6 +299,7 @@ impl Layout {
                     next_line.new_line_size = current_new_line_size;
                 }
             }
+
             while byte_offset < style.text.len() {
                 let character = read_utf8(style.text, &mut byte_offset);
                 let linebreak_state = linebreak_property(&mut state, character) & wrap_mask;
@@ -321,6 +340,8 @@ impl Layout {
                         y,
                         width: metrics.width,
                         height: metrics.height,
+                        text_style_index: index,
+                        user_data: &style.user_data,
                     });
                 }
                 caret_x += advance;
