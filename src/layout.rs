@@ -146,8 +146,6 @@ pub struct GlyphPosition<U> {
     pub width: usize,
     /// The height of the glyph. Dimensions are in pixels.
     pub height: usize,
-    /// The index of the TextStyle used for this glyph's layout.
-    pub text_style_index: usize,
     /// Custom user data attached to the TextStyle used for this glyph.
     pub user_data: U,
 }
@@ -286,7 +284,7 @@ impl Layout {
         };
         let mut current_ascent = 0.0; // Ascent for the current style.
         let mut current_new_line_size = 0.0; // New line height for the current style.
-        for (index, style) in styles.iter().enumerate() {
+        for style in styles {
             let mut byte_offset = 0;
             let font = &fonts[style.font_index];
             if let Some(metrics) = font.borrow().horizontal_line_metrics(style.px) {
@@ -340,7 +338,6 @@ impl Layout {
                         y,
                         width: metrics.width,
                         height: metrics.height,
-                        text_style_index: index,
                         user_data: &style.user_data,
                     });
                 }
