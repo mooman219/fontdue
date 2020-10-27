@@ -342,7 +342,7 @@ impl Layout {
         let mut current_ascent;
         let mut current_new_line_size;
         let mut x_base = settings.x;
-        let mut y_base = settings.y - Self::vertical_padding(settings, total_height);
+        let mut y_base = settings.y - ymod * Self::vertical_padding(settings, total_height);
         let line = self.line_metrics[0];
         next_line_index = line.end_index;
         current_ascent = ymod * line.ascent;
