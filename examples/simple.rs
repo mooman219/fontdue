@@ -2,7 +2,7 @@ use std::fs::File;
 use std::io::Write;
 
 // Scratch pad for glyphs: ⅞ g
-const CHARACTER: char = 'g';
+const CHARACTER: char = 'b';
 const SIZE: f32 = 20.0;
 
 // cargo run --example simple --release

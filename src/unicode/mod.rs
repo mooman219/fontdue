@@ -40,15 +40,13 @@ pub const LINEBREAK_SOFT: u8 = 1; // 0001
 pub const LINEBREAK_HARD: u8 = 2; // 0010
 
 #[inline(always)]
-pub fn wrap_mask(wrap: bool, wrap_soft_breaks: bool, wrap_hard_breaks: bool) -> u8 {
+pub fn wrap_mask(wrap_soft_breaks: bool, wrap_hard_breaks: bool, has_width: bool) -> u8 {
     let mut mask = 0;
-    if wrap {
-        if wrap_hard_breaks {
-            mask |= LINEBREAK_HARD;
-        }
-        if wrap_soft_breaks {
-            mask |= LINEBREAK_SOFT;
-        }
+    if wrap_hard_breaks {
+        mask |= LINEBREAK_HARD;
+    }
+    if wrap_soft_breaks && has_width {
+        mask |= LINEBREAK_SOFT;
     }
     mask
 }
@@ -79,5 +77,49 @@ pub fn linebreak_property(state: &mut u8, codepoint: char) -> u8 {
     } else {
         *state = new;
         LINEBREAK_NONE
+    }
+}
+
+/// Classification for various character types.
+#[derive(Debug, Copy, Clone, PartialEq)]
+pub struct CharacterClass(u8);
+
+impl CharacterClass {
+    const WHITESPACE: u8 = 0b0000_0001;
+    const CONTROL: u8 = 0b0000_0010;
+
+    fn new() -> Self {
+        CharacterClass(0)
+    }
+
+    fn set_whitespace(&self) -> Self {
+        CharacterClass(self.0 | CharacterClass::WHITESPACE)
+    }
+
+    /// Makrs if the character is an ASCII whitespace character.
+    pub fn is_whitespace(&self) -> bool {
+        self.0 & CharacterClass::WHITESPACE != 0
+    }
+
+    fn set_control(&self) -> Self {
+        CharacterClass(self.0 | CharacterClass::CONTROL)
+    }
+
+    /// Marks if the character is an ASCII control character.
+    pub fn is_control(&self) -> bool {
+        self.0 & CharacterClass::CONTROL != 0
+    }
+}
+
+#[inline(always)]
+pub fn classify(c: char) -> CharacterClass {
+    let mut class = CharacterClass::new();
+    match c {
+        '\t' | '\n' | '\x0C' | '\r' | ' ' => class = class.set_whitespace(),
+        _ => {}
+    }
+    match c {
+        '\0'..='\x1F' | '\x7F' => class.set_control(),
+        _ => class,
     }
 }

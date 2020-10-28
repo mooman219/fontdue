@@ -8,16 +8,16 @@
 Fontdue is a simple, `no_std` (does not use the standard library for portability), pure Rust, TrueType (`.ttf/.ttc`) & OpenType (`.otf`) font rasterizer and layout tool. It strives to make interacting with fonts as fast as possible, and currently has the lowest end to end latency for a font rasterizer.
 
 ## Roadmap
-**Current goal (milestone 1):** `fontdue` is designed to be a replacement for `rusttype` [(link)](https://gitlab.redox-os.org/redox-os/rusttype), `ab_glyph` [(link)](https://github.com/alexheretic/ab-glyph), parts of `glyph_brush` [(link)](https://github.com/alexheretic/glyph-brush/tree/master/glyph-brush), and `glyph_brush_layout` [(link)](https://github.com/alexheretic/glyph-brush/tree/master/layout). This is a class of font libraries that don't tackle shaping.
 
-**Future goals:** Shaping - the complex layout of text such as Arabic and Devanagari - will be added. There are two potential pure Rust libraries (allsorts or rustybuzz) that are candidates for providing a shaping backend to Fontdue, but are relatively immature right now.
+**Version 1.0:** `fontdue` is designed to be a replacement for `rusttype` [(link)](https://gitlab.redox-os.org/redox-os/rusttype), `ab_glyph` [(link)](https://github.com/alexheretic/ab-glyph), parts of `glyph_brush` [(link)](https://github.com/alexheretic/glyph-brush/tree/master/glyph-brush), and `glyph_brush_layout` [(link)](https://github.com/alexheretic/glyph-brush/tree/master/layout). This is a class of font libraries that don't tackle shaping.
+
+**Version 2.0:** Shaping - the complex layout of text such as Arabic and Devanagari - will be added. There are two potential pure Rust libraries (allsorts or rustybuzz) that are candidates for providing a shaping backend to Fontdue, but are relatively immature right now.
 
 A **non-goal** of this library is to be allocation free and have a fast, "zero cost" initial load. This library _does_ make allocations and depends on the `alloc` crate. Fonts are fully parsed on creation and relevant information is stored in a more convenient to access format. Unlike other font libraries, the font structures have no lifetime dependencies since it allocates its own space.
 
 ## Example
 
 ### Rasterization
-The rasterization API is done for **milestone 1** and should not see major changes.
 ```rust
 // Read the font data.
 let font = include_bytes!("../resources/Roboto-Regular.ttf") as &[u8];
@@ -28,30 +28,37 @@ let (metrics, bitmap) = font.rasterize('g', 17.0);
 ```
 
 ### Layout
-The layout API is immature and may see many more major breaking changes before **milestone 1**.
 ```rust
 // Read the font data.
-let font = include_bytes!("../resources/Roboto-Regular.ttf") as &[u8];
+let font = include_bytes!("../resources/fonts/Roboto-Regular.ttf") as &[u8];
 // Parse it into the font type.
-let roboto_regular = fontdue::Font::from_bytes(font, fontdue::FontSettings::default()).unwrap();
-// Create a layout context. This stores transient state needed to layout text.
-// Laying out text needs some heap allocations; reusing this context reduces the need to reallocate space.
-let mut layout = Layout::new();
-// The vector where the glyphs positional information will be written to. This vec is cleared before it's written to.
-let mut output = Vec::new();
-// Various settings for laying out the text, such as alignment and wrapping settings.
-let settings = LayoutSettings {
-    ..LayoutSettings::default()
-};
+let roboto_regular = Font::from_bytes(font, fontdue::FontSettings::default()).unwrap();
 // The list of fonts that will be used during layout.
 let fonts = &[roboto_regular];
-// The text that will be laid out, its size, and the index of the font in the font list to use for that section of text.
-let styles = &[
-    &TextStyle::new("Hello ", 35.0, 0),
-    &TextStyle::new("world!", 40.0, 0),
-];
-// Calculate the layout.
-layout.layout_horizontal(fonts, styles, &settings, &mut output);
+// Create a layout context. Laying out text needs some heap allocations; reusing this context
+// reduces the need to reallocate space. We inform layout of which way the Y axis points here.
+let mut layout = Layout::new(CoordinateSystem::PositiveYUp);
+// By default, layout is initialized with the default layout settings. This call is redundant, but
+// demonstrates setting the value with your custom settings.
+layout.reset(&LayoutSettings {
+    ..LayoutSettings::default()
+});
+// The text that will be laid out, its size, and the index of the font in the font list to use for
+// that section of text.
+layout.append(fonts, &TextStyle::new("Hello ", 35.0, 0));
+layout.append(fonts, &TextStyle::new("world!", 40.0, 0));
+// Prints the layout for "Hello world!"
+println!("{:?}", layout.glyphs());
+
+
+// If you wanted to attached metadata based on the TextStyle to the glyphs returned in the
+// glyphs() function, you can use the TextStyle::with_metadata function. In this example, the
+// Layout type is now parameterized with u8 (Layout<u8>). All styles need to share the same
+// metadata type.
+let mut layout = Layout::new(CoordinateSystem::PositiveYUp);
+layout.append(fonts, &TextStyle::with_metadata("Hello ", 35.0, 0, 10u8));
+layout.append(fonts, &TextStyle::with_metadata("world!", 40.0, 0, 20u8));
+println!("{:?}", layout.glyphs());
 ```
 
 ## Performance
