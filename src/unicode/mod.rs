@@ -96,7 +96,7 @@ impl CharacterClass {
         CharacterClass(self.0 | CharacterClass::WHITESPACE)
     }
 
-    /// Makrs if the character is an ASCII whitespace character.
+    /// Marks if the character is an ASCII whitespace character.
     pub fn is_whitespace(&self) -> bool {
         self.0 & CharacterClass::WHITESPACE != 0
     }
