@@ -364,7 +364,7 @@ impl<'a, U: Copy + Clone> Layout<U> {
         while byte_offset < style.text.len() {
             let c = read_utf8(style.text, &mut byte_offset);
             let class = classify(c);
-            let metrics = if c as u32 > 0x1F {
+            let metrics = if !class.is_control() {
                 font.borrow().metrics(c, style.px)
             } else {
                 Metrics::default()
