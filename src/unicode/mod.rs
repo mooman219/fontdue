@@ -82,44 +82,58 @@ pub fn linebreak_property(state: &mut u8, codepoint: char) -> u8 {
 
 /// Classification for various character types.
 #[derive(Debug, Copy, Clone, PartialEq)]
-pub struct CharacterClass(u8);
+pub struct CharacterData(u8);
 
-impl CharacterClass {
+impl CharacterData {
     const WHITESPACE: u8 = 0b0000_0001;
     const CONTROL: u8 = 0b0000_0010;
+    const MISSING: u8 = 0b0000_0100;
 
     fn new() -> Self {
-        CharacterClass(0)
+        CharacterData(0)
     }
 
-    fn set_whitespace(&self) -> Self {
-        CharacterClass(self.0 | CharacterClass::WHITESPACE)
+    fn set_whitespace(&mut self) {
+        self.0 |= CharacterData::WHITESPACE;
     }
 
     /// Marks if the character is an ASCII whitespace character.
     pub fn is_whitespace(&self) -> bool {
-        self.0 & CharacterClass::WHITESPACE != 0
+        self.0 & CharacterData::WHITESPACE != 0
     }
 
-    fn set_control(&self) -> Self {
-        CharacterClass(self.0 | CharacterClass::CONTROL)
+    fn set_control(&mut self) {
+        self.0 |= CharacterData::CONTROL;
     }
 
     /// Marks if the character is an ASCII control character.
     pub fn is_control(&self) -> bool {
-        self.0 & CharacterClass::CONTROL != 0
+        self.0 & CharacterData::CONTROL != 0
+    }
+
+    fn set_missing(&mut self) {
+        self.0 |= CharacterData::MISSING;
+    }
+
+    /// Marks if the character is missing from its associated font.
+    pub fn is_missing(&self) -> bool {
+        self.0 & CharacterData::MISSING != 0
     }
 }
 
 #[inline(always)]
-pub fn classify(c: char) -> CharacterClass {
-    let mut class = CharacterClass::new();
+pub fn classify(c: char, index: usize) -> CharacterData {
+    let mut class = CharacterData::new();
+    if index == 0 {
+        class.set_missing();
+    }
     match c {
-        '\t' | '\n' | '\x0C' | '\r' | ' ' => class = class.set_whitespace(),
+        '\t' | '\n' | '\x0C' | '\r' | ' ' => class.set_whitespace(),
         _ => {}
     }
     match c {
         '\0'..='\x1F' | '\x7F' => class.set_control(),
-        _ => class,
+        _ => {}
     }
+    class
 }

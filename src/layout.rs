@@ -1,4 +1,4 @@
-pub use crate::unicode::CharacterClass;
+pub use crate::unicode::CharacterData;
 
 use crate::unicode::{classify, linebreak_property, read_utf8, wrap_mask, LINEBREAK_HARD, LINEBREAK_NONE};
 use crate::Font;
@@ -144,10 +144,10 @@ pub struct GlyphPosition<U: Copy + Clone = ()> {
     pub width: usize,
     /// The height of the glyph. Dimensions are in pixels.
     pub height: usize,
-    /// The classification of the glyph's corresponding character (if it has one).
-    pub class: CharacterClass,
-    /// Custom user data attached to the TextStyle used for this glyph.
-    pub metadata: U,
+    /// Additional metadata associated with the character
+    pub char_data: CharacterData,
+    /// Custom user data associated with the text styled used to generate this glyph.
+    pub user_data: U,
 }
 
 /// A style description for a segment of text.
@@ -158,7 +158,8 @@ pub struct TextStyle<'a, U: Copy + Clone = ()> {
     pub px: f32,
     /// The font to layout the text in.
     pub font_index: usize,
-    pub metadata: U,
+    /// Additional user data to associate with glyphs produced by this text style.
+    pub user_data: U,
 }
 
 impl<'a> TextStyle<'a> {
@@ -167,18 +168,18 @@ impl<'a> TextStyle<'a> {
             text,
             px,
             font_index,
-            metadata: (),
+            user_data: (),
         }
     }
 }
 
 impl<'a, U: Copy + Clone> TextStyle<'a, U> {
-    pub fn with_metadata(text: &'a str, px: f32, font_index: usize, metadata: U) -> TextStyle<'a, U> {
+    pub fn with_user_data(text: &'a str, px: f32, font_index: usize, user_data: U) -> TextStyle<'a, U> {
         TextStyle {
             text,
             px,
             font_index,
-            metadata,
+            user_data,
         }
     }
 }
@@ -363,9 +364,10 @@ impl<'a, U: Copy + Clone> Layout<U> {
         }
         while byte_offset < style.text.len() {
             let c = read_utf8(style.text, &mut byte_offset);
-            let class = classify(c);
-            let metrics = if !class.is_control() {
-                font.borrow().metrics(c, style.px)
+            let char_index = font.borrow().lookup_glyph_index(c);
+            let char_data = classify(c, char_index);
+            let metrics = if !char_data.is_control() {
+                font.borrow().metrics_indexed(char_index, style.px)
             } else {
                 Metrics::default()
             };
@@ -407,8 +409,8 @@ impl<'a, U: Copy + Clone> Layout<U> {
                 y,
                 width: metrics.width,
                 height: metrics.height,
-                class,
-                metadata: style.metadata,
+                char_data,
+                user_data: style.user_data,
             });
             self.current_pos += advance;
         }

@@ -29,7 +29,7 @@ pub fn main() {
     // Layout type is now parameterized with u8 (Layout<u8>). All styles need to share the same
     // metadata type.
     let mut layout = Layout::new(CoordinateSystem::PositiveYUp);
-    layout.append(fonts, &TextStyle::with_metadata("Hello ", 35.0, 0, 10u8));
-    layout.append(fonts, &TextStyle::with_metadata("world!", 40.0, 0, 20u8));
+    layout.append(fonts, &TextStyle::with_user_data("Hello ", 35.0, 0, 10u8));
+    layout.append(fonts, &TextStyle::with_user_data("world!", 40.0, 0, 20u8));
     println!("{:?}", layout.glyphs());
 }
