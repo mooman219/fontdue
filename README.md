@@ -51,14 +51,13 @@ layout.append(fonts, &TextStyle::new("world!", 40.0, 0));
 // Prints the layout for "Hello world!"
 println!("{:?}", layout.glyphs());
 
-
 // If you wanted to attached metadata based on the TextStyle to the glyphs returned in the
 // glyphs() function, you can use the TextStyle::with_metadata function. In this example, the
 // Layout type is now parameterized with u8 (Layout<u8>). All styles need to share the same
 // metadata type.
 let mut layout = Layout::new(CoordinateSystem::PositiveYUp);
-layout.append(fonts, &TextStyle::with_metadata("Hello ", 35.0, 0, 10u8));
-layout.append(fonts, &TextStyle::with_metadata("world!", 40.0, 0, 20u8));
+layout.append(fonts, &TextStyle::with_user_data("Hello ", 35.0, 0, 10u8));
+layout.append(fonts, &TextStyle::with_user_data("world!", 40.0, 0, 20u8));
 println!("{:?}", layout.glyphs());
 ```
 
