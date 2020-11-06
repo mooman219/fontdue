@@ -80,7 +80,7 @@ pub fn linebreak_property(state: &mut u8, codepoint: char) -> u8 {
     }
 }
 
-/// Classification for various character types.
+/// Miscellaneous metadata associated with a character.
 #[derive(Debug, Copy, Clone, PartialEq)]
 pub struct CharacterData(u8);
 

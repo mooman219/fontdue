@@ -144,7 +144,7 @@ pub struct GlyphPosition<U: Copy + Clone = ()> {
     pub width: usize,
     /// The height of the glyph. Dimensions are in pixels.
     pub height: usize,
-    /// Additional metadata associated with the character
+    /// Additional metadata associated with the character used to generate this glyph.
     pub char_data: CharacterData,
     /// Custom user data associated with the text styled used to generate this glyph.
     pub user_data: U,
@@ -435,14 +435,10 @@ impl<'a, U: Copy + Clone> Layout<U> {
             1.0 // PositiveYUp
         };
         let mut y = self.y - dir * floor((self.max_height - self.height()) * self.vertical_align);
-        // let mut y = self.y - floor((self.max_height - self.height()) * self.vertical_align); // PositiveYUp
-        // let mut y = self.y + floor((self.max_height - self.height()) * self.vertical_align); // PositiveYDown
         let mut idx = 0;
         for line in &self.line_metrics {
             let x = self.x - line.x_start + floor(line.padding * self.horizontal_align);
             y -= dir * line.ascent;
-            // y -= line.ascent; // PositiveYUp
-            // y += line.ascent; // PositiveYDown
             while idx < line.end_index {
                 let mut glyph = self.glyphs[idx];
                 glyph.x += x;
@@ -451,8 +447,6 @@ impl<'a, U: Copy + Clone> Layout<U> {
                 idx += 1;
             }
             y -= dir * (line.new_line_size - line.ascent);
-            // y -= line.new_line_size - line.ascent; // PositiveYUp
-            // y += line.new_line_size - line.ascent; // PositiveYDown
         }
 
         &self.output
