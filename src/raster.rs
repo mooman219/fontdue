@@ -25,9 +25,9 @@ impl Raster {
         }
     }
 
-    pub(crate) fn draw(&mut self, glyph: &Glyph, scale: f32, offset_x: f32, offset_y: f32) {
-        let params = f32x4::new(1.0 / scale, 1.0 / scale, scale, scale);
-        let scale = f32x4::splat(scale);
+    pub(crate) fn draw(&mut self, glyph: &Glyph, scale_x: f32, scale_y: f32, offset_x: f32, offset_y: f32) {
+        let params = f32x4::new(1.0 / scale_x, 1.0 / scale_y, scale_x, scale_y);
+        let scale = f32x4::new(scale_x, scale_y, scale_x, scale_y);
         let offset = f32x4::new(offset_x, offset_y, offset_x, offset_y);
         for line in &glyph.v_lines {
             self.v_line(line, line.coords * scale + offset);
