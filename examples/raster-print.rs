@@ -1,4 +1,3 @@
-
 const CHARACTER: char = 'b';
 const SIZE: f32 = 20.0;
 
@@ -12,8 +11,8 @@ pub fn main() {
 
     println!("Normal:");
     let (metrics, bitmap) = font.rasterize(CHARACTER, SIZE);
-    for y in 0 .. metrics.height {
-        for x in 0 .. metrics.width {
+    for y in 0..metrics.height {
+        for x in 0..metrics.width {
             let char_s = bitmap[x + y * metrics.width];
             print!("\x1B[48;2;{};{};{}m   ", char_s, char_s, char_s);
         }
@@ -21,8 +20,8 @@ pub fn main() {
     }
     println!("\nSubpixel:");
     let (metrics, bitmap) = font.rasterize_subpixel(CHARACTER, SIZE);
-    for y in 0 .. metrics.height {
-        for x in (0 .. metrics.width * 3).step_by(3) {
+    for y in 0..metrics.height {
+        for x in (0..metrics.width * 3).step_by(3) {
             let char_r = bitmap[x + y * metrics.width * 3];
             let char_g = bitmap[x + 1 + y * metrics.width * 3];
             let char_b = bitmap[x + 2 + y * metrics.width * 3];
