@@ -1,0 +1,17 @@
+name: Test
+on: [push, pull_request]
+jobs:
+  native:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        rust: [stable, beta]
+    steps:
+    - uses: hecrj/setup-rust-action@v1
+      with:
+        rust-version: ${{ matrix.rust }}
+    - uses: actions/checkout@master
+    - name: Run tests
+      run: |
+        cargo test --verbose --all
+        cargo test --verbose --all --all-features
