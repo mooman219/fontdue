@@ -11,9 +11,13 @@ use core::ops::Deref;
 use hashbrown::HashMap;
 use ttf_parser::FaceParsingError;
 
+#[cfg(feature = "serde_derive")]
+use serde::{Deserialize, Serialize};
+
 /// Defines the bounds for a glyph's outline in subpixels. A glyph's outline is always contained in
 /// its bitmap.
 #[derive(Copy, Clone, PartialEq, Debug)]
+#[cfg_attr(feature = "serde_derive", derive(Serialize, Deserialize))]
 pub struct OutlineBounds {
     /// Subpixel offset of the left-most edge of the glyph's outline.
     pub xmin: f32,
@@ -51,6 +55,7 @@ impl OutlineBounds {
 
 /// Encapsulates all layout information associated with a glyph for a fixed scale.
 #[derive(Copy, Clone, PartialEq, Debug)]
+#[cfg_attr(feature = "serde_derive", derive(Serialize, Deserialize))]
 pub struct Metrics {
     /// Whole pixel offset of the left-most edge of the bitmap. This may be negative to reflect the
     /// glyph is positioned to the left of the origin.
@@ -87,6 +92,7 @@ impl Default for Metrics {
 
 /// Metrics associated with line positioning.
 #[derive(Copy, Clone, PartialEq, Debug)]
+#[cfg_attr(feature = "serde_derive", derive(Serialize, Deserialize))]
 pub struct LineMetrics {
     /// The highest point that any glyph in the font extends to above the baseline. Typically
     /// positive.
@@ -128,6 +134,7 @@ impl LineMetrics {
 }
 
 #[derive(Clone)]
+#[cfg_attr(feature = "serde_derive", derive(Serialize, Deserialize))]
 pub(crate) struct Glyph {
     pub v_lines: Vec<Line>,
     pub m_lines: Vec<Line>,
@@ -150,6 +157,7 @@ impl Default for Glyph {
 
 /// Settings for controlling specific font and layout behavior.
 #[derive(Copy, Clone, PartialEq)]
+#[cfg_attr(feature = "serde_derive", derive(Serialize, Deserialize))]
 pub struct FontSettings {
     /// The default is true. This offsets glyphs relative to their position in their scaled
     /// bounding box. This is required for laying out glyphs correctly, but can be disabled to make
@@ -175,6 +183,7 @@ impl Default for FontSettings {
 }
 
 /// Represents a font. Fonts are immutable after creation and owns its own copy of the font data.
+#[cfg_attr(feature = "serde_derive", derive(Serialize, Deserialize))]
 pub struct Font {
     units_per_em: f32,
     glyphs: Vec<Glyph>,

@@ -11,6 +11,41 @@ pub use simd_x86::*;
 mod float;
 pub use float::*;
 
+#[cfg(feature = "serde_derive")]
+use {
+    crate::alloc::string::ToString as _,
+    core::{fmt, fmt::Debug},
+};
+
+#[cfg(feature = "serde_derive")]
+impl Debug for f32x4 {
+    fn fmt(&self, f: &mut fmt::Formatter) -> Result<(), fmt::Error> {
+        // Opening
+        f.write_str("f32x4 { x0: ")?;
+
+        // The fields
+        let (x0, x1, x2, x3) = self.copied();
+        f.write_str(x0.to_string().as_str())?;
+        f.write_str(", x1: ")?;
+        f.write_str(x1.to_string().as_str())?;
+        f.write_str(", x2: ")?;
+        f.write_str(x2.to_string().as_str())?;
+        f.write_str(", x3: ")?;
+        f.write_str(x3.to_string().as_str())?;
+
+        // Closing
+        f.write_str(" }")
+    }
+}
+
+#[cfg(all(feature = "serde_derive", test))]
+impl PartialEq for f32x4 {
+    #[inline(always)]
+    fn eq(&self, other: &Self) -> bool {
+        self.copied() == other.copied()
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;

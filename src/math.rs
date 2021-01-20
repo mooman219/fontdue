@@ -2,6 +2,9 @@ use crate::platform::{abs, atan2, clamp, f32x4};
 use crate::{Glyph, OutlineBounds};
 use alloc::vec::*;
 
+#[cfg(feature = "serde_derive")]
+use serde::{Deserialize, Serialize};
+
 #[derive(Copy, Clone, PartialEq, Debug)]
 struct AABB {
     /// Coordinate of the left-most edge.
@@ -226,6 +229,7 @@ impl Point {
 }
 
 #[derive(Copy, Clone)]
+#[cfg_attr(feature = "serde_derive", derive(Serialize, Deserialize))]
 pub struct Line {
     /// X0, Y0, X1, Y1.
     pub coords: f32x4,
