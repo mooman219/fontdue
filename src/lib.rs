@@ -1,7 +1,7 @@
 //! Fontdue is a font parser, rasterizer, and layout tool.
 //!
 //! This is a #![no_std] crate, but still requires the alloc crate.
-//! 
+//!
 //! ## Optional features
 //! * `serde_derive` - Implementations of
 //! [`Serialize`](https://docs.serde.rs/serde/ser/trait.Serialize.html) and
