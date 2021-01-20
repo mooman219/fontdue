@@ -77,6 +77,13 @@ This benchmark measures the time it takes to layout latin characters of sample t
 
 ![Layout benchmarks](/images/layout.png)
 
+## Optional features
+
+* `serde_derive` - Implementations of
+[`Serialize`](https://docs.serde.rs/serde/ser/trait.Serialize.html) and
+[`Deserialize`](https://docs.serde.rs/serde/de/trait.Deserialize.html) for important `fontdue`
+types. Note that serialization works between builds of `fontdue` with and without SIMD enabled.
+
 ## Notices
 
 ### Maintenance
