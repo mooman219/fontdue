@@ -225,7 +225,7 @@ impl Point {
     }
 }
 
-#[derive(Copy, Clone)]
+#[derive(Debug, Copy, Clone)]
 pub struct Line {
     /// X0, Y0, X1, Y1.
     pub coords: f32x4,

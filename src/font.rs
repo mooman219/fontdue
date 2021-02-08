@@ -127,7 +127,7 @@ impl LineMetrics {
     }
 }
 
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub(crate) struct Glyph {
     pub v_lines: Vec<Line>,
     pub m_lines: Vec<Line>,
@@ -149,7 +149,7 @@ impl Default for Glyph {
 }
 
 /// Settings for controlling specific font and layout behavior.
-#[derive(Copy, Clone, PartialEq)]
+#[derive(Copy, Clone, PartialEq, Debug)]
 pub struct FontSettings {
     /// The default is true. This offsets glyphs relative to their position in their scaled
     /// bounding box. This is required for laying out glyphs correctly, but can be disabled to make
@@ -175,6 +175,7 @@ impl Default for FontSettings {
 }
 
 /// Represents a font. Fonts are immutable after creation and owns its own copy of the font data.
+#[derive(Debug, Clone)]
 pub struct Font {
     units_per_em: f32,
     glyphs: Vec<Glyph>,
