@@ -3,13 +3,14 @@ use crate::math::{Geometry, Line};
 use crate::platform::{as_i32, ceil, floor, fract, is_negative};
 use crate::raster::Raster;
 use crate::FontResult;
+use alloc::string::String;
 use alloc::vec;
 use alloc::vec::*;
 use core::mem;
 use core::num::NonZeroU16;
 use core::ops::Deref;
 use hashbrown::HashMap;
-use ttf_parser::FaceParsingError;
+use ttf_parser::{Face, FaceParsingError};
 
 /// Defines the bounds for a glyph's outline in subpixels. A glyph's outline is always contained in
 /// its bitmap.
@@ -176,12 +177,19 @@ impl Default for FontSettings {
 
 /// Represents a font. Fonts are immutable after creation and owns its own copy of the font data.
 pub struct Font {
+    name: Option<String>,
     units_per_em: f32,
     glyphs: Vec<Glyph>,
     char_to_glyph: HashMap<u32, NonZeroU16>,
     horizontal_line_metrics: Option<LineMetrics>,
     vertical_line_metrics: Option<LineMetrics>,
     settings: FontSettings,
+}
+
+impl core::fmt::Debug for Font {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+        f.debug_struct("Font").field("name", &self.name).finish()
+    }
 }
 
 /// Converts a ttf-parser FaceParsingError into a string.
@@ -197,14 +205,24 @@ fn convert_error(error: FaceParsingError) -> &'static str {
     }
 }
 
+fn convert_name(face: &Face) -> Option<String> {
+    for name in face.names() {
+        if name.name_id() == 4 {
+            return name.to_string();
+        }
+    }
+    None
+}
+
 impl Font {
     /// Constructs a font from an array of bytes.
     pub fn from_bytes<Data: Deref<Target = [u8]>>(data: Data, settings: FontSettings) -> FontResult<Font> {
-        use ttf_parser::{Face, GlyphId, TableName};
+        use ttf_parser::{GlyphId, TableName};
         let face = match Face::from_slice(&data, settings.collection_index) {
             Ok(f) => f,
             Err(e) => return Err(convert_error(e)),
         };
+        let name = convert_name(&face);
         // TrueType and OpenType define their point order opposite of eachother.
         let reverse_points =
             if face.has_table(TableName::GlyphVariations) || face.has_table(TableName::GlyphData) {
@@ -268,6 +286,7 @@ impl Font {
         };
 
         Ok(Font {
+            name,
             glyphs,
             char_to_glyph,
             units_per_em,
