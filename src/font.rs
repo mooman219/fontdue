@@ -150,7 +150,7 @@ impl Default for Glyph {
 }
 
 /// Settings for controlling specific font and layout behavior.
-#[derive(Copy, Clone, PartialEq)]
+#[derive(Copy, Clone, PartialEq, Debug)]
 pub struct FontSettings {
     /// The default is true. This offsets glyphs relative to their position in their scaled
     /// bounding box. This is required for laying out glyphs correctly, but can be disabled to make
@@ -176,6 +176,7 @@ impl Default for FontSettings {
 }
 
 /// Represents a font. Fonts are immutable after creation and owns its own copy of the font data.
+#[derive(Clone)]
 pub struct Font {
     name: Option<String>,
     units_per_em: f32,
