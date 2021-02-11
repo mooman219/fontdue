@@ -175,7 +175,7 @@ impl Default for FontSettings {
 }
 
 /// Represents a font. Fonts are immutable after creation and owns its own copy of the font data.
-#[derive(Debug, Clone)]
+#[derive(Clone)]
 pub struct Font {
     units_per_em: f32,
     glyphs: Vec<Glyph>,
@@ -183,6 +183,17 @@ pub struct Font {
     horizontal_line_metrics: Option<LineMetrics>,
     vertical_line_metrics: Option<LineMetrics>,
     settings: FontSettings,
+}
+
+impl core::fmt::Debug for Font {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+        // when `finish_non_exhaustive` is stablized, we'll use it here
+        // but for now, this is fine
+        f.debug_struct("Font")
+            .field("units_per_em", &self.units_per_em)
+            .field("settings", &self.settings)
+            .finish()
+    }
 }
 
 /// Converts a ttf-parser FaceParsingError into a string.
