@@ -10,7 +10,7 @@ use core::mem;
 use core::num::NonZeroU16;
 use core::ops::Deref;
 use hashbrown::HashMap;
-use ttf_parser::{Face, FaceParsingError, name_id};
+use ttf_parser::{name_id, Face, FaceParsingError};
 
 /// Defines the bounds for a glyph's outline in subpixels. A glyph's outline is always contained in
 /// its bitmap.
@@ -213,10 +213,10 @@ fn convert_name(face: &Face) -> Option<String> {
             let num_characters = name.name().len() >> 1;
             let mut data = vec![0 as u16; num_characters];
             for i in 0..num_characters {
-                data[i] = ((name_data[2*i] as u16) << 8) | (name_data[2*i+1] as u16);
+                data[i] = ((name_data[2 * i] as u16) << 8) | (name_data[2 * i + 1] as u16);
             }
             if let Ok(s) = String::from_utf16(&data) {
-                return Some(s)
+                return Some(s);
             }
         }
     }
