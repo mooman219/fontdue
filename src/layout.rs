@@ -363,7 +363,7 @@ impl<'a, U: Copy + Clone> Layout<U> {
             }
         }
         while byte_offset < style.text.len() {
-            let c = read_utf8(style.text, &mut byte_offset);
+            let c = read_utf8(style.text.as_bytes(), &mut byte_offset);
             let char_index = font.borrow().lookup_glyph_index(c);
             let char_data = classify(c, char_index);
             let metrics = if !char_data.is_control() {

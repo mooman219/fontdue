@@ -2,6 +2,7 @@ use crate::layout::GlyphRasterConfig;
 use crate::math::{Geometry, Line};
 use crate::platform::{as_i32, ceil, floor, fract, is_negative};
 use crate::raster::Raster;
+use crate::unicode::decode_utf16;
 use crate::FontResult;
 use alloc::string::String;
 use alloc::vec;
@@ -10,7 +11,7 @@ use core::mem;
 use core::num::NonZeroU16;
 use core::ops::Deref;
 use hashbrown::HashMap;
-use ttf_parser::{Face, FaceParsingError};
+use ttf_parser::{Face, FaceParsingError, PlatformId};
 
 /// Defines the bounds for a glyph's outline in subpixels. A glyph's outline is always contained in
 /// its bitmap.
@@ -208,11 +209,27 @@ fn convert_error(error: FaceParsingError) -> &'static str {
 
 fn convert_name(face: &Face) -> Option<String> {
     for name in face.names() {
-        if name.name_id() == 4 {
-            return name.to_string();
+        if name.name_id() == 4 && is_unicode_encoding(name.platform_id(), name.encoding_id()) {
+            return Some(decode_utf16(name.name()));
         }
     }
     None
+}
+
+#[inline]
+fn is_unicode_encoding(platform_id: PlatformId, encoding_id: u16) -> bool {
+    // https://docs.microsoft.com/en-us/typography/opentype/spec/name#windows-encoding-ids
+    const WINDOWS_SYMBOL_ENCODING_ID: u16 = 0;
+    const WINDOWS_UNICODE_BMP_ENCODING_ID: u16 = 1;
+
+    match platform_id {
+        PlatformId::Unicode => true,
+        PlatformId::Windows => match encoding_id {
+            WINDOWS_SYMBOL_ENCODING_ID | WINDOWS_UNICODE_BMP_ENCODING_ID => true,
+            _ => false,
+        },
+        _ => false,
+    }
 }
 
 impl Font {

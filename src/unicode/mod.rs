@@ -1,6 +1,7 @@
 mod tables;
 
 use crate::unicode::tables::*;
+use alloc::string::String;
 
 const CONT_MASK: u8 = 0b0011_1111;
 
@@ -9,9 +10,30 @@ fn utf8_acc_cont_byte(ch: u32, byte: u8) -> u32 {
     (ch << 6) | (byte & CONT_MASK) as u32
 }
 
+pub fn decode_utf16(bytes: &[u8]) -> String {
+    let mut output = String::new();
+    let mut offset = 0;
+    while offset < bytes.len() {
+        output.push(read_utf16(bytes, &mut offset));
+    }
+    output
+}
+
+pub fn read_utf16(bytes: &[u8], offset: &mut usize) -> char {
+    let a = ((bytes[*offset] as u16) << 8) | bytes[*offset + 1] as u16;
+    *offset += 2;
+    if a < 0xD800 || 0xDFFF < a {
+        unsafe { core::char::from_u32_unchecked(a as u32) }
+    } else {
+        let b = ((bytes[*offset] as u16) << 8) | bytes[*offset + 1] as u16;
+        *offset += 2;
+        let c = (((a - 0xD800) as u32) << 10 | (b - 0xDC00) as u32) + 0x1_0000;
+        unsafe { core::char::from_u32_unchecked(c as u32) }
+    }
+}
+
 /// Returns (length, character). Cannot be run at the end of the string.
-pub fn read_utf8(string: &str, byte_offset: &mut usize) -> char {
-    let bytes = string.as_bytes();
+pub fn read_utf8(bytes: &[u8], byte_offset: &mut usize) -> char {
     let x = bytes[*byte_offset];
     *byte_offset += 1;
     if x < 128 {
