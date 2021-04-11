@@ -205,21 +205,20 @@ struct LineMetrics {
     pub end_index: usize,
 }
 
-
 /// Gives the position of a line of text after layout.
 /// This can be useful to calculate where to put the caret when implementing
 /// text edit functionality.
 #[derive(Debug, Copy, Clone)]
 pub struct LinePosition<U: Clone + Copy> {
     /// The y coordinate of the baseline of this line, in pixels
-    pub baseline_y : f32,
+    pub baseline_y: f32,
     /// The user data for the first glyph on the line, and the byte index of the corresponding
     /// character in the original TextStyle used to create that glyph.
     /// This is useful to know to implement 'Home' button functionality in a text editor.
     ///
     /// Note that the byte index of a character is not the same as the character index, since some
     /// characters are represented by multiple bytes.
-    pub line_start: (U,usize),
+    pub line_start: (U, usize),
     /// The user data for the last glyph on the line, and the byte index following the corresponding
     /// character in the original TextStyle used to create that glyph.
     /// This is useful to know to implement 'End' button functionality in a text editor.
@@ -228,8 +227,7 @@ pub struct LinePosition<U: Clone + Copy> {
     ///
     /// Note that the byte index of a character is not the same as the character index, since some
     /// characters are represented by multiple bytes.
-    pub line_end: (U,usize),
-
+    pub line_end: (U, usize),
 }
 
 impl Default for LineMetrics {
@@ -448,7 +446,7 @@ impl<'a, U: Copy + Clone> Layout<U> {
                 height: metrics.height,
                 char_data,
                 user_data: style.user_data,
-                byte_offset: cur_character_offset
+                byte_offset: cur_character_offset,
             });
             self.current_pos += advance;
         }
@@ -497,14 +495,15 @@ impl<'a, U: Copy + Clone> Layout<U> {
             y -= dir * (line.new_line_size - line.ascent);
 
             if line_start_idx < line.end_index {
-                let line_start_offset =self.glyphs[line_start_idx].byte_offset;
-                let line_start_userdata =self.glyphs[line_start_idx].user_data;
-                let line_end_offset =self.glyphs[idx-1].byte_offset+self.glyphs[idx-1].key.c.len_utf8();
-                let line_end_userdata =self.glyphs[idx-1].user_data;
+                let line_start_offset = self.glyphs[line_start_idx].byte_offset;
+                let line_start_userdata = self.glyphs[line_start_idx].user_data;
+                let line_end_offset =
+                    self.glyphs[idx - 1].byte_offset + self.glyphs[idx - 1].key.c.len_utf8();
+                let line_end_userdata = self.glyphs[idx - 1].user_data;
                 self.line_positions.push(LinePosition {
                     baseline_y,
                     line_start: (line_start_userdata, line_start_offset),
-                    line_end: (line_end_userdata, line_end_offset)
+                    line_end: (line_end_userdata, line_end_offset),
                 });
             }
         }
