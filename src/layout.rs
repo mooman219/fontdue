@@ -148,6 +148,13 @@ pub struct GlyphPosition<U: Copy + Clone = ()> {
     pub char_data: CharacterData,
     /// Custom user data associated with the text styled used to generate this glyph.
     pub user_data: U,
+    /// The byte offset into the original string used in the append call which created
+    /// this glyph.
+    ///
+    /// At time of writing, fontdue does not handle unicode graphemes consisting of multiple
+    /// code points (some letters, certain emoji's etc). This field is guaranteed to use the
+    /// same logic as fontdue uses internally, even if that logic is changed.
+    pub byte_offset: usize,
 }
 
 /// A style description for a segment of text.
@@ -198,6 +205,33 @@ struct LineMetrics {
     pub end_index: usize,
 }
 
+
+/// Gives the position of a line of text after layout.
+/// This can be useful to calculate where to put the caret when implementing
+/// text edit functionality.
+#[derive(Debug, Copy, Clone)]
+pub struct LinePosition<U: Clone + Copy> {
+    /// The y coordinate of the baseline of this line, in pixels
+    pub baseline_y : f32,
+    /// The user data for the first glyph on the line, and the byte index of the corresponding
+    /// character in the original TextStyle used to create that glyph.
+    /// This is useful to know to implement 'Home' button functionality in a text editor.
+    ///
+    /// Note that the byte index of a character is not the same as the character index, since some
+    /// characters are represented by multiple bytes.
+    pub line_start: (U,usize),
+    /// The user data for the last glyph on the line, and the byte index following the corresponding
+    /// character in the original TextStyle used to create that glyph.
+    /// This is useful to know to implement 'End' button functionality in a text editor.
+    /// Note that the index provided here is one past the end of the glyph. For the last glyph
+    /// in a TextStyle, this will point to the byte just after the end of the string.
+    ///
+    /// Note that the byte index of a character is not the same as the character index, since some
+    /// characters are represented by multiple bytes.
+    pub line_end: (U,usize),
+
+}
+
 impl Default for LineMetrics {
     fn default() -> Self {
         LineMetrics {
@@ -228,6 +262,7 @@ pub struct Layout<U: Copy + Clone = ()> {
     output: Vec<GlyphPosition<U>>,
     glyphs: Vec<GlyphPosition<U>>,
     line_metrics: Vec<LineMetrics>,
+    line_positions: Vec<LinePosition<U>>,
     linebreak_prev: u8,
     linebreak_state: u8,
     linebreak_pos: f32,
@@ -259,6 +294,7 @@ impl<'a, U: Copy + Clone> Layout<U> {
             output: Vec::new(),
             glyphs: Vec::new(),
             line_metrics: Vec::new(),
+            line_positions: Vec::new(),
             linebreak_prev: 0,
             linebreak_state: 0,
             linebreak_pos: 0.0,
@@ -363,6 +399,7 @@ impl<'a, U: Copy + Clone> Layout<U> {
             }
         }
         while byte_offset < style.text.len() {
+            let cur_character_offset = byte_offset;
             let c = read_utf8(style.text.as_bytes(), &mut byte_offset);
             let char_index = font.borrow().lookup_glyph_index(c);
             let char_data = classify(c, char_index);
@@ -411,6 +448,7 @@ impl<'a, U: Copy + Clone> Layout<U> {
                 height: metrics.height,
                 char_data,
                 user_data: style.user_data,
+                byte_offset: cur_character_offset
             });
             self.current_pos += advance;
         }
@@ -420,12 +458,19 @@ impl<'a, U: Copy + Clone> Layout<U> {
         }
     }
 
+    /// Get position data for each line in the text.
+    pub fn get_lines(&mut self) -> &Vec<LinePosition<U>> {
+        self.glyphs(); //Needed to make sure line_positions are up to date
+        &self.line_positions
+    }
+
     /// Gets the current laid out glyphs. Additional layout may be performed lazily here.
     pub fn glyphs(&'a mut self) -> &'a Vec<GlyphPosition<U>> {
         if self.glyphs.len() == self.output.len() {
             return &self.output;
         }
 
+        self.line_positions.clear();
         unsafe { self.output.set_len(0) };
         self.output.reserve(self.glyphs.len());
 
@@ -438,6 +483,9 @@ impl<'a, U: Copy + Clone> Layout<U> {
         let mut idx = 0;
         for line in &self.line_metrics {
             let x = self.x - line.x_start + floor(line.padding * self.horizontal_align);
+
+            let line_start_idx = idx;
+            let baseline_y = y;
             y -= dir * line.ascent;
             while idx < line.end_index {
                 let mut glyph = self.glyphs[idx];
@@ -447,6 +495,18 @@ impl<'a, U: Copy + Clone> Layout<U> {
                 idx += 1;
             }
             y -= dir * (line.new_line_size - line.ascent);
+
+            if line_start_idx < line.end_index {
+                let line_start_offset =self.glyphs[line_start_idx].byte_offset;
+                let line_start_userdata =self.glyphs[line_start_idx].user_data;
+                let line_end_offset =self.glyphs[idx-1].byte_offset+self.glyphs[idx-1].key.c.len_utf8();
+                let line_end_userdata =self.glyphs[idx-1].user_data;
+                self.line_positions.push(LinePosition {
+                    baseline_y,
+                    line_start: (line_start_userdata, line_start_offset),
+                    line_end: (line_end_userdata, line_end_offset)
+                });
+            }
         }
 
         &self.output
