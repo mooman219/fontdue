@@ -235,19 +235,12 @@ fn is_unicode_encoding(platform_id: PlatformId, encoding_id: u16) -> bool {
 impl Font {
     /// Constructs a font from an array of bytes.
     pub fn from_bytes<Data: Deref<Target = [u8]>>(data: Data, settings: FontSettings) -> FontResult<Font> {
-        use ttf_parser::{GlyphId, TableName};
+        use ttf_parser::GlyphId;
         let face = match Face::from_slice(&data, settings.collection_index) {
             Ok(f) => f,
             Err(e) => return Err(convert_error(e)),
         };
         let name = convert_name(&face);
-        // TrueType and OpenType define their point order opposite of eachother.
-        let reverse_points =
-            if face.has_table(TableName::GlyphVariations) || face.has_table(TableName::GlyphData) {
-                false
-            } else {
-                true
-            };
 
         // Collect all the unique codepoint to glyph mappings.
         let mut char_to_glyph = HashMap::new();
@@ -285,7 +278,7 @@ impl Font {
                 glyph.advance_height = advance_height as f32;
             }
 
-            let mut geometry = Geometry::new(settings.scale, reverse_points);
+            let mut geometry = Geometry::new(settings.scale);
             face.outline_glyph(glyph_id, &mut geometry);
             geometry.finalize(glyph);
         }

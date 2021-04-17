@@ -283,8 +283,13 @@ impl Line {
         }
     }
 
-    fn reposition(&mut self, bounds: AABB) {
-        let (mut x0, mut y0, mut x1, mut y1) = self.coords.copied();
+    fn reposition(&mut self, bounds: AABB, reverse: bool) {
+        let (mut x0, mut y0, mut x1, mut y1) = if !reverse {
+            self.coords.copied()
+        } else {
+            let (x0, y0, x1, y1) = self.coords.copied();
+            (x1, y1, x0, y0)
+        };
 
         x0 -= bounds.xmin;
         y0 -= bounds.ymax;
@@ -305,8 +310,8 @@ pub struct Geometry {
     effective_bounds: AABB,
     start_point: Point,
     previous_point: Point,
+    winding_test: f32,
     max_angle: f32,
-    reverse_points: bool,
 }
 
 impl ttf_parser::OutlineBuilder for Geometry {
@@ -378,7 +383,7 @@ impl ttf_parser::OutlineBuilder for Geometry {
 }
 
 impl Geometry {
-    pub fn new(scale: f32, reverse_points: bool) -> Geometry {
+    pub fn new(scale: f32) -> Geometry {
         const PI: f32 = 3.14159265359;
         const LOW_SIZE: f32 = 20.0;
         const LOW_ANGLE: f32 = 17.0;
@@ -401,18 +406,17 @@ impl Geometry {
             },
             start_point: Point::default(),
             previous_point: Point::default(),
+            winding_test: core::f32::MAX,
             max_angle,
-            reverse_points,
         }
     }
 
     fn push(&mut self, start: Point, end: Point) {
+        let test = start.x;
+        if test < self.winding_test {
+            self.winding_test = test;
+        }
         if start.y != end.y {
-            let (start, end) = if self.reverse_points {
-                (end, start)
-            } else {
-                (start, end)
-            };
             if start.x == end.x {
                 self.v_lines.push(Line::new(start, end));
             } else {
@@ -425,13 +429,18 @@ impl Geometry {
         if self.v_lines.is_empty() && self.m_lines.is_empty() {
             self.effective_bounds = AABB::default();
         } else {
+            let mut winding_value = 0.0;
             for line in self.v_lines.iter().chain(self.m_lines.iter()) {
                 let (x0, y0, x1, y1) = line.coords.copied();
                 Self::recalculate_bounds(&mut self.effective_bounds, x0, y0);
                 Self::recalculate_bounds(&mut self.effective_bounds, x1, y1);
+                if x0 <= self.winding_test || x1 <= self.winding_test {
+                    winding_value += y1 - y0;
+                }
             }
+            let reverse_points = winding_value < 0.0;
             for line in self.v_lines.iter_mut().chain(self.m_lines.iter_mut()) {
-                line.reposition(self.effective_bounds);
+                line.reposition(self.effective_bounds, reverse_points);
             }
             self.v_lines.shrink_to_fit();
             self.m_lines.shrink_to_fit();

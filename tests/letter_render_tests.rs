@@ -10,9 +10,11 @@ const CHARACTERS: [char; 94] = [
     '@', '#', '$', '%', '^', '&', '*', '(', ')', '_', '+', '-', '=', '`', '~', '[', ']', '\\', ';', '\'',
     ',', '.', '/', '{', '}', '|', ':', '"', '<', '>', '?',
 ];
-static FONTS: [&[u8]; 3] = [
+static FONTS: [&[u8]; 5] = [
     include_bytes!("../resources/fonts/Roboto-Regular.ttf"),
     include_bytes!("../resources/fonts/RobotoMono-Regular.ttf"),
+    include_bytes!("../resources/fonts/Comfortaa-Regular.ttf"),
+    include_bytes!("../resources/fonts/Inconsolata-Regular.ttf"),
     include_bytes!("../resources/fonts/Exo2-Regular.otf"),
 ];
 
@@ -25,11 +27,20 @@ fn check_best_guess_rasterization((metrics, bitmap): (fontdue::Metrics, Vec<u8>)
         "bitmap must match dimensions for character '{}'",
         rendered_char
     );
+    let mut visible = false;
+    for x in bitmap {
+        if x > 0 {
+            visible = true;
+            break;
+        }
+    }
+    assert!(visible, "No valid bitmap for '{}'", rendered_char);
 }
 
 fn render_characters(sizes: &[f32]) {
     for font in &FONTS {
         let font = Font::from_bytes(*font, FontSettings::default()).unwrap();
+        println!("Rendering characters for: {:?}", font);
         for character in CHARACTERS.iter().copied() {
             for size in sizes {
                 check_best_guess_rasterization(font.rasterize(character, *size), character);
