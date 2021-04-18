@@ -527,4 +527,9 @@ impl Font {
                 as usize
         }
     }
+
+    /// Gets the total glyphs in the font.
+    pub fn glyph_count(&self) -> usize {
+        self.glyphs.len()
+    }
 }

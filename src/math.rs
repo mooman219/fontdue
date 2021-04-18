@@ -1,4 +1,4 @@
-use crate::platform::{abs, atan2, clamp, f32x4};
+use crate::platform::{abs, atan2, clamp, f32x4, sqrt};
 use crate::{Glyph, OutlineBounds};
 use alloc::vec::*;
 
@@ -217,6 +217,12 @@ impl Point {
         x * x + y * y
     }
 
+    pub fn distance(&self, other: Point) -> f32 {
+        let x = self.x - other.x;
+        let y = self.y - other.y;
+        sqrt(x * x + y * y)
+    }
+
     pub fn midpoint(&self, other: Point) -> Point {
         Point {
             x: (self.x + other.x) / 2.0,
@@ -310,7 +316,11 @@ pub struct Geometry {
     effective_bounds: AABB,
     start_point: Point,
     previous_point: Point,
-    winding_test: f32,
+    winding_test_x: f32,
+    winding_test_y: Option<f32>,
+    winding_last_end: Point,
+    winding_last_start: Point,
+    reverse_points: bool,
     max_angle: f32,
 }
 
@@ -406,22 +416,78 @@ impl Geometry {
             },
             start_point: Point::default(),
             previous_point: Point::default(),
-            winding_test: core::f32::MAX,
+            winding_test_x: core::f32::MAX,
+            winding_test_y: None,
+            winding_last_end: Point::new(0.0, 0.0),
+            winding_last_start: Point::new(0.0, 0.0),
+            reverse_points: false,
             max_angle,
         }
     }
 
-    fn push(&mut self, start: Point, end: Point) {
-        let test = start.x;
-        if test < self.winding_test {
-            self.winding_test = test;
+    fn intersection(start: Point, end: Point, y_target: f32) -> f32 {
+        let t = (y_target - start.y) / (end.y - start.y);
+        if t > 1.0 || t < 0.0 {
+            return core::f32::MAX;
         }
+        start.x + t * (end.x - start.x)
+    }
+
+    fn should_reverse_leftmost(a: Point, b: Point, c: Point, d: Point) -> bool {
+        let len_ab = a.distance(b);
+        let len_cd = c.distance(d);
+        let (dot_ab, dot_cd) = if a.x == d.x && a.y == d.y {
+            let dot_ab = (b.x - a.x) / len_ab;
+            let dot_cd = (c.x - d.x) / len_cd;
+            (dot_ab, dot_cd)
+        } else {
+            let dot_ab = (a.x - b.x) / len_ab;
+            let dot_cd = (d.x - c.x) / len_cd;
+            (dot_ab, dot_cd)
+        };
+        if dot_ab < dot_cd {
+            a.y > b.y
+        } else {
+            c.y > d.y
+        }
+    }
+
+    fn push(&mut self, start: Point, end: Point) {
         if start.y != end.y {
+            if let Some(winding_test_y) = self.winding_test_y {
+                let test_x = Self::intersection(start, end, winding_test_y);
+                if test_x == self.winding_test_x {
+                    self.reverse_points = Self::should_reverse_leftmost(
+                        start,
+                        end,
+                        self.winding_last_start,
+                        self.winding_last_end,
+                    );
+                    self.winding_test_x = test_x;
+                    self.winding_last_start = start;
+                    self.winding_last_end = end;
+                } else if test_x < self.winding_test_x {
+                    self.reverse_points = start.y > end.y;
+                    self.winding_test_x = test_x;
+                    self.winding_last_start = start;
+                    self.winding_last_end = end;
+                }
+            } else {
+                let mid = start.midpoint(end);
+                self.winding_test_y = Some(mid.y);
+                self.winding_test_x = mid.x;
+                self.winding_last_start = start;
+                self.winding_last_end = end;
+                self.reverse_points = start.y > end.y;
+            }
+
             if start.x == end.x {
                 self.v_lines.push(Line::new(start, end));
             } else {
                 self.m_lines.push(Line::new(start, end));
             }
+            Self::recalculate_bounds(&mut self.effective_bounds, start.x, start.y);
+            Self::recalculate_bounds(&mut self.effective_bounds, end.x, end.y);
         }
     }
 
@@ -429,18 +495,8 @@ impl Geometry {
         if self.v_lines.is_empty() && self.m_lines.is_empty() {
             self.effective_bounds = AABB::default();
         } else {
-            let mut winding_value = 0.0;
-            for line in self.v_lines.iter().chain(self.m_lines.iter()) {
-                let (x0, y0, x1, y1) = line.coords.copied();
-                Self::recalculate_bounds(&mut self.effective_bounds, x0, y0);
-                Self::recalculate_bounds(&mut self.effective_bounds, x1, y1);
-                if x0 <= self.winding_test || x1 <= self.winding_test {
-                    winding_value += y1 - y0;
-                }
-            }
-            let reverse_points = winding_value < 0.0;
             for line in self.v_lines.iter_mut().chain(self.m_lines.iter_mut()) {
-                line.reposition(self.effective_bounds, reverse_points);
+                line.reposition(self.effective_bounds, self.reverse_points);
             }
             self.v_lines.shrink_to_fit();
             self.m_lines.shrink_to_fit();
