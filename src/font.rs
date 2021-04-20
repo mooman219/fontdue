@@ -307,8 +307,9 @@ impl Font {
         })
     }
 
-    /// The new line height for the font. Only populated for fonts with vertical text layout
-    /// metrics. None if unpopulated.
+    /// New line metrics for fonts that append characters to lines horizonatally, and append new
+    /// lines vertically (above or below the current line). Only populated for fonts with the
+    /// appropriate metrics, none if it's missing.
     pub fn horizontal_line_metrics(&self, px: f32) -> Option<LineMetrics> {
         if let Some(metrics) = self.horizontal_line_metrics {
             Some(metrics.scale(self.scale_factor(px)))
@@ -317,8 +318,9 @@ impl Font {
         }
     }
 
-    /// The new line height for the font. Only populated for fonts with horizontal text layout
-    /// metrics. None if unpopulated.
+    /// New line metrics for fonts that append characters to lines vertically, and append new
+    /// lines horizonatally (left or right of the current line). Only populated for fonts with the
+    /// appropriate metrics, none if it's missing.
     pub fn vertical_line_metrics(&self, px: f32) -> Option<LineMetrics> {
         if let Some(metrics) = self.vertical_line_metrics {
             Some(metrics.scale(self.scale_factor(px)))
