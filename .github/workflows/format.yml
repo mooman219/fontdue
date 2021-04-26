@@ -10,5 +10,5 @@ jobs:
     - uses: actions/checkout@master
     - name: Check format
       run: |
-      cargo fmt --all -- --check
-      cargo clippy --all-features -- -D warnings
+        cargo fmt --all -- --check
+        cargo clippy --all-features -- -D warnings
