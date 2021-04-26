@@ -1,6 +1,7 @@
 const CHARACTER: char = 'b';
 const SIZE: f32 = 20.0;
 
+// cargo run --example raster-print --release
 pub fn main() {
     let font = include_bytes!("../resources/fonts/Roboto-Regular.ttf") as &[u8];
     let settings = fontdue::FontSettings {
