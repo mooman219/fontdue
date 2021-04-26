@@ -1,6 +1,7 @@
 use crate::platform::{abs, atan2, clamp, f32x4, sqrt};
 use crate::{Glyph, OutlineBounds};
 use alloc::vec::*;
+use core::f32::consts::PI;
 
 #[derive(Copy, Clone, PartialEq, Debug)]
 struct AABB {
@@ -391,7 +392,6 @@ impl ttf_parser::OutlineBuilder for Geometry {
 
 impl Geometry {
     pub fn new(scale: f32) -> Geometry {
-        const PI: f32 = 3.14159265359;
         const LOW_SIZE: f32 = 20.0;
         const LOW_ANGLE: f32 = 17.0;
         const HIGH_SIZE: f32 = 125.0;
@@ -420,9 +420,10 @@ impl Geometry {
     }
 
     fn push(&mut self, start: Point, end: Point) {
-        if start.y != end.y {
+        // We're using to_bits here because we only care if they're _exactly_ the same.
+        if start.y.to_bits() != end.y.to_bits() {
             self.area += (end.y - start.y) * (end.x + start.x);
-            if start.x == end.x {
+            if start.x.to_bits() == end.x.to_bits() {
                 self.v_lines.push(Line::new(start, end));
             } else {
                 self.m_lines.push(Line::new(start, end));

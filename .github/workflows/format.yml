@@ -6,7 +6,9 @@ jobs:
     steps:
     - uses: hecrj/setup-rust-action@v1
       with:
-        components: rustfmt
+        components: rustfmt, clippy
     - uses: actions/checkout@master
     - name: Check format
-      run: cargo fmt --all -- --check
+      run: |
+      cargo fmt --all -- --check
+      cargo clippy --all-features -- -D warnings

@@ -4,6 +4,8 @@
 
 #![no_std]
 #![allow(dead_code)]
+#![allow(clippy::style)]
+#![allow(clippy::complexity)]
 
 extern crate alloc;
 
