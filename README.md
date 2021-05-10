@@ -16,6 +16,8 @@ A **non-goal** of this library is to be allocation free and have a fast, "zero c
 
 ## Example
 
+[Live demo](https://mooman219.github.io/fontdue/)
+
 ### Rasterization
 The rasterization API is done for **milestone 1** and should not see major changes.
 ```rust
