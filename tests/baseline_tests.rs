@@ -1,0 +1,152 @@
+use fontdue::{Font, FontSettings};
+use image::ImageEncoder;
+use std::{convert::TryInto, fs, io::Cursor, path::Path};
+use walkdir::WalkDir;
+
+extern crate image;
+
+static FONT_NAMES: [&str; 8] = [
+    "Roboto-Regular",
+    "RobotoMono-Regular",
+    "Comfortaa-Regular",
+    "Inconsolata-Regular",
+    "FasterOne-Regular",
+    "Exo2-Regular",
+    "GreatVibes-Regular",
+    "modernpics",
+];
+static FONTS: [&[u8]; 8] = [
+    include_bytes!("../resources/fonts/Roboto-Regular.ttf"),
+    include_bytes!("../resources/fonts/RobotoMono-Regular.ttf"),
+    include_bytes!("../resources/fonts/Comfortaa-Regular.ttf"),
+    include_bytes!("../resources/fonts/Inconsolata-Regular.ttf"),
+    include_bytes!("../resources/fonts/FasterOne-Regular.ttf"),
+    include_bytes!("../resources/fonts/Exo2-Regular.otf"),
+    include_bytes!("../resources/fonts/GreatVibes-Regular.otf"),
+    include_bytes!("../resources/fonts/modernpics.otf"),
+];
+const SIZES: [f32; 1] = [32.0];
+
+fn clean_local_baselines() {
+    fs::remove_dir_all("./resources/baselines/local/characters").ok();
+}
+
+fn record_local_baseline(font: &Font, name: &str, character_index: usize, size: f32) -> Option<()> {
+    let testcase_name = format!("{}/{}-{}px.png", name, character_index, size);
+    let reference_path = format!("./resources/baselines/reference/characters/{}", testcase_name);
+    let local_path = format!("./resources/baselines/local/characters/{}", testcase_name);
+    let (metrics, new_bitmap) = font.rasterize_indexed(character_index, size);
+    if metrics.width == 0 || metrics.height == 0 {
+        // No glyph rendered, assert file does not exist on disk
+        if Path::new(&reference_path).exists() {
+            fs::create_dir_all(Path::new(&local_path).parent()?).ok();
+            return fs::write(
+                Path::new(&reference_path)
+                    .parent()?
+                    .join(format!("{}.delete", Path::new(&reference_path).file_stem()?.to_str()?)),
+                [],
+            )
+            .ok();
+        }
+        return None;
+    }
+    let mut encoded = vec![];
+    let encoder = image::png::PngEncoder::new(Cursor::new(&mut encoded));
+    encoder
+        .write_image(
+            &new_bitmap,
+            metrics.width.try_into().unwrap(),
+            metrics.height.try_into().unwrap(),
+            image::ColorType::L8,
+        )
+        .unwrap();
+    fs::create_dir_all(Path::new(&reference_path).parent()?).ok();
+    if !Path::new(&reference_path).exists() || fs::read(reference_path).unwrap() != encoded {
+        // only write out local bitmap when it doesn't match (this saves a lot of disk i/o time)
+        fs::create_dir_all(Path::new(&local_path).parent()?).ok();
+        let err = fs::write(&local_path, encoded);
+        if err.is_err() {
+            assert!(false, "Unable to save file {}: {}", &local_path, err.unwrap_err());
+        }
+    }
+    None
+}
+
+fn report_changed_baselines() {
+    let reference_path = "./resources/baselines/reference/characters";
+    let local_path = "./resources/baselines/local/characters";
+    let mut failures: Vec<String> = vec![];
+    for entry in WalkDir::new(local_path).into_iter().filter_map(|e| e.ok()) {
+        if entry.path().is_dir() {
+            continue;
+        }
+        let ext = entry.path().extension();
+        let test_path = format!(
+            "{}/{}",
+            entry.path().parent().unwrap().file_name().unwrap().to_string_lossy(),
+            entry.file_name().to_string_lossy()
+        );
+        match ext {
+            Some(str) => {
+                if str == "delete" {
+                    failures.push(format!("{} no longer renders a glyph", test_path));
+                    continue;
+                }
+            }
+            None => continue,
+        }
+        if !Path::new(reference_path)
+            .join(entry.path().parent().unwrap().file_name().unwrap())
+            .join(entry.file_name())
+            .exists()
+        {
+            failures.push(format!("{} has no reference baseline", test_path));
+            continue;
+        }
+    }
+
+    for entry in WalkDir::new(reference_path).into_iter().filter_map(|e| e.ok()) {
+        if entry.path().is_dir() {
+            continue;
+        }
+        let test_path = format!(
+            "{}/{}",
+            entry.path().parent().unwrap().file_name().unwrap().to_string_lossy(),
+            entry.file_name().to_string_lossy()
+        );
+        let local_entry = Path::new(local_path)
+            .join(entry.path().parent().unwrap().file_name().unwrap())
+            .join(entry.file_name());
+        if !local_entry.exists() {
+            continue;
+        }
+        failures.push(format!("{} image data did not match", test_path));
+    }
+
+    assert!(
+        failures.len() == 0,
+        "Baseline failures:
+{}
+
+You can view these differences with a difftool and a command like
+`$DIFFTOOL .\\tests\\baselines\\reference\\ .\\tests\\baselines\\local\\`
+or you can blindly accept all differences by running
+`cargo run --example baseline-accept`",
+        failures.join("\n")
+    );
+}
+
+#[test]
+fn baseline_all() {
+    clean_local_baselines();
+    for (index, bytes) in (&FONTS).iter().enumerate() {
+        let name = FONT_NAMES[index];
+        let font = Font::from_bytes(*bytes, FontSettings::default()).unwrap();
+        for g in 0..font.glyph_count() {
+            for size in &SIZES {
+                record_local_baseline(&font, name, g, *size);
+            }
+        }
+    }
+    report_changed_baselines();
+}

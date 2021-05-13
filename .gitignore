@@ -11,3 +11,4 @@ Cargo.lock
 
 # Test file I don't need to include
 fontdue.pgm
+resources/baselines/local
