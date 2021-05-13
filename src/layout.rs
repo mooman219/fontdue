@@ -103,8 +103,8 @@ impl Default for LayoutSettings {
 /// uniquely identify a rasterized glyph for applications that want to cache glyphs.
 #[derive(Debug, Copy, Clone)]
 pub struct GlyphRasterConfig {
-    /// The character represented by the glyph being positioned.
-    pub c: char,
+    /// The glyph index represented by the glyph being positioned.
+    pub glyph_index: u16,
     /// The scale of the glyph being positioned in px.
     pub px: f32,
     /// The index of the font used in layout to raster the glyph.
@@ -113,7 +113,7 @@ pub struct GlyphRasterConfig {
 
 impl Hash for GlyphRasterConfig {
     fn hash<H: Hasher>(&self, state: &mut H) {
-        self.c.hash(state);
+        self.glyph_index.hash(state);
         self.px.to_bits().hash(state);
         self.font_index.hash(state);
     }
@@ -121,7 +121,7 @@ impl Hash for GlyphRasterConfig {
 
 impl PartialEq for GlyphRasterConfig {
     fn eq(&self, other: &Self) -> bool {
-        self.c == other.c && self.px == other.px && self.font_index == other.font_index
+        self.glyph_index == other.glyph_index && self.px == other.px && self.font_index == other.font_index
     }
 }
 
@@ -365,19 +365,19 @@ impl<'a, U: Copy + Clone> Layout<U> {
         while byte_offset < style.text.len() {
             let character = read_utf8(style.text.as_bytes(), &mut byte_offset);
             let linebreak = self.linebreaker.next(character).mask(self.wrap_mask);
-            let char_index = font.lookup_glyph_index(character);
-            let char_data = CharacterData::classify(character, char_index);
+            let glyph_index = font.lookup_glyph_index(character);
+            let char_data = CharacterData::classify(character, glyph_index);
             let metrics = if !char_data.is_control() {
-                font.metrics_indexed(char_index, style.px)
+                font.metrics_indexed(glyph_index, style.px)
             } else {
                 Metrics::default()
             };
-            let advance = ceil(metrics.advance_width);
             if linebreak >= self.linebreak_prev {
                 self.linebreak_prev = linebreak;
                 self.linebreak_pos = self.current_pos;
                 self.linebreak_idx = self.glyphs.len();
             }
+            let advance = ceil(metrics.advance_width);
             if linebreak.is_hard() || (self.current_pos - self.start_pos + advance > self.max_width) {
                 self.linebreak_prev = LINEBREAK_NONE;
                 if let Some(line) = self.line_metrics.last_mut() {
@@ -401,11 +401,11 @@ impl<'a, U: Copy + Clone> Layout<U> {
             };
             self.glyphs.push(GlyphPosition {
                 key: GlyphRasterConfig {
-                    c: character,
+                    glyph_index: glyph_index as u16,
                     px: style.px,
                     font_index: style.font_index,
                 },
-                x: self.current_pos + floor(metrics.bounds.xmin),
+                x: floor(self.current_pos + metrics.bounds.xmin),
                 y,
                 width: metrics.width,
                 height: metrics.height,

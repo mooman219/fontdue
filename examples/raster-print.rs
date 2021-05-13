@@ -1,6 +1,9 @@
+//! Generates grayscale and unfiltered subpixel RGB output for Fontdue in the terminal.
+
 const CHARACTER: char = 'b';
 const SIZE: f32 = 20.0;
 
+// cargo run --example raster-print --release
 pub fn main() {
     let font = include_bytes!("../resources/fonts/Roboto-Regular.ttf") as &[u8];
     let settings = fontdue::FontSettings {
@@ -10,6 +13,12 @@ pub fn main() {
     let font = fontdue::Font::from_bytes(font, settings).unwrap();
 
     println!("Normal:");
+    print_normal(&font);
+    println!("\nSubpixel:");
+    print_subpixel(&font);
+}
+
+pub fn print_normal(font: &fontdue::Font) {
     let (metrics, bitmap) = font.rasterize(CHARACTER, SIZE);
     for y in 0..metrics.height {
         for x in 0..metrics.width {
@@ -18,7 +27,9 @@ pub fn main() {
         }
         println!("\x1B[0m");
     }
-    println!("\nSubpixel:");
+}
+
+pub fn print_subpixel(font: &fontdue::Font) {
     let (metrics, bitmap) = font.rasterize_subpixel(CHARACTER, SIZE);
     for y in 0..metrics.height {
         for x in (0..metrics.width * 3).step_by(3) {

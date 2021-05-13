@@ -3,6 +3,7 @@ use alloc::vec::*;
 use core::arch::x86::*;
 #[cfg(target_arch = "x86_64")]
 use core::arch::x86_64::*;
+use core::f32;
 
 #[cfg(not(any(target_arch = "x86", target_arch = "x86_64")))]
 pub fn get_bitmap(a: &Vec<f32>, length: usize) -> Vec<u8> {
@@ -13,7 +14,8 @@ pub fn get_bitmap(a: &Vec<f32>, length: usize) -> Vec<u8> {
     for i in 0..length {
         unsafe {
             height += a.get_unchecked(i);
-            *(output.get_unchecked_mut(i)) = ((height) * 255.9) as u8;
+            // Clamping because as u8 is undefined outside of its range in rustc.
+            *(output.get_unchecked_mut(i)) = f32::clamp(f32::abs(height) * 255.9, 0.0, 255.0) as u8;
         }
     }
     output
@@ -29,7 +31,8 @@ pub fn get_bitmap(a: &Vec<f32>, length: usize) -> Vec<u8> {
         output.set_len(aligned_length);
         // offset = Zeroed out lanes
         let mut offset = _mm_setzero_ps();
-        let zero = _mm_castps_si128(_mm_setzero_ps());
+        // Negative zero is important here.
+        let nzero = _mm_castps_si128(_mm_set1_ps(-0.0));
         for i in (0..aligned_length).step_by(4) {
             // x = Read 4 floats from self.a
             let mut x = _mm_loadu_ps(a.get_unchecked(i));
@@ -42,11 +45,13 @@ pub fn get_bitmap(a: &Vec<f32>, length: usize) -> Vec<u8> {
 
             // y = x * 255.9
             let y = _mm_mul_ps(x, _mm_set1_ps(255.9));
+            // y = abs(y)
+            let y = _mm_andnot_ps(_mm_castsi128_ps(nzero), y);
             // y = Convert y to i32s and truncate
             let mut y = _mm_cvttps_epi32(y);
             // y = Take the first byte of each of the 4 values in y and pack them into
             // the first 4 bytes of y.
-            y = _mm_packus_epi16(_mm_packs_epi32(y, zero), zero);
+            y = _mm_packus_epi16(_mm_packs_epi32(y, nzero), nzero);
 
             // Store the first 4 u8s from y in output.
             let pointer: &mut i32 = core::mem::transmute(output.get_unchecked_mut(i));
