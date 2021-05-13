@@ -14,4 +14,3 @@ jobs:
     - name: Run tests
       run: |
         cargo test --verbose --all
-        cargo test --verbose --all --all-features
