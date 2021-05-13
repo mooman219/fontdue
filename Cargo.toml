@@ -33,7 +33,7 @@ criterion = "0.3"
 rusttype = "0.9.2"
 ab_glyph = "0.2"
 glyph_brush_layout = "0.2.0"
-image = "0.23"
+png = "0.16"
 walkdir = "2.3"
 
 [[bench]]

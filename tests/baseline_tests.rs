@@ -1,9 +1,8 @@
 use fontdue::{Font, FontSettings};
-use image::ImageEncoder;
 use std::{convert::TryInto, fs, io::Cursor, path::Path};
 use walkdir::WalkDir;
 
-extern crate image;
+extern crate png;
 
 static FONT_NAMES: [&str; 8] = [
     "Roboto-Regular",
@@ -51,15 +50,14 @@ fn record_local_baseline(font: &Font, name: &str, character_index: usize, size: 
         return None;
     }
     let mut encoded = vec![];
-    let encoder = image::png::PngEncoder::new(Cursor::new(&mut encoded));
-    encoder
-        .write_image(
-            &new_bitmap,
-            metrics.width.try_into().unwrap(),
-            metrics.height.try_into().unwrap(),
-            image::ColorType::L8,
-        )
-        .unwrap();
+    let mut encoder = png::Encoder::new(
+        Cursor::new(&mut encoded),
+        metrics.width.try_into().unwrap(),
+        metrics.height.try_into().unwrap(),
+    );
+    encoder.set_color(png::ColorType::Grayscale);
+    encoder.set_depth(png::BitDepth::Eight);
+    encoder.write_header().unwrap().write_image_data(&new_bitmap).unwrap();
     fs::create_dir_all(Path::new(&reference_path).parent()?).ok();
     if !Path::new(&reference_path).exists() || fs::read(reference_path).unwrap() != encoded {
         // only write out local bitmap when it doesn't match (this saves a lot of disk i/o time)
