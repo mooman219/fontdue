@@ -11,3 +11,4 @@ Cargo.lock
 
 # Test files I don't need to include
 *.pgm
+resources/baselines/local
