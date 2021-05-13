@@ -1,7 +1,6 @@
 use fontdue::{Font, FontSettings};
 
-const SMALL_SIZES: [f32; 5] = [100.0, 32.0, 16.0, 4.0, 2.0];
-const LARGE_SIZES: [f32; 1] = [1024.0];
+const SIZES: [f32; 6] = [1024.0, 100.0, 32.0, 16.0, 4.0, 2.0];
 const CHARACTERS: [char; 94] = [
     'a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k', 'l', 'm', 'n', 'o', 'p', 'q', 'r', 's', 't', 'u',
     'v', 'w', 'x', 'y', 'z', 'A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M', 'N', 'O', 'P',
@@ -74,11 +73,6 @@ fn render_all_small() {
 }
 
 #[test]
-fn render_common_small() {
-    render_common(&SMALL_SIZES);
-}
-
-#[test]
-fn render_common_large() {
-    render_common(&LARGE_SIZES);
+fn render_common_scaled() {
+    render_common(&SIZES);
 }

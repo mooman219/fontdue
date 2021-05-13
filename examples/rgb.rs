@@ -1,3 +1,5 @@
+//! Generates unfiltered subpixel RGB output for Fontdue.
+
 use std::fs::File;
 use std::io::Write;
 

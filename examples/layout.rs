@@ -1,3 +1,5 @@
+//! Performs basic text layout in Fontdue.
+
 use fontdue::layout::{CoordinateSystem, Layout, LayoutSettings, TextStyle};
 use fontdue::Font;
 
