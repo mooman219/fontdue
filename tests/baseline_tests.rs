@@ -127,9 +127,9 @@ fn report_changed_baselines() {
 {}
 
 You can view these differences with a difftool and a command like
-`$DIFFTOOL .\\resources\\baselines\\reference\\ .\\resources\\baselines\\local\\`
+$DIFFTOOL '.\\resources\\baselines\\reference\\' '.\\resources\\baselines\\local\\'
 or you can blindly accept all differences by running
-`cargo run --example baseline-accept`",
+cargo run --example baseline-accept",
         failures.join("\n")
     );
 }

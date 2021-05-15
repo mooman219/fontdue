@@ -261,7 +261,7 @@ impl Font {
                 glyph.advance_height = advance_height as f32;
             }
 
-            let mut geometry = Geometry::new(settings.scale);
+            let mut geometry = Geometry::new(settings.scale, units_per_em);
             face.outline_glyph(glyph_id, &mut geometry);
             geometry.finalize(glyph);
         }

@@ -1,7 +1,6 @@
-use crate::platform::{abs, atan2, clamp, f32x4, sqrt};
+use crate::platform::{self, abs, atan2, f32x4, sqrt};
 use crate::{Glyph, OutlineBounds};
 use alloc::vec::*;
-use core::f32::consts::PI;
 
 #[derive(Copy, Clone, PartialEq, Debug)]
 struct AABB {
@@ -319,7 +318,25 @@ pub struct Geometry {
     previous_point: Point,
     area: f32,
     reverse_points: bool,
-    max_angle: f32,
+    max_area: f32,
+}
+
+struct Segment {
+    a: Point,
+    at: f32,
+    c: Point,
+    ct: f32,
+}
+
+impl Segment {
+    fn new(a: Point, at: f32, c: Point, ct: f32) -> Segment {
+        Segment {
+            a,
+            at,
+            c,
+            ct,
+        }
+    }
 }
 
 impl ttf_parser::OutlineBuilder for Geometry {
@@ -339,21 +356,21 @@ impl ttf_parser::OutlineBuilder for Geometry {
         let control_point = Point::new(x0, y0);
         let next_point = Point::new(x1, y1);
 
-        const STEPS: u32 = 20;
-        const INCREMENT: f32 = 1.0 / (STEPS as f32);
         let curve = QuadCurve::new(self.previous_point, control_point, next_point);
-        let mut previous_angle = curve.angle(0.0);
-        for x in 1..STEPS {
-            let t = INCREMENT * x as f32;
-            let temp_angle = curve.angle(t);
-            if abs(previous_angle - temp_angle) > self.max_angle {
-                previous_angle = temp_angle;
-                let temp_point = curve.point(t);
-                self.push(self.previous_point, temp_point);
-                self.previous_point = temp_point;
+        let mut stack = Vec::new();
+        stack.push(Segment::new(self.previous_point, 0.0, next_point, 1.0));
+        while let Some(seg) = stack.pop() {
+            let bt = (seg.at + seg.ct) * 0.5;
+            let b = curve.point(bt);
+            // This is twice the triangle area
+            let area = (b.x - seg.a.x) * (seg.c.y - seg.a.y) - (seg.c.x - seg.a.x) * (b.y - seg.a.y);
+            if platform::abs(area) > self.max_area {
+                stack.push(Segment::new(seg.a, seg.at, b, bt));
+                stack.push(Segment::new(b, bt, seg.c, seg.ct));
+            } else {
+                self.push(seg.a, seg.c);
             }
         }
-        self.push(self.previous_point, next_point);
 
         self.previous_point = next_point;
     }
@@ -363,22 +380,21 @@ impl ttf_parser::OutlineBuilder for Geometry {
         let second_control = Point::new(x1, y1);
         let next_point = Point::new(x2, y2);
 
-        const STEPS: u32 = 20;
-        const INCREMENT: f32 = 1.0 / (STEPS as f32);
         let curve = CubeCurve::new(self.previous_point, first_control, second_control, next_point);
-        let mut previous_angle = curve.angle(0.0);
-        for x in 1..STEPS {
-            let t = INCREMENT * x as f32;
-            let temp_angle = curve.angle(t);
-            if abs(previous_angle - temp_angle) > self.max_angle {
-                previous_angle = temp_angle;
-                let temp_point = curve.point(t);
-                self.push(self.previous_point, temp_point);
-                self.previous_point = temp_point;
+        let mut stack = Vec::new();
+        stack.push(Segment::new(self.previous_point, 0.0, next_point, 1.0));
+        while let Some(seg) = stack.pop() {
+            let bt = (seg.at + seg.ct) * 0.5;
+            let b = curve.point(bt);
+            // This is twice the triangle area
+            let area = (b.x - seg.a.x) * (seg.c.y - seg.a.y) - (seg.c.x - seg.a.x) * (b.y - seg.a.y);
+            if platform::abs(area) > self.max_area {
+                stack.push(Segment::new(seg.a, seg.at, b, bt));
+                stack.push(Segment::new(b, bt, seg.c, seg.ct));
+            } else {
+                self.push(seg.a, seg.c);
             }
         }
-        self.push(self.previous_point, next_point);
-
         self.previous_point = next_point;
     }
 
@@ -391,17 +407,11 @@ impl ttf_parser::OutlineBuilder for Geometry {
 }
 
 impl Geometry {
-    pub fn new(scale: f32) -> Geometry {
-        const LOW_SIZE: f32 = 20.0;
-        const LOW_ANGLE: f32 = 17.0;
-        const HIGH_SIZE: f32 = 125.0;
-        const HIGH_ANGLE: f32 = 5.0;
-        const MAX_ANGLE: f32 = 3.0;
-        const SLOPE: f32 = (HIGH_ANGLE - LOW_ANGLE) / (HIGH_SIZE - LOW_SIZE);
-        const YINT: f32 = SLOPE * -HIGH_SIZE + HIGH_ANGLE;
-        let max_angle = scale * SLOPE + YINT;
-        let max_angle = clamp(MAX_ANGLE, LOW_ANGLE, max_angle);
-        let max_angle = max_angle * PI / 180.0; // Convert into rads
+    // Artisanal bespoke hand carved curves
+    pub fn new(scale: f32, units_per_em: f32) -> Geometry {
+        const ERROR_THRESHOLD: f32 = 3.0; // In pixels.
+        let max_area = ERROR_THRESHOLD * 2.0 * (units_per_em / scale);
+
         Geometry {
             v_lines: Vec::new(),
             m_lines: Vec::new(),
@@ -415,7 +425,7 @@ impl Geometry {
             previous_point: Point::default(),
             area: 0.0,
             reverse_points: false,
-            max_angle,
+            max_area,
         }
     }
 

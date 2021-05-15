@@ -1,6 +1,6 @@
 use fontdue::{Font, FontSettings};
 
-const SIZES: [f32; 6] = [1024.0, 100.0, 32.0, 16.0, 4.0, 2.0];
+const SIZES: [f32; 3] = [1024.0, 8.0, 2.0];
 const CHARACTERS: [char; 94] = [
     'a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k', 'l', 'm', 'n', 'o', 'p', 'q', 'r', 's', 't', 'u',
     'v', 'w', 'x', 'y', 'z', 'A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M', 'N', 'O', 'P',
