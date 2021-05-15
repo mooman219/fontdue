@@ -14,8 +14,9 @@ pub fn get_bitmap(a: &Vec<f32>, length: usize) -> Vec<u8> {
     for i in 0..length {
         unsafe {
             height += a.get_unchecked(i);
+            let height_abs = if height < 0.0 { -height } else { height };
             // Clamping because as u8 is undefined outside of its range in rustc.
-            *(output.get_unchecked_mut(i)) = f32::clamp(f32::abs(height) * 255.9, 0.0, 255.0) as u8;
+            *(output.get_unchecked_mut(i)) = f32::clamp(height_abs * 255.9, 0.0, 255.0) as u8;
         }
     }
     output
