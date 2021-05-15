@@ -55,7 +55,7 @@ pub fn copysign(value: f32, sign: f32) -> f32 {
 }
 
 #[inline(always)]
-pub fn clamp(min: f32, max: f32, value: f32) -> f32 {
+pub fn clamp(value: f32, min: f32, max: f32) -> f32 {
     let mut x = value;
     if x < min {
         x = min;
