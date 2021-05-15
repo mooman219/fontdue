@@ -1,5 +1,6 @@
 use crate::platform::{self, abs, atan2, f32x4, sqrt};
 use crate::{Glyph, OutlineBounds};
+use alloc::vec;
 use alloc::vec::*;
 
 #[derive(Copy, Clone, PartialEq, Debug)]
@@ -357,8 +358,7 @@ impl ttf_parser::OutlineBuilder for Geometry {
         let next_point = Point::new(x1, y1);
 
         let curve = QuadCurve::new(self.previous_point, control_point, next_point);
-        let mut stack = Vec::new();
-        stack.push(Segment::new(self.previous_point, 0.0, next_point, 1.0));
+        let mut stack = vec![Segment::new(self.previous_point, 0.0, next_point, 1.0)];
         while let Some(seg) = stack.pop() {
             let bt = (seg.at + seg.ct) * 0.5;
             let b = curve.point(bt);
@@ -381,8 +381,7 @@ impl ttf_parser::OutlineBuilder for Geometry {
         let next_point = Point::new(x2, y2);
 
         let curve = CubeCurve::new(self.previous_point, first_control, second_control, next_point);
-        let mut stack = Vec::new();
-        stack.push(Segment::new(self.previous_point, 0.0, next_point, 1.0));
+        let mut stack = vec![Segment::new(self.previous_point, 0.0, next_point, 1.0)];
         while let Some(seg) = stack.pop() {
             let bt = (seg.at + seg.ct) * 0.5;
             let b = curve.point(bt);
