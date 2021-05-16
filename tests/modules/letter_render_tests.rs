@@ -1,5 +1,6 @@
 use fontdue::{Font, FontSettings};
 
+use crate::modules::FONTS;
 const SIZES: [f32; 3] = [1024.0, 8.0, 2.0];
 const CHARACTERS: [char; 94] = [
     'a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k', 'l', 'm', 'n', 'o', 'p', 'q', 'r', 's', 't', 'u',
@@ -7,16 +8,6 @@ const CHARACTERS: [char; 94] = [
     'Q', 'R', 'S', 'T', 'U', 'V', 'W', 'X', 'Y', 'Z', '0', '1', '2', '3', '4', '5', '6', '7', '8', '9', '!',
     '@', '#', '$', '%', '^', '&', '*', '(', ')', '_', '+', '-', '=', '`', '~', '[', ']', '\\', ';', '\'',
     ',', '.', '/', '{', '}', '|', ':', '"', '<', '>', '?',
-];
-static FONTS: [&[u8]; 8] = [
-    include_bytes!("../../resources/fonts/Roboto-Regular.ttf"),
-    include_bytes!("../../resources/fonts/RobotoMono-Regular.ttf"),
-    include_bytes!("../../resources/fonts/Comfortaa-Regular.ttf"),
-    include_bytes!("../../resources/fonts/Inconsolata-Regular.ttf"),
-    include_bytes!("../../resources/fonts/FasterOne-Regular.ttf"),
-    include_bytes!("../../resources/fonts/Exo2-Regular.otf"),
-    include_bytes!("../../resources/fonts/GreatVibes-Regular.otf"),
-    include_bytes!("../../resources/fonts/modernpics.otf"),
 ];
 
 // Performs some basic asserts on the rasterization output.

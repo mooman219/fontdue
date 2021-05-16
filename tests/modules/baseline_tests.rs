@@ -4,26 +4,7 @@ use walkdir::WalkDir;
 
 extern crate png;
 
-static FONT_NAMES: [&str; 8] = [
-    "Roboto-Regular",
-    "RobotoMono-Regular",
-    "Comfortaa-Regular",
-    "Inconsolata-Regular",
-    "FasterOne-Regular",
-    "Exo2-Regular",
-    "GreatVibes-Regular",
-    "modernpics",
-];
-static FONTS: [&[u8]; 8] = [
-    include_bytes!("../../resources/fonts/Roboto-Regular.ttf"),
-    include_bytes!("../../resources/fonts/RobotoMono-Regular.ttf"),
-    include_bytes!("../../resources/fonts/Comfortaa-Regular.ttf"),
-    include_bytes!("../../resources/fonts/Inconsolata-Regular.ttf"),
-    include_bytes!("../../resources/fonts/FasterOne-Regular.ttf"),
-    include_bytes!("../../resources/fonts/Exo2-Regular.otf"),
-    include_bytes!("../../resources/fonts/GreatVibes-Regular.otf"),
-    include_bytes!("../../resources/fonts/modernpics.otf"),
-];
+use crate::modules::{FONTS, FONT_NAMES};
 const SIZES: [f32; 1] = [32.0];
 
 fn clean_local_baselines() {
