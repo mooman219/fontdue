@@ -1,5 +1,5 @@
 // [See license/rust-lang/libm] Copyright (c) 2018 Jorge Aparicio
-#[cfg(not(any(target_arch = "x86", target_arch = "x86_64")))]
+#[cfg(not(all(any(target_arch = "x86", target_arch = "x86_64"), not(feature = "disable_simd"))))]
 pub fn trunc(x: f32) -> f32 {
     let mut i: u32 = x.to_bits();
     let mut e: i32 = (i >> 23 & 0xff) as i32 - 0x7f + 9;
@@ -18,7 +18,7 @@ pub fn trunc(x: f32) -> f32 {
     f32::from_bits(i)
 }
 
-#[cfg(any(target_arch = "x86", target_arch = "x86_64"))]
+#[cfg(all(any(target_arch = "x86", target_arch = "x86_64"), not(feature = "disable_simd")))]
 #[inline(always)]
 pub fn trunc(value: f32) -> f32 {
     #[cfg(target_arch = "x86")]

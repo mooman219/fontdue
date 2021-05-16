@@ -19,6 +19,8 @@ maintenance = { status = "experimental" }
 [features]
 # Enable this flag to include the freetype benchmark in the benches.
 freetype_benchmark = ["freetype-rs"]
+# Enable this flag to disable SIMD usage on x86/x86_64 platforms.
+disable_simd = []
 
 [dependencies]
 ttf-parser = { version = "0.12", default-features = false }

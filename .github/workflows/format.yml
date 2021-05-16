@@ -11,4 +11,5 @@ jobs:
     - name: Check format
       run: |
         cargo fmt --all -- --check
-        cargo clippy --all-features -- -D warnings
+        cargo clippy --features disable_simd -- -D warnings
+        cargo clippy -- -D warnings

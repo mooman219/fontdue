@@ -47,8 +47,9 @@ impl Raster {
         }
 
         // This is safe but slow.
-        // self.a[index] += height * (1.0 - mid_x);
-        // self.a[index + 1] += height * mid_x;
+        // let m = height * mid_x;
+        // self.a[index] += height - m;
+        // self.a[index + 1] += m;
     }
 
     #[inline(always)]
