@@ -9,14 +9,14 @@ const CHARACTERS: [char; 94] = [
     ',', '.', '/', '{', '}', '|', ':', '"', '<', '>', '?',
 ];
 static FONTS: [&[u8]; 8] = [
-    include_bytes!("../resources/fonts/Roboto-Regular.ttf"),
-    include_bytes!("../resources/fonts/RobotoMono-Regular.ttf"),
-    include_bytes!("../resources/fonts/Comfortaa-Regular.ttf"),
-    include_bytes!("../resources/fonts/Inconsolata-Regular.ttf"),
-    include_bytes!("../resources/fonts/FasterOne-Regular.ttf"),
-    include_bytes!("../resources/fonts/Exo2-Regular.otf"),
-    include_bytes!("../resources/fonts/GreatVibes-Regular.otf"),
-    include_bytes!("../resources/fonts/modernpics.otf"),
+    include_bytes!("../../resources/fonts/Roboto-Regular.ttf"),
+    include_bytes!("../../resources/fonts/RobotoMono-Regular.ttf"),
+    include_bytes!("../../resources/fonts/Comfortaa-Regular.ttf"),
+    include_bytes!("../../resources/fonts/Inconsolata-Regular.ttf"),
+    include_bytes!("../../resources/fonts/FasterOne-Regular.ttf"),
+    include_bytes!("../../resources/fonts/Exo2-Regular.otf"),
+    include_bytes!("../../resources/fonts/GreatVibes-Regular.otf"),
+    include_bytes!("../../resources/fonts/modernpics.otf"),
 ];
 
 // Performs some basic asserts on the rasterization output.
