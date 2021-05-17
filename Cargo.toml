@@ -24,7 +24,7 @@ disable_simd = []
 
 [dependencies]
 ttf-parser = { version = "0.12", default-features = false }
-hashbrown = "0.9"
+hashbrown = "0.11"
 
 # This is a dev-dependency, but those cannot be optional, so it's included here and not built by
 # default.
