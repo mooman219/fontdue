@@ -1,7 +1,7 @@
 name: Build
 on: [push, pull_request]
 jobs:
-  native:
+  build:
     runs-on: ubuntu-latest
     strategy:
       matrix:
@@ -12,7 +12,9 @@ jobs:
         rust-version: ${{ matrix.rust }}
         targets: wasm32-unknown-unknown
     - uses: actions/checkout@master
-    - name: Build
+    - name: Build native
       run: |
         cargo build --verbose
+    - name: Build wasm
+      run: |
         cargo build --verbose --target wasm32-unknown-unknown

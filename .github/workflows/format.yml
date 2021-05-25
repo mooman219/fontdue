@@ -1,15 +1,19 @@
-name: Format
+name: Check
 on: [push, pull_request]
 jobs:
-  all:
+  check:
     runs-on: ubuntu-latest
     steps:
     - uses: hecrj/setup-rust-action@v1
       with:
         components: rustfmt, clippy
     - uses: actions/checkout@master
-    - name: Check format
+    - name: Format
       run: |
         cargo fmt --all -- --check
-        cargo clippy --features disable_simd -- -D warnings
+    - name: Clippy
+      run: |
         cargo clippy -- -D warnings
+    - name: Clippy (disable_simd)
+      run: |
+        cargo clippy --features disable_simd -- -D warnings
