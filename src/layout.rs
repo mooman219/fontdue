@@ -154,7 +154,7 @@ pub struct GlyphPosition<U: Copy + Clone = ()> {
 pub struct TextStyle<'a, U: Copy + Clone = ()> {
     /// The text to layout.
     pub text: &'a str,
-    /// The scale of the text in pixel units.
+    /// The scale of the text in pixel units. The units of the scale are pixels per Em unit.
     pub px: f32,
     /// The font to layout the text in.
     pub font_index: usize,

@@ -15,6 +15,7 @@ pub mod layout;
 mod math;
 mod platform;
 mod raster;
+mod table;
 mod unicode;
 
 pub use crate::font::*;

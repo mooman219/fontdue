@@ -158,7 +158,8 @@ pub struct FontSettings {
     /// The default is 40. The scale in px the font geometry is optimized for. Fonts rendered at
     /// the scale defined here will be the most optimal in terms of looks and performance. Glyphs
     /// rendered smaller than this scale will look the same but perform slightly worse, while
-    /// glyphs rendered larger than this will looks worse but perform slightly better.
+    /// glyphs rendered larger than this will looks worse but perform slightly better. The units of
+    /// the scale are pixels per Em unit.
     pub scale: f32,
 }
 
@@ -201,7 +202,7 @@ fn convert_error(error: FaceParsingError) -> &'static str {
         UnknownMagic => "Face data must start with 0x00010000, 0x74727565, 0x4F54544F or 0x74746366.",
         FaceIndexOutOfBounds => "The face index is larger than the number of faces in the font.",
         NoHeadTable => "The head table is missing or malformed.",
-        NoHheaTable => "The hhea  table is missing or malformed.",
+        NoHheaTable => "The hhea table is missing or malformed.",
         NoMaxpTable => "The maxp table is missing or malformed.",
     }
 }
@@ -293,6 +294,10 @@ impl Font {
     /// New line metrics for fonts that append characters to lines horizontally, and append new
     /// lines vertically (above or below the current line). Only populated for fonts with the
     /// appropriate metrics, none if it's missing.
+    /// # Arguments
+    ///
+    /// * `px` - The size to scale the line metrics by. The units of the scale are pixels per Em
+    /// unit.
     pub fn horizontal_line_metrics(&self, px: f32) -> Option<LineMetrics> {
         if let Some(metrics) = self.horizontal_line_metrics {
             Some(metrics.scale(self.scale_factor(px)))
@@ -304,6 +309,10 @@ impl Font {
     /// New line metrics for fonts that append characters to lines vertically, and append new
     /// lines horizontally (left or right of the current line). Only populated for fonts with the
     /// appropriate metrics, none if it's missing.
+    /// # Arguments
+    ///
+    /// * `px` - The size to scale the line metrics by. The units of the scale are pixels per Em
+    /// unit.
     pub fn vertical_line_metrics(&self, px: f32) -> Option<LineMetrics> {
         if let Some(metrics) = self.vertical_line_metrics {
             Some(metrics.scale(self.scale_factor(px)))
@@ -318,7 +327,8 @@ impl Font {
         self.units_per_em
     }
 
-    /// Calculates the glyph's outline scale factor for a given px size.
+    /// Calculates the glyph's outline scale factor for a given px size. The units of the scale are
+    /// pixels per Em unit.
     #[inline(always)]
     pub fn scale_factor(&self, px: f32) -> f32 {
         px / self.units_per_em
@@ -330,6 +340,7 @@ impl Font {
     ///
     /// * `index` - The character in the font to to generate the layout metrics for.
     /// * `px` - The size to generate the layout metrics for the character at. Cannot be negative.
+    /// The units of the scale are pixels per Em unit.
     /// # Returns
     ///
     /// * `Metrics` - Sizing and positioning metadata for the glyph.
@@ -343,7 +354,8 @@ impl Font {
     /// # Arguments
     ///
     /// * `index` - The glyph index in the font to to generate the layout metrics for.
-    /// * `px` - The size to generate the layout metrics for the glyph at. Cannot be negative.
+    /// * `px` - The size to generate the layout metrics for the glyph at. Cannot be negative. The
+    /// units of the scale are pixels per Em unit.
     /// # Returns
     ///
     /// * `Metrics` - Sizing and positioning metadata for the glyph.
@@ -400,7 +412,8 @@ impl Font {
     /// # Arguments
     ///
     /// * `character` - The character to rasterize.
-    /// * `px` - The size to render the character at. Cannot be negative.
+    /// * `px` - The size to render the character at. Cannot be negative. The units of the scale
+    /// are pixels per Em unit.
     /// # Returns
     ///
     /// * `Metrics` - Sizing and positioning metadata for the rasterized glyph.
@@ -441,7 +454,8 @@ impl Font {
     /// # Arguments
     ///
     /// * `character` - The character to rasterize.
-    /// * `px` - The size to render the character at. Cannot be negative.
+    /// * `px` - The size to render the character at. Cannot be negative. The units of the scale
+    /// are pixels per Em unit.
     /// # Returns
     ///
     /// * `Metrics` - Sizing and positioning metadata for the rasterized glyph.
@@ -458,7 +472,8 @@ impl Font {
     /// # Arguments
     ///
     /// * `index` - The glyph index in the font to rasterize.
-    /// * `px` - The size to render the character at. Cannot be negative.
+    /// * `px` - The size to render the character at. Cannot be negative. The units of the scale
+    /// are pixels per Em unit.
     /// # Returns
     ///
     /// * `Metrics` - Sizing and positioning metadata for the rasterized glyph.
@@ -482,7 +497,8 @@ impl Font {
     /// # Arguments
     ///
     /// * `index` - The glyph index in the font to rasterize.
-    /// * `px` - The size to render the character at. Cannot be negative.
+    /// * `px` - The size to render the character at. Cannot be negative. The units of the scale
+    /// are pixels per Em unit.
     /// # Returns
     ///
     /// * `Metrics` - Sizing and positioning metadata for the rasterized glyph.
