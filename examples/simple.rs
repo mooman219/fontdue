@@ -7,7 +7,7 @@ use std::io::Write;
 // Scratch pad for glyphs: ⅞ g ₹
 const CHARACTER: char = '₹';
 const SIZE: f32 = 200.0;
-const PATH: &[u8] = include_bytes!("../resources/fonts/Inconsolata-Regular.ttf") as &[u8];
+const PATH: &[u8] = include_bytes!("../resources/fonts/GreatVibes-Regular.otf") as &[u8];
 
 // cargo run --example simple --release
 pub fn main() {

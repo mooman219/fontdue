@@ -2,6 +2,7 @@ use crate::layout::GlyphRasterConfig;
 use crate::math::{Geometry, Line};
 use crate::platform::{as_i32, ceil, floor, fract, is_negative};
 use crate::raster::Raster;
+use crate::table::TableKern;
 use crate::unicode;
 use crate::FontResult;
 use alloc::string::String;
@@ -11,7 +12,7 @@ use core::mem;
 use core::num::NonZeroU16;
 use core::ops::Deref;
 use hashbrown::HashMap;
-use ttf_parser::{Face, FaceParsingError};
+use ttf_parser::{Face, FaceParsingError, GlyphId, Tag};
 
 /// Defines the bounds for a glyph's outline in subpixels. A glyph's outline is always contained in
 /// its bitmap.
@@ -180,6 +181,7 @@ pub struct Font {
     glyphs: Vec<Glyph>,
     char_to_glyph: HashMap<u32, NonZeroU16>,
     horizontal_line_metrics: Option<LineMetrics>,
+    horizontal_kern: Option<HashMap<u32, i16>>,
     vertical_line_metrics: Option<LineMetrics>,
     settings: FontSettings,
 }
@@ -219,24 +221,28 @@ fn convert_name(face: &Face) -> Option<String> {
 impl Font {
     /// Constructs a font from an array of bytes.
     pub fn from_bytes<Data: Deref<Target = [u8]>>(data: Data, settings: FontSettings) -> FontResult<Font> {
-        use ttf_parser::GlyphId;
         let face = match Face::from_slice(&data, settings.collection_index) {
             Ok(f) => f,
             Err(e) => return Err(convert_error(e)),
         };
         let name = convert_name(&face);
 
+        // Optionally get kerning values for the font. This should be a try block in the future.
+        let horizontal_kern: Option<HashMap<u32, i16>> = (|| {
+            let table: &[u8] = face.table_data(Tag::from_bytes(&b"kern"))?;
+            let table: TableKern = TableKern::new(table)?;
+            Some(table.horizontal_mappings)
+        })();
+
         // Collect all the unique codepoint to glyph mappings.
         let mut char_to_glyph = HashMap::new();
         for subtable in face.character_mapping_subtables() {
             subtable.codepoints(|codepoint| {
-                let mapping = match subtable.glyph_index(codepoint) {
-                    Some(id) => id.0,
-                    None => 0,
-                };
-                // Zero is a valid value for missing glyphs, so even if a mapping is zero, the
-                // result is desireable.
-                char_to_glyph.insert(codepoint, unsafe { NonZeroU16::new_unchecked(mapping) });
+                if let Some(mapping) = subtable.glyph_index(codepoint) {
+                    // Zero is a valid value for missing glyphs, so even if a mapping is zero, the
+                    // result is desireable.
+                    char_to_glyph.insert(codepoint, unsafe { NonZeroU16::new_unchecked(mapping.0) });
+                }
             });
         }
 
@@ -286,6 +292,7 @@ impl Font {
             char_to_glyph,
             units_per_em,
             horizontal_line_metrics,
+            horizontal_kern,
             vertical_line_metrics,
             settings,
         })
@@ -299,11 +306,8 @@ impl Font {
     /// * `px` - The size to scale the line metrics by. The units of the scale are pixels per Em
     /// unit.
     pub fn horizontal_line_metrics(&self, px: f32) -> Option<LineMetrics> {
-        if let Some(metrics) = self.horizontal_line_metrics {
-            Some(metrics.scale(self.scale_factor(px)))
-        } else {
-            None
-        }
+        let metrics = self.horizontal_line_metrics?;
+        Some(metrics.scale(self.scale_factor(px)))
     }
 
     /// New line metrics for fonts that append characters to lines vertically, and append new
@@ -314,11 +318,8 @@ impl Font {
     /// * `px` - The size to scale the line metrics by. The units of the scale are pixels per Em
     /// unit.
     pub fn vertical_line_metrics(&self, px: f32) -> Option<LineMetrics> {
-        if let Some(metrics) = self.vertical_line_metrics {
-            Some(metrics.scale(self.scale_factor(px)))
-        } else {
-            None
-        }
+        let metrics = self.vertical_line_metrics?;
+        Some(metrics.scale(self.scale_factor(px)))
     }
 
     /// Gets the font's units per em.
@@ -332,6 +333,42 @@ impl Font {
     #[inline(always)]
     pub fn scale_factor(&self, px: f32) -> f32 {
         px / self.units_per_em
+    }
+
+    /// Retrieves the horizontal scaled kerning value for two adjacent characters.
+    /// # Arguments
+    ///
+    /// * `left` - The character on the left hand side of the pairing.
+    /// * `right` - The character on the right hand side of the pairing.
+    /// * `px` - The size to scale the kerning value for. The units of the scale are pixels per Em
+    /// unit.
+    /// # Returns
+    ///
+    /// * `Option<f32>` - The horizontal scaled kerning value if one is present in the font for the
+    /// given left and right pair, None otherwise.
+    #[inline(always)]
+    pub fn horizontal_kern(&self, left: char, right: char, px: f32) -> Option<f32> {
+        self.horizontal_kern_indexed(self.lookup_glyph_index(left), self.lookup_glyph_index(right), px)
+    }
+
+    /// Retrieves the horizontal scaled kerning value for two adjacent glyph indicies.
+    /// # Arguments
+    ///
+    /// * `left` - The glyph index on the left hand side of the pairing.
+    /// * `right` - The glyph index on the right hand side of the pairing.
+    /// * `px` - The size to scale the kerning value for. The units of the scale are pixels per Em
+    /// unit.
+    /// # Returns
+    ///
+    /// * `Option<f32>` - The horizontal scaled kerning value if one is present in the font for the
+    /// given left and right pair, None otherwise.
+    #[inline(always)]
+    pub fn horizontal_kern_indexed(&self, left: u16, right: u16, px: f32) -> Option<f32> {
+        let scale = self.scale_factor(px);
+        let map = self.horizontal_kern.as_ref()?;
+        let key = u32::from(left) << 16 | u32::from(right);
+        let value = map.get(&key)?;
+        Some((*value as f32) * scale)
     }
 
     /// Retrieves the layout metrics for the given character. If the character isn't present in the
@@ -359,8 +396,8 @@ impl Font {
     /// # Returns
     ///
     /// * `Metrics` - Sizing and positioning metadata for the glyph.
-    pub fn metrics_indexed(&self, index: usize, px: f32) -> Metrics {
-        let glyph = &self.glyphs[index];
+    pub fn metrics_indexed(&self, index: u16, px: f32) -> Metrics {
+        let glyph = &self.glyphs[index as usize];
         let scale = self.scale_factor(px);
         let (metrics, _, _) = self.metrics_raw(scale, glyph, 0.0);
         metrics
@@ -403,7 +440,7 @@ impl Font {
     /// the top left corner of the glyph.
     #[inline]
     pub fn rasterize_config(&self, config: GlyphRasterConfig) -> (Metrics, Vec<u8>) {
-        self.rasterize_indexed(config.glyph_index as usize, config.px)
+        self.rasterize_indexed(config.glyph_index, config.px)
     }
 
     /// Retrieves the layout metrics and rasterized bitmap for the given character. If the
@@ -442,7 +479,7 @@ impl Font {
     /// vec starts at the top left corner of the glyph.
     #[inline]
     pub fn rasterize_config_subpixel(&self, config: GlyphRasterConfig) -> (Metrics, Vec<u8>) {
-        self.rasterize_indexed_subpixel(config.glyph_index as usize, config.px)
+        self.rasterize_indexed_subpixel(config.glyph_index, config.px)
     }
 
     /// Retrieves the layout metrics and rasterized bitmap for the given character. If the
@@ -480,8 +517,8 @@ impl Font {
     /// * `Vec<u8>` - Coverage vector for the glyph. Coverage is a linear scale where 0 represents
     /// 0% coverage of that pixel by the glyph and 255 represents 100% coverage. The vec starts at
     /// the top left corner of the glyph.
-    pub fn rasterize_indexed(&self, index: usize, px: f32) -> (Metrics, Vec<u8>) {
-        let glyph = &self.glyphs[index];
+    pub fn rasterize_indexed(&self, index: u16, px: f32) -> (Metrics, Vec<u8>) {
+        let glyph = &self.glyphs[index as usize];
         let scale = self.scale_factor(px);
         let (metrics, offset_x, offset_y) = self.metrics_raw(scale, glyph, 0.0);
         let mut canvas = Raster::new(metrics.width, metrics.height);
@@ -505,8 +542,8 @@ impl Font {
     /// * `Vec<u8>` - Swizzled RGB coverage vector for the glyph. Coverage is a linear scale where 0
     /// represents 0% coverage of that subpixel by the glyph and 255 represents 100% coverage. The
     /// vec starts at the top left corner of the glyph.
-    pub fn rasterize_indexed_subpixel(&self, index: usize, px: f32) -> (Metrics, Vec<u8>) {
-        let glyph = &self.glyphs[index];
+    pub fn rasterize_indexed_subpixel(&self, index: u16, px: f32) -> (Metrics, Vec<u8>) {
+        let glyph = &self.glyphs[index as usize];
         let scale = self.scale_factor(px);
         let (metrics, offset_x, offset_y) = self.metrics_raw(scale, glyph, 0.0);
         let mut canvas = Raster::new(metrics.width * 3, metrics.height);
@@ -517,15 +554,14 @@ impl Font {
     /// Finds the internal glyph index for the given character. If the character is not present in
     /// the font then 0 is returned.
     #[inline]
-    pub fn lookup_glyph_index(&self, character: char) -> usize {
+    pub fn lookup_glyph_index(&self, character: char) -> u16 {
         unsafe {
             mem::transmute::<Option<NonZeroU16>, u16>(self.char_to_glyph.get(&(character as u32)).copied())
-                as usize
         }
     }
 
     /// Gets the total glyphs in the font.
-    pub fn glyph_count(&self) -> usize {
-        self.glyphs.len()
+    pub fn glyph_count(&self) -> u16 {
+        self.glyphs.len() as u16
     }
 }

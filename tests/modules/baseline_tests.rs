@@ -11,7 +11,7 @@ fn clean_local_baselines() {
     fs::remove_dir_all("./resources/baselines/local/characters").ok();
 }
 
-fn record_local_baseline(font: &Font, name: &str, character_index: usize, size: f32) -> Option<()> {
+fn record_local_baseline(font: &Font, name: &str, character_index: u16, size: f32) -> Option<()> {
     let testcase_name = format!("{}/{}-{}px.png", name, character_index, size);
     let reference_path = format!("./resources/baselines/reference/characters/{}", testcase_name);
     let local_path = format!("./resources/baselines/local/characters/{}", testcase_name);

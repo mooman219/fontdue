@@ -6,10 +6,10 @@ pub struct StreamSliceU32<'a>(&'a [u8]);
 impl<'a> StreamSliceU8<'a> {
     #[inline]
     pub fn get(&self, index: usize) -> Option<u8> {
-        let offset = index;
-        self.0
-            .get(offset..offset) // Option<&[u8]>
-            .map(|slice| u8::from_be_bytes(slice.try_into().unwrap()))
+        const SIZE: usize = 1;
+        let offset = index * SIZE;
+        let slice = self.0.get(offset..offset + SIZE)?;
+        Some(slice[0])
     }
 }
 impl<'a> StreamSliceU16<'a> {
@@ -17,9 +17,8 @@ impl<'a> StreamSliceU16<'a> {
     pub fn get(&self, index: usize) -> Option<u16> {
         const SIZE: usize = 2;
         let offset = index * SIZE;
-        self.0
-            .get(offset..offset + SIZE) // Option<&[u8]>
-            .map(|slice| u16::from_be_bytes(slice.try_into().unwrap()))
+        let slice = self.0.get(offset..offset + SIZE)?;
+        Some(u16::from_be_bytes(slice.try_into().unwrap()))
     }
 }
 impl<'a> StreamSliceU32<'a> {
@@ -27,9 +26,8 @@ impl<'a> StreamSliceU32<'a> {
     pub fn get(&self, index: usize) -> Option<u32> {
         const SIZE: usize = 4;
         let offset = index * SIZE;
-        self.0
-            .get(offset..offset + SIZE) // Option<&[u8]>
-            .map(|slice| u32::from_be_bytes(slice.try_into().unwrap()))
+        let slice = self.0.get(offset..offset + SIZE)?;
+        Some(u32::from_be_bytes(slice.try_into().unwrap()))
     }
 }
 
@@ -95,25 +93,28 @@ impl<'a> Stream<'a> {
     #[inline]
     pub fn read_u8_slice(&mut self, len: usize) -> Option<StreamSliceU8<'a>> {
         let end = self.offset + len;
-        let result = self.bytes.get(self.offset..end)?;
-        self.offset = end;
-        Some(StreamSliceU8(result))
+        self.bytes.get(self.offset..end).map(|slice| {
+            self.offset = end;
+            StreamSliceU8(slice)
+        })
     }
 
     #[inline]
     pub fn read_u16_slice(&mut self, len: usize) -> Option<StreamSliceU16<'a>> {
         let end = self.offset + len * 2;
-        let result = self.bytes.get(self.offset..end)?;
-        self.offset = end;
-        Some(StreamSliceU16(result))
+        self.bytes.get(self.offset..end).map(|slice| {
+            self.offset = end;
+            StreamSliceU16(slice)
+        })
     }
 
     #[inline]
     pub fn read_u32_slice(&mut self, len: usize) -> Option<StreamSliceU32<'a>> {
         let end = self.offset + len * 4;
-        let result = self.bytes.get(self.offset..end)?;
-        self.offset = end;
-        Some(StreamSliceU32(result))
+        self.bytes.get(self.offset..end).map(|slice| {
+            self.offset = end;
+            StreamSliceU32(slice)
+        })
     }
 
     // SIGNED SLICE
@@ -137,23 +138,26 @@ impl<'a> Stream<'a> {
 
     #[inline]
     pub fn read_u8(&mut self) -> Option<u8> {
-        self.bytes
-            .get(self.offset..self.offset + 1) // Option<&[u8]>
-            .map(|slice| u8::from_be_bytes(slice.try_into().unwrap()))
+        const SIZE: usize = 1;
+        let slice = self.bytes.get(self.offset..self.offset + SIZE)?;
+        self.offset += SIZE;
+        Some(slice[0])
     }
 
     #[inline]
     pub fn read_u16(&mut self) -> Option<u16> {
-        self.bytes
-            .get(self.offset..self.offset + 2) // Option<&[u8]>
-            .map(|slice| u16::from_be_bytes(slice.try_into().unwrap()))
+        const SIZE: usize = 2;
+        let slice = self.bytes.get(self.offset..self.offset + SIZE)?;
+        self.offset += SIZE;
+        Some(u16::from_be_bytes(slice.try_into().unwrap()))
     }
 
     #[inline]
     pub fn read_u32(&mut self) -> Option<u32> {
-        self.bytes
-            .get(self.offset..self.offset + 4) // Option<&[u8]>
-            .map(|slice| u32::from_be_bytes(slice.try_into().unwrap()))
+        const SIZE: usize = 4;
+        let slice = self.bytes.get(self.offset..self.offset + SIZE)?;
+        self.offset += SIZE;
+        Some(u32::from_be_bytes(slice.try_into().unwrap()))
     }
 
     // SIGNED
@@ -185,11 +189,8 @@ impl<'a> Stream<'a> {
     #[inline]
     pub fn read_tag(&mut self) -> Option<[u8; 4]> {
         const SIZE: usize = 4;
-        if self.offset + SIZE > self.bytes.len() {
-            return None;
-        }
-        let slice = &self.bytes[self.offset..];
+        let slice = self.bytes.get(self.offset..self.offset + SIZE)?;
         self.offset += SIZE;
-        Some(unsafe { *(slice.as_ptr() as *const [u8; SIZE]) })
+        Some(slice.try_into().unwrap())
     }
 }

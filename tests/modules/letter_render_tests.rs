@@ -14,7 +14,7 @@ const CHARACTERS: [char; 94] = [
 fn check_best_guess_rasterization(
     (metrics, bitmap): (fontdue::Metrics, Vec<u8>),
     rendered_char: char,
-    index: usize,
+    index: u16,
 ) {
     // Ensure that the bitmap dimensions matches the metrics' description
     assert_eq!(

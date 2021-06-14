@@ -160,7 +160,7 @@ impl CharacterData {
     const CONTROL: u8 = 0b0000_0010;
     const MISSING: u8 = 0b0000_0100;
 
-    pub fn classify(c: char, index: usize) -> CharacterData {
+    pub fn classify(c: char, index: u16) -> CharacterData {
         let mut class = 0;
         if index == 0 {
             class |= CharacterData::MISSING;
