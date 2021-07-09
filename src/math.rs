@@ -1,5 +1,6 @@
-use crate::platform::{abs, atan2, clamp, f32x4};
+use crate::platform::{self, abs, atan2, f32x4, sqrt};
 use crate::{Glyph, OutlineBounds};
+use alloc::vec;
 use alloc::vec::*;
 
 #[cfg(feature = "serde_derive")]
@@ -57,10 +58,10 @@ impl CubeCurve {
 
     fn is_flat(&self, threshold: f32) -> bool {
         let (d1, d2, d3, d4) = f32x4::new(
-            self.a.squared_distance(self.b),
-            self.b.squared_distance(self.c),
-            self.c.squared_distance(self.d),
-            self.a.squared_distance(self.d),
+            self.a.distance_squared(self.b),
+            self.b.distance_squared(self.c),
+            self.c.distance_squared(self.d),
+            self.a.distance_squared(self.d),
         )
         .sqrt()
         .copied();
@@ -135,9 +136,9 @@ impl QuadCurve {
 
     fn is_flat(&self, threshold: f32) -> bool {
         let (d1, d2, d3, _) = f32x4::new(
-            self.a.squared_distance(self.b),
-            self.b.squared_distance(self.c),
-            self.a.squared_distance(self.c),
+            self.a.distance_squared(self.b),
+            self.b.distance_squared(self.c),
+            self.a.distance_squared(self.c),
             1.0,
         )
         .sqrt()
@@ -214,10 +215,16 @@ impl Point {
         }
     }
 
-    pub fn squared_distance(&self, other: Point) -> f32 {
+    pub fn distance_squared(&self, other: Point) -> f32 {
         let x = self.x - other.x;
         let y = self.y - other.y;
         x * x + y * y
+    }
+
+    pub fn distance(&self, other: Point) -> f32 {
+        let x = self.x - other.x;
+        let y = self.y - other.y;
+        sqrt(x * x + y * y)
     }
 
     pub fn midpoint(&self, other: Point) -> Point {
@@ -287,8 +294,13 @@ impl Line {
         }
     }
 
-    fn reposition(&mut self, bounds: AABB) {
-        let (mut x0, mut y0, mut x1, mut y1) = self.coords.copied();
+    fn reposition(&mut self, bounds: AABB, reverse: bool) {
+        let (mut x0, mut y0, mut x1, mut y1) = if !reverse {
+            self.coords.copied()
+        } else {
+            let (x0, y0, x1, y1) = self.coords.copied();
+            (x1, y1, x0, y0)
+        };
 
         x0 -= bounds.xmin;
         y0 -= bounds.ymax;
@@ -309,8 +321,27 @@ pub struct Geometry {
     effective_bounds: AABB,
     start_point: Point,
     previous_point: Point,
-    max_angle: f32,
+    area: f32,
     reverse_points: bool,
+    max_area: f32,
+}
+
+struct Segment {
+    a: Point,
+    at: f32,
+    c: Point,
+    ct: f32,
+}
+
+impl Segment {
+    fn new(a: Point, at: f32, c: Point, ct: f32) -> Segment {
+        Segment {
+            a,
+            at,
+            c,
+            ct,
+        }
+    }
 }
 
 impl ttf_parser::OutlineBuilder for Geometry {
@@ -330,21 +361,20 @@ impl ttf_parser::OutlineBuilder for Geometry {
         let control_point = Point::new(x0, y0);
         let next_point = Point::new(x1, y1);
 
-        const STEPS: u32 = 20;
-        const INCREMENT: f32 = 1.0 / (STEPS as f32);
         let curve = QuadCurve::new(self.previous_point, control_point, next_point);
-        let mut previous_angle = curve.angle(0.0);
-        for x in 1..STEPS {
-            let t = INCREMENT * x as f32;
-            let temp_angle = curve.angle(t);
-            if abs(previous_angle - temp_angle) > self.max_angle {
-                previous_angle = temp_angle;
-                let temp_point = curve.point(t);
-                self.push(self.previous_point, temp_point);
-                self.previous_point = temp_point;
+        let mut stack = vec![Segment::new(self.previous_point, 0.0, next_point, 1.0)];
+        while let Some(seg) = stack.pop() {
+            let bt = (seg.at + seg.ct) * 0.5;
+            let b = curve.point(bt);
+            // This is twice the triangle area
+            let area = (b.x - seg.a.x) * (seg.c.y - seg.a.y) - (seg.c.x - seg.a.x) * (b.y - seg.a.y);
+            if platform::abs(area) > self.max_area {
+                stack.push(Segment::new(seg.a, seg.at, b, bt));
+                stack.push(Segment::new(b, bt, seg.c, seg.ct));
+            } else {
+                self.push(seg.a, seg.c);
             }
         }
-        self.push(self.previous_point, next_point);
 
         self.previous_point = next_point;
     }
@@ -354,22 +384,20 @@ impl ttf_parser::OutlineBuilder for Geometry {
         let second_control = Point::new(x1, y1);
         let next_point = Point::new(x2, y2);
 
-        const STEPS: u32 = 20;
-        const INCREMENT: f32 = 1.0 / (STEPS as f32);
         let curve = CubeCurve::new(self.previous_point, first_control, second_control, next_point);
-        let mut previous_angle = curve.angle(0.0);
-        for x in 1..STEPS {
-            let t = INCREMENT * x as f32;
-            let temp_angle = curve.angle(t);
-            if abs(previous_angle - temp_angle) > self.max_angle {
-                previous_angle = temp_angle;
-                let temp_point = curve.point(t);
-                self.push(self.previous_point, temp_point);
-                self.previous_point = temp_point;
+        let mut stack = vec![Segment::new(self.previous_point, 0.0, next_point, 1.0)];
+        while let Some(seg) = stack.pop() {
+            let bt = (seg.at + seg.ct) * 0.5;
+            let b = curve.point(bt);
+            // This is twice the triangle area
+            let area = (b.x - seg.a.x) * (seg.c.y - seg.a.y) - (seg.c.x - seg.a.x) * (b.y - seg.a.y);
+            if platform::abs(area) > self.max_area {
+                stack.push(Segment::new(seg.a, seg.at, b, bt));
+                stack.push(Segment::new(b, bt, seg.c, seg.ct));
+            } else {
+                self.push(seg.a, seg.c);
             }
         }
-        self.push(self.previous_point, next_point);
-
         self.previous_point = next_point;
     }
 
@@ -382,18 +410,11 @@ impl ttf_parser::OutlineBuilder for Geometry {
 }
 
 impl Geometry {
-    pub fn new(scale: f32, reverse_points: bool) -> Geometry {
-        const PI: f32 = 3.14159265359;
-        const LOW_SIZE: f32 = 20.0;
-        const LOW_ANGLE: f32 = 17.0;
-        const HIGH_SIZE: f32 = 125.0;
-        const HIGH_ANGLE: f32 = 5.0;
-        const MAX_ANGLE: f32 = 3.0;
-        const SLOPE: f32 = (HIGH_ANGLE - LOW_ANGLE) / (HIGH_SIZE - LOW_SIZE);
-        const YINT: f32 = SLOPE * -HIGH_SIZE + HIGH_ANGLE;
-        let max_angle = scale * SLOPE + YINT;
-        let max_angle = clamp(MAX_ANGLE, LOW_ANGLE, max_angle);
-        let max_angle = max_angle * PI / 180.0; // Convert into rads
+    // Artisanal bespoke hand carved curves
+    pub fn new(scale: f32, units_per_em: f32) -> Geometry {
+        const ERROR_THRESHOLD: f32 = 3.0; // In pixels.
+        let max_area = ERROR_THRESHOLD * 2.0 * (units_per_em / scale);
+
         Geometry {
             v_lines: Vec::new(),
             m_lines: Vec::new(),
@@ -405,23 +426,23 @@ impl Geometry {
             },
             start_point: Point::default(),
             previous_point: Point::default(),
-            max_angle,
-            reverse_points,
+            area: 0.0,
+            reverse_points: false,
+            max_area,
         }
     }
 
     fn push(&mut self, start: Point, end: Point) {
-        if start.y != end.y {
-            let (start, end) = if self.reverse_points {
-                (end, start)
-            } else {
-                (start, end)
-            };
-            if start.x == end.x {
+        // We're using to_bits here because we only care if they're _exactly_ the same.
+        if start.y.to_bits() != end.y.to_bits() {
+            self.area += (end.y - start.y) * (end.x + start.x);
+            if start.x.to_bits() == end.x.to_bits() {
                 self.v_lines.push(Line::new(start, end));
             } else {
                 self.m_lines.push(Line::new(start, end));
             }
+            Self::recalculate_bounds(&mut self.effective_bounds, start.x, start.y);
+            Self::recalculate_bounds(&mut self.effective_bounds, end.x, end.y);
         }
     }
 
@@ -429,13 +450,9 @@ impl Geometry {
         if self.v_lines.is_empty() && self.m_lines.is_empty() {
             self.effective_bounds = AABB::default();
         } else {
-            for line in self.v_lines.iter().chain(self.m_lines.iter()) {
-                let (x0, y0, x1, y1) = line.coords.copied();
-                Self::recalculate_bounds(&mut self.effective_bounds, x0, y0);
-                Self::recalculate_bounds(&mut self.effective_bounds, x1, y1);
-            }
+            self.reverse_points = self.area > 0.0;
             for line in self.v_lines.iter_mut().chain(self.m_lines.iter_mut()) {
-                line.reposition(self.effective_bounds);
+                line.reposition(self.effective_bounds, self.reverse_points);
             }
             self.v_lines.shrink_to_fit();
             self.m_lines.shrink_to_fit();

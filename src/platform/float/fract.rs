@@ -1,10 +1,10 @@
-#[cfg(not(any(target_arch = "x86", target_arch = "x86_64")))]
+#[cfg(not(all(any(target_arch = "x86", target_arch = "x86_64"), not(feature = "disable_simd"))))]
 #[inline(always)]
 pub fn fract(value: f32) -> f32 {
     value - super::trunc(value)
 }
 
-#[cfg(any(target_arch = "x86", target_arch = "x86_64"))]
+#[cfg(all(any(target_arch = "x86", target_arch = "x86_64"), not(feature = "disable_simd")))]
 #[inline(always)]
 pub fn fract(value: f32) -> f32 {
     #[cfg(target_arch = "x86")]

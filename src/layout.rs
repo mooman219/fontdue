@@ -1,6 +1,6 @@
 pub use crate::unicode::CharacterData;
 
-use crate::unicode::{classify, linebreak_property, read_utf8, wrap_mask, LINEBREAK_HARD, LINEBREAK_NONE};
+use crate::unicode::{read_utf8, LinebreakData, Linebreaker, LINEBREAK_NONE};
 use crate::Font;
 use crate::{
     platform::{ceil, floor},
@@ -103,8 +103,8 @@ impl Default for LayoutSettings {
 /// uniquely identify a rasterized glyph for applications that want to cache glyphs.
 #[derive(Debug, Copy, Clone)]
 pub struct GlyphRasterConfig {
-    /// The character represented by the glyph being positioned.
-    pub c: char,
+    /// The glyph index represented by the glyph being positioned.
+    pub glyph_index: u16,
     /// The scale of the glyph being positioned in px.
     pub px: f32,
     /// The index of the font used in layout to raster the glyph.
@@ -113,7 +113,7 @@ pub struct GlyphRasterConfig {
 
 impl Hash for GlyphRasterConfig {
     fn hash<H: Hasher>(&self, state: &mut H) {
-        self.c.hash(state);
+        self.glyph_index.hash(state);
         self.px.to_bits().hash(state);
         self.font_index.hash(state);
     }
@@ -121,7 +121,7 @@ impl Hash for GlyphRasterConfig {
 
 impl PartialEq for GlyphRasterConfig {
     fn eq(&self, other: &Self) -> bool {
-        self.c == other.c && self.px == other.px && self.font_index == other.font_index
+        self.glyph_index == other.glyph_index && self.px == other.px && self.font_index == other.font_index
     }
 }
 
@@ -154,7 +154,7 @@ pub struct GlyphPosition<U: Copy + Clone = ()> {
 pub struct TextStyle<'a, U: Copy + Clone = ()> {
     /// The text to layout.
     pub text: &'a str,
-    /// The scale of the text in pixel units.
+    /// The scale of the text in pixel units. The units of the scale are pixels per Em unit.
     pub px: f32,
     /// The font to layout the text in.
     pub font_index: usize,
@@ -219,7 +219,7 @@ pub struct Layout<U: Copy + Clone = ()> {
     // Settings state
     x: f32,
     y: f32,
-    wrap_mask: u8,
+    wrap_mask: LinebreakData,
     max_width: f32,
     max_height: f32,
     vertical_align: f32,
@@ -228,8 +228,8 @@ pub struct Layout<U: Copy + Clone = ()> {
     output: Vec<GlyphPosition<U>>,
     glyphs: Vec<GlyphPosition<U>>,
     line_metrics: Vec<LineMetrics>,
-    linebreak_prev: u8,
-    linebreak_state: u8,
+    linebreaker: Linebreaker,
+    linebreak_prev: LinebreakData,
     linebreak_pos: f32,
     linebreak_idx: usize,
     current_pos: f32,
@@ -250,7 +250,7 @@ impl<'a, U: Copy + Clone> Layout<U> {
             // Settings state
             x: 0.0,
             y: 0.0,
-            wrap_mask: 0,
+            wrap_mask: LINEBREAK_NONE,
             max_width: 0.0,
             max_height: 0.0,
             vertical_align: 0.0,
@@ -259,8 +259,8 @@ impl<'a, U: Copy + Clone> Layout<U> {
             output: Vec::new(),
             glyphs: Vec::new(),
             line_metrics: Vec::new(),
-            linebreak_prev: 0,
-            linebreak_state: 0,
+            linebreaker: Linebreaker::new(),
+            linebreak_prev: LINEBREAK_NONE,
             linebreak_pos: 0.0,
             linebreak_idx: 0,
             current_pos: 0.0,
@@ -278,7 +278,7 @@ impl<'a, U: Copy + Clone> Layout<U> {
     pub fn reset(&mut self, settings: &LayoutSettings) {
         self.x = settings.x;
         self.y = settings.y;
-        self.wrap_mask = wrap_mask(
+        self.wrap_mask = LinebreakData::from_mask(
             settings.wrap_style == WrapStyle::Word,
             settings.wrap_hard_breaks,
             settings.max_width.is_some(),
@@ -313,8 +313,8 @@ impl<'a, U: Copy + Clone> Layout<U> {
         self.line_metrics.clear();
         self.line_metrics.push(LineMetrics::default());
 
-        self.linebreak_prev = 0;
-        self.linebreak_state = 0;
+        self.linebreaker.reset();
+        self.linebreak_prev = LINEBREAK_NONE;
         self.linebreak_pos = 0.0;
         self.linebreak_idx = 0;
         self.current_pos = 0.0;
@@ -349,8 +349,8 @@ impl<'a, U: Copy + Clone> Layout<U> {
     /// in the styles.
     pub fn append<T: Borrow<Font>>(&mut self, fonts: &[T], style: &TextStyle<U>) {
         let mut byte_offset = 0;
-        let font = &fonts[style.font_index];
-        if let Some(metrics) = font.borrow().horizontal_line_metrics(style.px) {
+        let font: &Font = &fonts[style.font_index].borrow();
+        if let Some(metrics) = font.horizontal_line_metrics(style.px) {
             self.current_ascent = ceil(metrics.ascent);
             self.current_new_line = ceil(metrics.new_line_size);
             if let Some(line) = self.line_metrics.last_mut() {
@@ -363,22 +363,22 @@ impl<'a, U: Copy + Clone> Layout<U> {
             }
         }
         while byte_offset < style.text.len() {
-            let c = read_utf8(style.text, &mut byte_offset);
-            let char_index = font.borrow().lookup_glyph_index(c);
-            let char_data = classify(c, char_index);
+            let character = read_utf8(style.text.as_bytes(), &mut byte_offset);
+            let linebreak = self.linebreaker.next(character).mask(self.wrap_mask);
+            let glyph_index = font.lookup_glyph_index(character);
+            let char_data = CharacterData::classify(character, glyph_index);
             let metrics = if !char_data.is_control() {
-                font.borrow().metrics_indexed(char_index, style.px)
+                font.metrics_indexed(glyph_index, style.px)
             } else {
                 Metrics::default()
             };
-            let advance = ceil(metrics.advance_width);
-            let linebreak = linebreak_property(&mut self.linebreak_state, c) & self.wrap_mask;
             if linebreak >= self.linebreak_prev {
                 self.linebreak_prev = linebreak;
                 self.linebreak_pos = self.current_pos;
                 self.linebreak_idx = self.glyphs.len();
             }
-            if linebreak == LINEBREAK_HARD || (self.current_pos - self.start_pos + advance > self.max_width) {
+            let advance = ceil(metrics.advance_width);
+            if linebreak.is_hard() || (self.current_pos - self.start_pos + advance > self.max_width) {
                 self.linebreak_prev = LINEBREAK_NONE;
                 if let Some(line) = self.line_metrics.last_mut() {
                     line.end_index = self.linebreak_idx;
@@ -401,11 +401,11 @@ impl<'a, U: Copy + Clone> Layout<U> {
             };
             self.glyphs.push(GlyphPosition {
                 key: GlyphRasterConfig {
-                    c,
+                    glyph_index: glyph_index as u16,
                     px: style.px,
                     font_index: style.font_index,
                 },
-                x: self.current_pos + floor(metrics.bounds.xmin),
+                x: floor(self.current_pos + metrics.bounds.xmin),
                 y,
                 width: metrics.width,
                 height: metrics.height,

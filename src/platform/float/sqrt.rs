@@ -1,5 +1,5 @@
 // [See license/rust-lang/libm] Copyright (c) 2018 Jorge Aparicio
-#[cfg(not(any(target_arch = "x86", target_arch = "x86_64")))]
+#[cfg(not(all(any(target_arch = "x86", target_arch = "x86_64"), not(feature = "disable_simd"))))]
 pub fn sqrt(x: f32) -> f32 {
     const TINY: f32 = 1.0e-30;
 
@@ -26,6 +26,7 @@ pub fn sqrt(x: f32) -> f32 {
             return x; /* sqrt(+-0) = +-0 */
         }
         if ix < 0 {
+            #[allow(clippy::eq_op)] // This has special semantics and is not wrong.
             return (x - x) / (x - x); /* sqrt(-ve) = sNaN */
         }
     }
@@ -84,7 +85,7 @@ pub fn sqrt(x: f32) -> f32 {
     f32::from_bits(ix as u32)
 }
 
-#[cfg(any(target_arch = "x86", target_arch = "x86_64"))]
+#[cfg(all(any(target_arch = "x86", target_arch = "x86_64"), not(feature = "disable_simd")))]
 #[inline(always)]
 pub fn sqrt(value: f32) -> f32 {
     #[cfg(target_arch = "x86")]

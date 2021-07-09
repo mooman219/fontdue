@@ -90,7 +90,7 @@ pub fn atan2f(y: f32, x: f32) -> f32 {
 }
 
 pub fn atan2(x: f32, y: f32) -> f32 {
-    const PI: f32 = 3.14159265359;
+    use core::f32::consts::PI;
     const PI_2: f32 = PI / 2.0;
     const M_PI_2: f32 = -PI / 2.0;
     const PI_4: f32 = PI / 4.0;

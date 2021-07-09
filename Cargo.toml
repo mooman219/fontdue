@@ -1,6 +1,6 @@
 [package]
 name = "fontdue"
-version = "0.4.0"
+version = "0.6.0"
 authors = ["Joe Cumbo <mooman219@gmail.com>"]
 license = "MIT"
 documentation = "https://docs.rs/fontdue"
@@ -19,11 +19,13 @@ maintenance = { status = "experimental" }
 [features]
 # Enable this flag to include the freetype benchmark in the benches.
 freetype_benchmark = ["freetype-rs"]
+# Enable this flag to disable SIMD usage on x86/x86_64 platforms.
+disable_simd = []
 serde_derive = ["hashbrown/serde", "serde", "serde_json"]
 
 [dependencies]
-ttf-parser = {version = "0.8", default-features = false}
-hashbrown = "0.8"
+ttf-parser = { version = "0.12", default-features = false }
+hashbrown = "0.11"
 serde = { version = "1.0", optional = true, default-features = false, features = ["derive"] }
 
 # This is a dev-dependency, but those cannot be optional, so it's included here and not built by
@@ -39,6 +41,8 @@ criterion = "0.3"
 rusttype = "0.9.2"
 ab_glyph = "0.2"
 glyph_brush_layout = "0.2.0"
+png = "0.16"
+walkdir = "2.3"
 
 [[bench]]
 name = "rasterize"

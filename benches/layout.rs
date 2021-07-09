@@ -20,7 +20,7 @@ fn fontdue_layout_benchmark(c: &mut Criterion) {
     });
     let fonts = &[roboto_regular];
 
-    let mut group = c.benchmark_group("fontdue layout");
+    let mut group = c.benchmark_group("layout/fontdue");
     group.measurement_time(core::time::Duration::from_secs(4));
     group.sample_size(250);
     for message in MESSAGES.iter() {
@@ -47,7 +47,7 @@ fn glyph_brush_layout_benchmark(c: &mut Criterion) {
     };
     let layout = glyph_brush_layout::Layout::default();
 
-    let mut group = c.benchmark_group("glyph_brush_layout layout");
+    let mut group = c.benchmark_group("layout/glyph_brush_layout");
     group.measurement_time(core::time::Duration::from_secs(4));
     group.sample_size(250);
     for message in MESSAGES.iter() {

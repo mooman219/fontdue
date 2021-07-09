@@ -10,6 +10,8 @@
 
 #![no_std]
 #![allow(dead_code)]
+#![allow(clippy::style)]
+#![allow(clippy::complexity)]
 
 extern crate alloc;
 
@@ -19,6 +21,7 @@ pub mod layout;
 mod math;
 mod platform;
 mod raster;
+mod table;
 mod unicode;
 
 pub use crate::font::*;
