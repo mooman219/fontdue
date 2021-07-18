@@ -518,6 +518,9 @@ impl Font {
     /// 0% coverage of that pixel by the glyph and 255 represents 100% coverage. The vec starts at
     /// the top left corner of the glyph.
     pub fn rasterize_indexed(&self, index: u16, px: f32) -> (Metrics, Vec<u8>) {
+        if px <= 0.0 {
+            return (Metrics::default(), Vec::new());
+        }
         let glyph = &self.glyphs[index as usize];
         let scale = self.scale_factor(px);
         let (metrics, offset_x, offset_y) = self.metrics_raw(scale, glyph, 0.0);
@@ -543,6 +546,9 @@ impl Font {
     /// represents 0% coverage of that subpixel by the glyph and 255 represents 100% coverage. The
     /// vec starts at the top left corner of the glyph.
     pub fn rasterize_indexed_subpixel(&self, index: u16, px: f32) -> (Metrics, Vec<u8>) {
+        if px <= 0.0 {
+            return (Metrics::default(), Vec::new());
+        }
         let glyph = &self.glyphs[index as usize];
         let scale = self.scale_factor(px);
         let (metrics, offset_x, offset_y) = self.metrics_raw(scale, glyph, 0.0);
