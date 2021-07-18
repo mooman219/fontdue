@@ -132,6 +132,9 @@ impl Eq for GlyphRasterConfig {}
 pub struct GlyphPosition<U: Copy + Clone = ()> {
     /// Hashable key that can be used to uniquely identify a rasterized glyph.
     pub key: GlyphRasterConfig,
+    /// The associated character that generated this glyph. A character may generate multiple
+    /// glyphs.
+    pub parent: char,
     /// The xmin of the glyph bounding box. This represents the left side of the glyph. Dimensions
     /// are in pixels, and are always whole numbers.
     pub x: f32,
@@ -405,6 +408,7 @@ impl<'a, U: Copy + Clone> Layout<U> {
                     px: style.px,
                     font_index: style.font_index,
                 },
+                parent: character,
                 x: floor(self.current_pos + metrics.bounds.xmin),
                 y,
                 width: metrics.width,
