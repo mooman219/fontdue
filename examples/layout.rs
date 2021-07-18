@@ -27,7 +27,7 @@ pub fn main() {
     println!("{:?}", layout.glyphs());
 
     // If you wanted to attached metadata based on the TextStyle to the glyphs returned in the
-    // glyphs() function, you can use the TextStyle::with_metadata function. In this example, the
+    // glyphs() function, you can use the TextStyle::with_user_data function. In this example, the
     // Layout type is now parameterized with u8 (Layout<u8>). All styles need to share the same
     // metadata type.
     let mut layout = Layout::new(CoordinateSystem::PositiveYUp);
