@@ -129,7 +129,7 @@ impl Eq for GlyphRasterConfig {}
 
 /// A positioned scaled glyph.
 #[derive(Debug, Copy, Clone)]
-pub struct GlyphPosition<U: Copy + Clone = ()> {
+pub struct GlyphPosition<U: Copy = ()> {
     /// Hashable key that can be used to uniquely identify a rasterized glyph.
     pub key: GlyphRasterConfig,
     /// The associated character that generated this glyph. A character may generate multiple
@@ -154,7 +154,7 @@ pub struct GlyphPosition<U: Copy + Clone = ()> {
 }
 
 /// A style description for a segment of text.
-pub struct TextStyle<'a, U: Copy + Clone = ()> {
+pub struct TextStyle<'a, U: Copy = ()> {
     /// The text to layout.
     pub text: &'a str,
     /// The scale of the text in pixel units. The units of the scale are pixels per Em unit.
@@ -176,7 +176,7 @@ impl<'a> TextStyle<'a> {
     }
 }
 
-impl<'a, U: Copy + Clone> TextStyle<'a, U> {
+impl<'a, U: Copy> TextStyle<'a, U> {
     pub fn with_user_data(text: &'a str, px: f32, font_index: usize, user_data: U) -> TextStyle<'a, U> {
         TextStyle {
             text,
@@ -216,7 +216,7 @@ impl Default for LineMetrics {
 /// Text layout requires a small amount of heap usage which is contained in the Layout struct. This
 /// context is reused between layout calls. Reusing the Layout struct will greatly reduce memory
 /// allocations and is advisable for performance.
-pub struct Layout<U: Copy + Clone = ()> {
+pub struct Layout<U: Copy = ()> {
     // Global state
     flip: bool,
     // Settings state
@@ -243,7 +243,7 @@ pub struct Layout<U: Copy + Clone = ()> {
     height: f32,
 }
 
-impl<'a, U: Copy + Clone> Layout<U> {
+impl<'a, U: Copy> Layout<U> {
     /// Creates a layout instance. This requires the direction that the Y coordinate increases in.
     /// Layout needs to be aware of your coordinate system to place the glyphs correctly.
     pub fn new(coordinate_system: CoordinateSystem) -> Layout<U> {
