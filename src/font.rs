@@ -8,6 +8,7 @@ use crate::FontResult;
 use alloc::string::String;
 use alloc::vec;
 use alloc::vec::*;
+use core::hash::{Hash, Hasher};
 use core::mem;
 use core::num::NonZeroU16;
 use core::ops::Deref;
@@ -184,6 +185,13 @@ pub struct Font {
     horizontal_kern: Option<HashMap<u32, i16>>,
     vertical_line_metrics: Option<LineMetrics>,
     settings: FontSettings,
+    hash: usize,
+}
+
+impl Hash for Font {
+    fn hash<H: Hasher>(&self, state: &mut H) {
+        self.hash.hash(state);
+    }
 }
 
 impl core::fmt::Debug for Font {
@@ -221,6 +229,8 @@ fn convert_name(face: &Face) -> Option<String> {
 impl Font {
     /// Constructs a font from an array of bytes.
     pub fn from_bytes<Data: Deref<Target = [u8]>>(data: Data, settings: FontSettings) -> FontResult<Font> {
+        let hash = crate::hash::hash(&data);
+
         let face = match Face::from_slice(&data, settings.collection_index) {
             Ok(f) => f,
             Err(e) => return Err(convert_error(e)),
@@ -295,7 +305,13 @@ impl Font {
             horizontal_kern,
             vertical_line_metrics,
             settings,
+            hash,
         })
+    }
+
+    /// Returns a precomputed hash for the font file.
+    pub fn file_hash(&self) -> usize {
+        self.hash
     }
 
     /// New line metrics for fonts that append characters to lines horizontally, and append new
