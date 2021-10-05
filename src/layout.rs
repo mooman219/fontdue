@@ -132,6 +132,8 @@ impl Eq for GlyphRasterConfig {}
 pub struct GlyphPosition<U: Copy + Clone = ()> {
     /// Hashable key that can be used to uniquely identify a rasterized glyph.
     pub key: GlyphRasterConfig,
+    /// The index of the font used to generate this glyph position.
+    pub font_index: usize,
     /// The associated character that generated this glyph. A character may generate multiple
     /// glyphs.
     pub parent: char,
@@ -408,6 +410,7 @@ impl<'a, U: Copy + Clone> Layout<U> {
                     px: style.px,
                     font_hash: font.file_hash(),
                 },
+                font_index: style.font_index,
                 parent: character,
                 x: floor(self.current_pos + metrics.bounds.xmin),
                 y,
