@@ -31,13 +31,13 @@ struct Coverage {
 }
 
 impl Coverage {
-    pub fn aat(cov: u8) -> Coverage {
+    pub const fn aat(cov: u8) -> Coverage {
         Coverage {
             is_horizontal: cov & 0x80 != 0x80,
         }
     }
 
-    pub fn ot(cov: u8) -> Coverage {
+    pub const fn ot(cov: u8) -> Coverage {
         Coverage {
             is_horizontal: cov & 0x01 == 0x01,
         }

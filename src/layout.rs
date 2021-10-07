@@ -168,7 +168,7 @@ pub struct TextStyle<'a, U: Copy + Clone = ()> {
 }
 
 impl<'a> TextStyle<'a> {
-    pub fn new(text: &'a str, px: f32, font_index: usize) -> TextStyle<'a> {
+    pub const fn new(text: &'a str, px: f32, font_index: usize) -> TextStyle<'a> {
         TextStyle {
             text,
             px,

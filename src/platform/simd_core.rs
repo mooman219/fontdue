@@ -56,13 +56,13 @@ impl f32x4 {
     }
 
     #[inline(always)]
-    pub fn trunc(self) -> Self {
+    pub const fn trunc(self) -> Self {
         use super::trunc;
         Self::new(trunc(self.x0), trunc(self.x1), trunc(self.x2), trunc(self.x3))
     }
 
     #[inline(always)]
-    pub fn sqrt(self) -> Self {
+    pub const fn sqrt(self) -> Self {
         use super::sqrt;
         Self::new(sqrt(self.x0), sqrt(self.x1), sqrt(self.x2), sqrt(self.x3))
     }
