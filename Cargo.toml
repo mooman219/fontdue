@@ -21,10 +21,12 @@ maintenance = { status = "experimental" }
 freetype_benchmark = ["freetype-rs"]
 # Enable this flag to disable SIMD usage on x86/x86_64 platforms.
 disable_simd = []
+parallel = ["rayon", "hashbrown/rayon"]
 
 [dependencies]
 ttf-parser = { version = "0.12", default-features = false }
 hashbrown = "0.11"
+rayon = { version = "1.5.1", optional = true }
 
 # This is a dev-dependency, but those cannot be optional, so it's included here and not built by
 # default.
