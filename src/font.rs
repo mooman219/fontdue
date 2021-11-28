@@ -15,6 +15,9 @@ use core::ops::Deref;
 use hashbrown::HashMap;
 use ttf_parser::{Face, FaceParsingError, GlyphId, Tag};
 
+#[cfg(feature = "parallel")]
+use rayon::prelude::*;
+
 /// Defines the bounds for a glyph's outline in subpixels. A glyph's outline is always contained in
 /// its bitmap.
 #[derive(Copy, Clone, PartialEq, Debug)]
@@ -261,16 +264,15 @@ impl Font {
         let units_per_em = face.units_per_em().unwrap_or(1000) as f32;
 
         // Parse and store all unique codepoints.
-        let glyph_count = face.number_of_glyphs() as usize;
-        let mut glyphs: Vec<Glyph> = vec::from_elem(Glyph::default(), glyph_count);
-        for (_, mapping) in &char_to_glyph {
-            let mapping = unsafe { mem::transmute::<NonZeroU16, u16>(*mapping) as usize };
-            if mapping as usize >= glyph_count {
+        let glyph_count = face.number_of_glyphs();
+        let mut glyphs: Vec<Glyph> = vec::from_elem(Glyph::default(), glyph_count as usize);
+
+        let mapping_to_glyph = |mapping: NonZeroU16, glyph: &mut Glyph| {
+            if mapping.get() >= glyph_count {
                 return Err("Attempted to map a codepoint out of bounds.");
             }
 
-            let glyph_id = GlyphId(mapping as u16);
-            let glyph = &mut glyphs[mapping];
+            let glyph_id = GlyphId(mapping.get());
             if let Some(advance_width) = face.glyph_hor_advance(glyph_id) {
                 glyph.advance_width = advance_width as f32;
             }
@@ -281,6 +283,29 @@ impl Font {
             let mut geometry = Geometry::new(settings.scale, units_per_em);
             face.outline_glyph(glyph_id, &mut geometry);
             geometry.finalize(glyph);
+
+            Ok(())
+        };
+
+        #[cfg(not(feature = "parallel"))]
+        for mapping in char_to_glyph.values().copied() {
+            mapping_to_glyph(mapping, &mut glyphs[mapping.get() as usize])?;
+        }
+
+        #[cfg(feature = "parallel")]
+        {
+            let mapped: HashMap<NonZeroU16, Glyph> = char_to_glyph
+                .par_values()
+                .map(|&mapping| {
+                    let mut glyph = Glyph::default();
+                    mapping_to_glyph(mapping, &mut glyph)?;
+                    Ok((mapping, glyph))
+                })
+                .collect::<Result<_, _>>()?;
+
+            for (idx, glyph) in mapped {
+                glyphs[idx.get() as usize] = glyph;
+            }
         }
 
         // New line metrics.
