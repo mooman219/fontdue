@@ -17,10 +17,12 @@ exclude = ["resources/**", "examples/**", "fontdue.pgm"]
 maintenance = { status = "experimental" }
 
 [features]
+default = ["simd"]
 # Enable this flag to include the freetype benchmark in the benches.
 freetype_benchmark = ["freetype-rs"]
-# Enable this flag to disable SIMD usage on x86/x86_64 platforms.
-disable_simd = []
+# Enable this flag to leverage SIMD usage on x86/x86_64 platforms.
+simd = []
+# Enable this flag to parallelize font loading using threads.
 parallel = ["rayon", "hashbrown/rayon"]
 
 [dependencies]

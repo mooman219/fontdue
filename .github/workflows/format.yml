@@ -11,9 +11,9 @@ jobs:
     - name: Format
       run: |
         cargo fmt --all -- --check
-    - name: Clippy
+    - name: Clippy (no default features)
       run: |
-        cargo clippy -- -D warnings
-    - name: Clippy (disable_simd)
+        cargo clippy --no-default-features -- -D warnings
+    - name: Clippy (all features)
       run: |
-        cargo clippy --features disable_simd -- -D warnings
+        cargo clippy --all-features -- -D warnings

@@ -1,6 +1,6 @@
 use alloc::vec::*;
 
-#[cfg(not(all(any(target_arch = "x86", target_arch = "x86_64"), not(feature = "disable_simd"))))]
+#[cfg(not(all(any(target_arch = "x86", target_arch = "x86_64"), feature = "simd")))]
 pub fn get_bitmap(a: &Vec<f32>, length: usize) -> Vec<u8> {
     use crate::platform::{abs, clamp};
     use alloc::vec;
@@ -17,7 +17,7 @@ pub fn get_bitmap(a: &Vec<f32>, length: usize) -> Vec<u8> {
     output
 }
 
-#[cfg(all(any(target_arch = "x86", target_arch = "x86_64"), not(feature = "disable_simd")))]
+#[cfg(all(any(target_arch = "x86", target_arch = "x86_64"), feature = "simd"))]
 pub fn get_bitmap(a: &Vec<f32>, length: usize) -> Vec<u8> {
     #[cfg(target_arch = "x86")]
     use core::arch::x86::*;

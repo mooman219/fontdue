@@ -12,9 +12,12 @@ jobs:
         rust-version: ${{ matrix.rust }}
         targets: wasm32-unknown-unknown
     - uses: actions/checkout@master
-    - name: Build native
+    - name: Build native (no default features)
       run: |
-        cargo build --verbose
+        cargo build --no-default-features --verbose
+    - name: Build native (all features)
+      run: |
+        cargo build --all-features --verbose
     - name: Build wasm
       run: |
         cargo build --verbose --target wasm32-unknown-unknown
