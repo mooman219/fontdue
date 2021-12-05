@@ -267,12 +267,12 @@ impl Font {
         let glyph_count = face.number_of_glyphs();
         let mut glyphs: Vec<Glyph> = vec::from_elem(Glyph::default(), glyph_count as usize);
 
-        let mapping_to_glyph = |mapping: NonZeroU16, glyph: &mut Glyph| {
-            if mapping.get() >= glyph_count {
+        let mapping_to_glyph = |mapping: u16, glyph: &mut Glyph| {
+            if mapping >= glyph_count {
                 return Err("Attempted to map a codepoint out of bounds.");
             }
 
-            let glyph_id = GlyphId(mapping.get());
+            let glyph_id = GlyphId(mapping);
             if let Some(advance_width) = face.glyph_hor_advance(glyph_id) {
                 glyph.advance_width = advance_width as f32;
             }
@@ -283,20 +283,21 @@ impl Font {
             let mut geometry = Geometry::new(settings.scale, units_per_em);
             face.outline_glyph(glyph_id, &mut geometry);
             geometry.finalize(glyph);
-
             Ok(())
         };
 
         #[cfg(not(feature = "parallel"))]
         for mapping in char_to_glyph.values().copied() {
-            mapping_to_glyph(mapping, &mut glyphs[mapping.get() as usize])?;
+            let mapping: u16 = unsafe { mem::transmute::<NonZeroU16, u16>(mapping) };
+            mapping_to_glyph(mapping, &mut glyphs[mapping as usize])?;
         }
 
         #[cfg(feature = "parallel")]
         {
-            let mapped: HashMap<NonZeroU16, Glyph> = char_to_glyph
+            let mapped: Vec<(u16, Glyph)> = char_to_glyph
                 .par_values()
-                .map(|&mapping| {
+                .map(|mapping| {
+                    let mapping: u16 = unsafe { mem::transmute::<NonZeroU16, u16>(*mapping) };
                     let mut glyph = Glyph::default();
                     mapping_to_glyph(mapping, &mut glyph)?;
                     Ok((mapping, glyph))
@@ -304,7 +305,7 @@ impl Font {
                 .collect::<Result<_, _>>()?;
 
             for (idx, glyph) in mapped {
-                glyphs[idx.get() as usize] = glyph;
+                glyphs[idx as usize] = glyph;
             }
         }
 
