@@ -24,7 +24,7 @@ fn check_best_guess_rasterization(
         rendered_char,
         index
     );
-    if bitmap.len() > 0 {
+    if !bitmap.is_empty() {
         let mut visible = false;
         for x in bitmap {
             if x > 0 {

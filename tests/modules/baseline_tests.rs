@@ -43,10 +43,7 @@ fn record_local_baseline(font: &Font, name: &str, character_index: u16, size: f3
     if !Path::new(&reference_path).exists() || fs::read(reference_path).unwrap() != encoded {
         // only write out local bitmap when it doesn't match (this saves a lot of disk i/o time)
         fs::create_dir_all(Path::new(&local_path).parent()?).ok();
-        let err = fs::write(&local_path, encoded);
-        if err.is_err() {
-            assert!(false, "Unable to save file {}: {}", &local_path, err.unwrap_err());
-        }
+        fs::write(&local_path, encoded).unwrap();
     }
     None
 }
@@ -103,7 +100,7 @@ fn report_changed_baselines() {
     }
 
     assert!(
-        failures.len() == 0,
+        failures.is_empty(),
         "Baseline failures:
 {}
 
