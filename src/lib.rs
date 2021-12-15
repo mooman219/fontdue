@@ -1,6 +1,6 @@
 //! Fontdue is a font parser, rasterizer, and layout tool.
 //!
-//! This is a #![no_std] crate, but still requires the alloc crate.
+//! This is a no_std crate, but still requires the alloc crate.
 
 #![no_std]
 #![allow(dead_code)]
