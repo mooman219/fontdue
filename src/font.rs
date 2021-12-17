@@ -12,7 +12,7 @@ use core::hash::{Hash, Hasher};
 use core::mem;
 use core::num::NonZeroU16;
 use core::ops::Deref;
-use hashbrown::HashMap;
+use hashbrown::{HashMap, HashSet};
 use ttf_parser::{Face, FaceParsingError, GlyphId, Tag};
 
 #[cfg(feature = "parallel")]
@@ -248,13 +248,17 @@ impl Font {
         })();
 
         // Collect all the unique codepoint to glyph mappings.
-        let mut char_to_glyph = HashMap::new();
+        let glyph_count = face.number_of_glyphs();
+        let mut seen_mappings = HashSet::with_capacity(glyph_count as usize);
+        let mut char_to_glyph = HashMap::with_capacity(glyph_count as usize);
+        seen_mappings.insert(0u16);
         for subtable in face.character_mapping_subtables() {
             subtable.codepoints(|codepoint| {
                 if let Some(mapping) = subtable.glyph_index(codepoint) {
-                    // Zero is a valid value for missing glyphs, so even if a mapping is zero, the
-                    // result is desireable.
-                    char_to_glyph.insert(codepoint, unsafe { NonZeroU16::new_unchecked(mapping.0) });
+                    if let Some(mapping) = NonZeroU16::new(mapping.0) {
+                        seen_mappings.insert(mapping.get());
+                        char_to_glyph.insert(codepoint, mapping);
+                    }
                 }
             });
         }
@@ -264,15 +268,15 @@ impl Font {
         let units_per_em = face.units_per_em().unwrap_or(1000) as f32;
 
         // Parse and store all unique codepoints.
-        let glyph_count = face.number_of_glyphs();
         let mut glyphs: Vec<Glyph> = vec::from_elem(Glyph::default(), glyph_count as usize);
 
-        let mapping_to_glyph = |mapping: u16, glyph: &mut Glyph| {
-            if mapping >= glyph_count {
+        let generate_glyph = |index: u16| -> Result<Glyph, &'static str> {
+            if index >= glyph_count {
                 return Err("Attempted to map a codepoint out of bounds.");
             }
 
-            let glyph_id = GlyphId(mapping);
+            let mut glyph = Glyph::default();
+            let glyph_id = GlyphId(index);
             if let Some(advance_width) = face.glyph_hor_advance(glyph_id) {
                 glyph.advance_width = advance_width as f32;
             }
@@ -282,30 +286,23 @@ impl Font {
 
             let mut geometry = Geometry::new(settings.scale, units_per_em);
             face.outline_glyph(glyph_id, &mut geometry);
-            geometry.finalize(glyph);
-            Ok(())
+            geometry.finalize(&mut glyph);
+            Ok(glyph)
         };
 
         #[cfg(not(feature = "parallel"))]
-        for mapping in char_to_glyph.values().copied() {
-            let mapping: u16 = unsafe { mem::transmute::<NonZeroU16, u16>(mapping) };
-            mapping_to_glyph(mapping, &mut glyphs[mapping as usize])?;
+        for index in seen_mappings {
+            glyphs[index as usize] = generate_glyph(index)?;
         }
 
         #[cfg(feature = "parallel")]
         {
-            let mapped: Vec<(u16, Glyph)> = char_to_glyph
-                .par_values()
-                .map(|mapping| {
-                    let mapping: u16 = unsafe { mem::transmute::<NonZeroU16, u16>(*mapping) };
-                    let mut glyph = Glyph::default();
-                    mapping_to_glyph(mapping, &mut glyph)?;
-                    Ok((mapping, glyph))
-                })
+            let generated: Vec<(u16, Glyph)> = seen_mappings
+                .into_par_iter()
+                .map(|index| Ok((index, generate_glyph(index)?)))
                 .collect::<Result<_, _>>()?;
-
-            for (idx, glyph) in mapped {
-                glyphs[idx as usize] = glyph;
+            for (index, glyph) in generated {
+                glyphs[index as usize] = glyph;
             }
         }
 
