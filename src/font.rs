@@ -134,6 +134,7 @@ impl LineMetrics {
     }
 }
 
+/// Stores compiled geometry and metric information.
 #[derive(Clone)]
 pub(crate) struct Glyph {
     pub v_lines: Vec<Line>,
@@ -203,6 +204,7 @@ impl core::fmt::Debug for Font {
             .field("name", &self.name)
             .field("settings", &self.settings)
             .field("units_per_em", &self.units_per_em)
+            .field("hash", &self.hash)
             .finish()
     }
 }
