@@ -149,7 +149,7 @@ impl Linebreaker {
     }
 }
 
-/// Miscellaneous metadata associated with a character.
+/// Miscellaneous metadata associated with a character to assist in layout.
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]
 pub struct CharacterData {
     bits: u8,
@@ -160,6 +160,7 @@ impl CharacterData {
     const CONTROL: u8 = 0b0000_0010;
     const MISSING: u8 = 0b0000_0100;
 
+    /// Classifies a character given its index in the font.
     pub fn classify(c: char, index: u16) -> CharacterData {
         let mut class = 0;
         if index == 0 {
@@ -176,6 +177,12 @@ impl CharacterData {
         CharacterData {
             bits: class,
         }
+    }
+
+    /// A heuristic for if the glpyh this was classified from should be rasterized. Missing glyphs,
+    /// whitespace, and control characters will return false.
+    pub fn rasterize(&self) -> bool {
+        self.bits == 0
     }
 
     /// Marks if the character is an ASCII whitespace character.
