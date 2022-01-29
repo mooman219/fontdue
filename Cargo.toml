@@ -1,6 +1,6 @@
 [package]
 name = "fontdue"
-version = "0.6.2"
+version = "0.6.3"
 authors = ["Joe Cumbo <mooman219@gmail.com>"]
 license = "MIT"
 documentation = "https://docs.rs/fontdue"
@@ -11,7 +11,7 @@ keywords = ["font", "text", "truetype", "opentype", "ttf"]
 categories = ["no-std", "gui"]
 readme = "README.md"
 edition = "2018"
-exclude = ["resources/**", "examples/**", "fontdue.pgm"]
+exclude = ["resources/**", "examples/**", "tests/**", "fontdue.pgm"]
 
 [badges]
 maintenance = { status = "experimental" }
