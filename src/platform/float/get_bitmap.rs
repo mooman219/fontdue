@@ -17,6 +17,7 @@ pub fn get_bitmap(a: &Vec<f32>, length: usize) -> Vec<u8> {
     output
 }
 
+#[allow(clippy::uninit_vec)]
 #[cfg(all(any(target_arch = "x86", target_arch = "x86_64"), feature = "simd"))]
 pub fn get_bitmap(a: &Vec<f32>, length: usize) -> Vec<u8> {
     #[cfg(target_arch = "x86")]
