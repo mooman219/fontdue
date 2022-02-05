@@ -184,7 +184,7 @@ pub struct Font {
     name: Option<String>,
     units_per_em: f32,
     glyphs: Vec<Glyph>,
-    char_to_glyph: HashMap<u32, NonZeroU16>,
+    char_to_glyph: HashMap<char, NonZeroU16>,
     horizontal_line_metrics: Option<LineMetrics>,
     horizontal_kern: Option<HashMap<u32, i16>>,
     vertical_line_metrics: Option<LineMetrics>,
@@ -259,7 +259,7 @@ impl Font {
                 if let Some(mapping) = subtable.glyph_index(codepoint) {
                     if let Some(mapping) = NonZeroU16::new(mapping.0) {
                         seen_mappings.insert(mapping.get());
-                        char_to_glyph.insert(codepoint, mapping);
+                        char_to_glyph.insert(unsafe { mem::transmute(codepoint) }, mapping);
                     }
                 }
             });
@@ -332,6 +332,13 @@ impl Font {
             settings,
             hash,
         })
+    }
+
+    /// Returns all valid unicode codepoints that have mappings to glyph geometry in the font, along
+    /// with their associated index. This does not include grapheme cluster mappings. The mapped
+    /// NonZeroU16 index can be used in the _indexed font functions.
+    pub fn chars(&self) -> &HashMap<char, NonZeroU16> {
+        &self.char_to_glyph
     }
 
     /// Returns a precomputed hash for the font file.
@@ -602,9 +609,7 @@ impl Font {
     /// the font then 0 is returned.
     #[inline]
     pub fn lookup_glyph_index(&self, character: char) -> u16 {
-        unsafe {
-            mem::transmute::<Option<NonZeroU16>, u16>(self.char_to_glyph.get(&(character as u32)).copied())
-        }
+        unsafe { mem::transmute::<Option<NonZeroU16>, u16>(self.char_to_glyph.get(&character).copied()) }
     }
 
     /// Gets the total glyphs in the font.
