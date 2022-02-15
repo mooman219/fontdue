@@ -8,9 +8,9 @@
 Fontdue is a simple, `no_std` (does not use the standard library for portability), pure Rust, TrueType (`.ttf/.ttc`) & OpenType (`.otf`) font rasterizer and layout tool. It strives to make interacting with fonts as fast as possible, and currently has the lowest end to end latency for a font rasterizer.
 
 ## Roadmap
-**Current goal (milestone 1):** `fontdue` is designed to be a replacement for `rusttype` [(link)](https://gitlab.redox-os.org/redox-os/rusttype), `ab_glyph` [(link)](https://github.com/alexheretic/ab-glyph), parts of `glyph_brush` [(link)](https://github.com/alexheretic/glyph-brush/tree/master/glyph-brush), and `glyph_brush_layout` [(link)](https://github.com/alexheretic/glyph-brush/tree/master/layout). This is a class of font libraries that don't tackle shaping.
+**Current goal:** `fontdue` is designed to be a replacement for `rusttype` [(link)](https://gitlab.redox-os.org/redox-os/rusttype), `ab_glyph` [(link)](https://github.com/alexheretic/ab-glyph), parts of `glyph_brush` [(link)](https://github.com/alexheretic/glyph-brush/tree/master/glyph-brush), and `glyph_brush_layout` [(link)](https://github.com/alexheretic/glyph-brush/tree/master/layout). This is a class of font libraries that don't tackle shaping.
 
-**Future goals:** Shaping - the complex layout of text such as Arabic and Devanagari - will be added. There are two potential pure Rust libraries (allsorts or rustybuzz) that are candidates for providing a shaping backend to Fontdue, but are relatively immature right now.
+**Future goals:** Shaping - the complex layout of text such as Arabic and Devanagari - will be added someday. There are a few potential pure Rust libraries (allsorts, rustybuzz, and swash) that are candidates for providing a shaping backend to Fontdue, but are relatively immature right now.
 
 A **non-goal** of this library is to be allocation free and have a fast, "zero cost" initial load. This library _does_ make allocations and depends on the `alloc` crate. Fonts are fully parsed on creation and relevant information is stored in a more convenient to access format. Unlike other font libraries, the font structures have no lifetime dependencies since it allocates its own space.
 
@@ -19,7 +19,7 @@ A **non-goal** of this library is to be allocation free and have a fast, "zero c
 [Live demo](https://mooman219.github.io/fontdue/)
 
 ### Rasterization
-The rasterization API is done for **milestone 1** and should not see major changes.
+The rasterization API should not see major changes in the near future.
 ```rust
 // Read the font data.
 let font = include_bytes!("../resources/Roboto-Regular.ttf") as &[u8];
@@ -30,7 +30,7 @@ let (metrics, bitmap) = font.rasterize('g', 17.0);
 ```
 
 ### Layout
-The layout API is immature and may see many more major breaking changes before **milestone 1**.
+The layout API is immature and may see breaking changes. The layout `fontdue` provides is naïve and is only designed to be on par with existing libraries like `glpyh_brush`.
 ```rust
 // Read the font data.
 let font = include_bytes!("../resources/fonts/Roboto-Regular.ttf") as &[u8];
@@ -83,7 +83,7 @@ This benchmark measures the time it takes to layout latin characters of sample t
 
 ### Maintenance
 
-Please bear with me on new features or quirks that you find. I will definitely get to issues you open (also thank you for opening them), but I don't have as much time as I would like to work on fontdue so please be patient, this is a mostly solo project <3.
+Please bear with me on new features or quirks that you find. Bugs will take priority, but I don't have as much time as I would like to work on fontdue so please be patient, this is a solo project.
 
 ### TrueType & OpenType Table Support
 
@@ -91,4 +91,4 @@ Fontdue depends on `ttf-parser` ([link](https://github.com/RazrFalcon/ttf-parser
 
 ### Attribution
 
-`Fontdue` started as a slightly more production ready wrapper around `font-rs` [(link)](https://github.com/raphlinus/font-rs) because of how fast it made rasterization look, and how simple the wonderful `rusttype` [(link)](https://gitlab.redox-os.org/redox-os/rusttype) crate made font parsing look. Since then, I've rewritten fontdue from the ground up, but I feel like it still deservers some attribution.
+`Fontdue` started as a vaguely more production ready fork of `font-rs` [(link)](https://github.com/raphlinus/font-rs) because of how fast it made rasterization look, and how simple the `rusttype` [(link)](https://gitlab.redox-os.org/redox-os/rusttype) crate made font parsing look. Since then, I've read a lot of font specification and modern rasterization techniques, rewriting `fontdue` from the ground up in the process into its own unique beast.
