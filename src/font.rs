@@ -267,8 +267,6 @@ impl Font {
             });
         }
 
-        // This is fairly degenerate, but fonts without a units per em will be assumed to have the
-        // common default for compatibility.
         let units_per_em = face.units_per_em() as f32;
 
         // Parse and store all unique codepoints.
