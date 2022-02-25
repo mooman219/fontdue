@@ -254,7 +254,7 @@ impl Font {
         let mut seen_mappings = HashSet::with_capacity(glyph_count as usize);
         let mut char_to_glyph = HashMap::with_capacity(glyph_count as usize);
         seen_mappings.insert(0u16);
-        for subtable in face.tables().cmap {
+        if let Some(subtable) = face.tables().cmap {
             subtable.subtables.into_iter().for_each(|subtable| {
                 subtable.codepoints(|codepoint| {
                     if let Some(mapping) = subtable.glyph_index(codepoint) {
