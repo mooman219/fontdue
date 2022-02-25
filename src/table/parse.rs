@@ -59,7 +59,7 @@ pub struct Stream<'a> {
 }
 
 impl<'a> Stream<'a> {
-    pub fn new(bytes: &'a [u8]) -> Stream<'a> {
+    pub const fn new(bytes: &'a [u8]) -> Stream<'a> {
         Stream {
             bytes,
             offset: 0,
@@ -74,7 +74,7 @@ impl<'a> Stream<'a> {
     }
 
     #[inline]
-    pub fn offset(&self) -> usize {
+    pub const fn offset(&self) -> usize {
         self.offset
     }
 

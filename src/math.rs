@@ -35,7 +35,7 @@ struct CubeCurve {
 }
 
 impl CubeCurve {
-    fn new(a: Point, b: Point, c: Point, d: Point) -> CubeCurve {
+    const fn new(a: Point, b: Point, c: Point, d: Point) -> CubeCurve {
         CubeCurve {
             a,
             b,
@@ -198,7 +198,7 @@ impl Default for Point {
 }
 
 impl Point {
-    pub fn new(x: f32, y: f32) -> Point {
+    pub const fn new(x: f32, y: f32) -> Point {
         Point {
             x,
             y,
@@ -330,7 +330,7 @@ struct Segment {
 }
 
 impl Segment {
-    fn new(a: Point, at: f32, c: Point, ct: f32) -> Segment {
+    const fn new(a: Point, at: f32, c: Point, ct: f32) -> Segment {
         Segment {
             a,
             at,

@@ -51,7 +51,7 @@ impl f32x4 {
     }
 
     #[inline(always)]
-    pub fn copied(self) -> (f32, f32, f32, f32) {
+    pub const fn copied(self) -> (f32, f32, f32, f32) {
         (self.x0, self.x1, self.x2, self.x3)
     }
 
