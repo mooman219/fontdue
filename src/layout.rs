@@ -189,28 +189,47 @@ impl<'a, U: Copy + Clone> TextStyle<'a, U> {
     }
 }
 
+/// Metrics about a positioned line.
 #[derive(Debug, Copy, Clone)]
-struct LineMetrics {
-    /// How much empty space is left at the end of the line.
+pub struct LinePosition {
+    /// The y coordinate of the baseline of this line, in pixels.
+    pub baseline_y: f32,
+    /// How much empty space is left at the end of the line before any alignment. If no max width is
+    /// specified, f32::MAX is used.
     pub padding: f32,
-    /// The largest ascent for the line.
-    pub ascent: f32,
-    /// The largest new line size for the line.
-    pub new_line_size: f32,
+    /// The highest point that any glyph in the font extends to above the baseline. Typically
+    /// positive. If there are multiple styles on this line, this their max value.
+    pub max_ascent: f32,
+    /// The lowest point that any glyph in the font extends to below the baseline. Typically
+    /// negative. If there are multiple styles on this line, this their max value.
+    pub min_descent: f32,
+    /// The gap to leave between the descent of one line and the ascent of the next. This is of
+    /// course only a guideline given by the font's designers. If there are multiple styles on this
+    /// line, this their max value.
+    pub max_line_gap: f32,
+    /// A precalculated value for the of the line depending. It's calculated by: ascent - descent +
+    /// line_gap. If there are multiple styles on this line, this their min value.
+    pub max_new_line_size: f32,
+    /// The GlyphPosition index of the first glyph in the line.
+    pub line_start: usize,
+    /// The GlyphPosition index of the last glyph in the line.
+    pub line_end: usize,
     /// The x position this line starts at.
-    pub x_start: f32,
-    /// The index of the last glyph in the line.
-    pub end_index: usize,
+    x_start: f32,
 }
 
-impl Default for LineMetrics {
+impl Default for LinePosition {
     fn default() -> Self {
-        LineMetrics {
+        LinePosition {
+            baseline_y: 0.0,
             padding: 0.0,
-            ascent: 0.0,
+            max_ascent: 0.0,
+            min_descent: 0.0,
+            max_line_gap: 0.0,
+            max_new_line_size: 0.0,
+            line_start: 0,
+            line_end: 0,
             x_start: 0.0,
-            new_line_size: 0.0,
-            end_index: 0,
         }
     }
 }
@@ -219,30 +238,56 @@ impl Default for LineMetrics {
 /// context is reused between layout calls. Reusing the Layout struct will greatly reduce memory
 /// allocations and is advisable for performance.
 pub struct Layout<U: Copy + Clone = ()> {
-    // Global state
+    /// Marks if layout should be performed as if the Y axis is flipped (Positive Y incrementing
+    /// down instead of up).
     flip: bool,
-    // Settings state
+    /// Origin position. Left side of the region text is being laid out in.
     x: f32,
+    /// Origin position. Top side of the region text is being laid out in.
     y: f32,
+    /// A mask to filter only linebreak types being requested.
     wrap_mask: LinebreakData,
+    /// The max width of the region text is being laid out in.
     max_width: f32,
+    /// The max height of the region text is being laid out in.
     max_height: f32,
+    /// A multiplier for how text fills unused vertical space.
     vertical_align: f32,
+    /// A multiplier for how text fills unused horizontal space.
     horizontal_align: f32,
-    // Single line state
-    output: Vec<GlyphPosition<U>>,
-    glyphs: Vec<GlyphPosition<U>>,
-    line_metrics: Vec<LineMetrics>,
-    linebreaker: Linebreaker,
-    linebreak_prev: LinebreakData,
-    linebreak_pos: f32,
-    linebreak_idx: usize,
-    current_pos: f32,
-    current_ascent: f32,
-    current_new_line: f32,
-    current_px: f32,
-    start_pos: f32,
+    /// The current height of all laid out text.
     height: f32,
+
+    /// Finalized glyph state.
+    output: Vec<GlyphPosition<U>>,
+    /// Intermediate glyph state.
+    glyphs: Vec<GlyphPosition<U>>,
+
+    /// Linebreak state. Used to derive linebreaks from past glyphs.
+    linebreaker: Linebreaker,
+    /// The current highest priority linebreak (Hard > Soft > None).
+    linebreak_prev: LinebreakData,
+    /// The x position that the glyph that has the current highest priority linebreak status starts
+    /// at.
+    linebreak_pos: f32,
+    /// The index of the glyph that has the current highest priority linebreak status. This glyph is
+    /// the last glyph on a line if a linebreak is required.
+    linebreak_idx: usize,
+
+    /// Layout state of each line currently laid out. This always has at least 1 element.
+    line_metrics: Vec<LinePosition>,
+    /// The x position the next glyph starts at.
+    current_pos: f32,
+    /// The ceil(ascent) of the current style.
+    current_ascent: f32,
+    /// The ceil(descent) of the current style.
+    current_descent: f32,
+    /// The ceil(line_gap) of the current style.
+    current_line_gap: f32,
+    /// The ceil(new_line_size) of the current style.
+    current_new_line: f32,
+    /// The x position the current line starts at.
+    start_pos: f32,
 }
 
 impl<'a, U: Copy + Clone> Layout<U> {
@@ -250,9 +295,7 @@ impl<'a, U: Copy + Clone> Layout<U> {
     /// Layout needs to be aware of your coordinate system to place the glyphs correctly.
     pub fn new(coordinate_system: CoordinateSystem) -> Layout<U> {
         let mut layout = Layout {
-            // Global state
             flip: coordinate_system == CoordinateSystem::PositiveYDown,
-            // Settings state
             x: 0.0,
             y: 0.0,
             wrap_mask: LINEBREAK_NONE,
@@ -260,7 +303,6 @@ impl<'a, U: Copy + Clone> Layout<U> {
             max_height: 0.0,
             vertical_align: 0.0,
             horizontal_align: 0.0,
-            // Line state
             output: Vec::new(),
             glyphs: Vec::new(),
             line_metrics: Vec::new(),
@@ -270,8 +312,9 @@ impl<'a, U: Copy + Clone> Layout<U> {
             linebreak_idx: 0,
             current_pos: 0.0,
             current_ascent: 0.0,
+            current_descent: 0.0,
+            current_line_gap: 0.0,
             current_new_line: 0.0,
-            current_px: 0.0,
             start_pos: 0.0,
             height: 0.0,
         };
@@ -316,7 +359,7 @@ impl<'a, U: Copy + Clone> Layout<U> {
         self.glyphs.clear();
         self.output.clear();
         self.line_metrics.clear();
-        self.line_metrics.push(LineMetrics::default());
+        self.line_metrics.push(LinePosition::default());
 
         self.linebreaker.reset();
         self.linebreak_prev = LINEBREAK_NONE;
@@ -324,8 +367,9 @@ impl<'a, U: Copy + Clone> Layout<U> {
         self.linebreak_idx = 0;
         self.current_pos = 0.0;
         self.current_ascent = 0.0;
+        self.current_descent = 0.0;
+        self.current_line_gap = 0.0;
         self.current_new_line = 0.0;
-        self.current_px = 0.0;
         self.start_pos = 0.0;
         self.height = 0.0;
     }
@@ -333,15 +377,19 @@ impl<'a, U: Copy + Clone> Layout<U> {
     /// Gets the current height of the appended text.
     pub fn height(&self) -> f32 {
         if let Some(line) = self.line_metrics.last() {
-            self.height + line.new_line_size
+            self.height + line.max_new_line_size
         } else {
             0.0
         }
     }
 
-    /// Gets the current line count. If there's no text this still returns 1.
-    pub fn lines(&self) -> usize {
-        self.line_metrics.len()
+    /// Gets the currently positioned lines. If there are no lines positioned, this returns none.
+    pub fn lines(&'a self) -> Option<&'a Vec<LinePosition>> {
+        if self.glyphs.is_empty() {
+            None
+        } else {
+            Some(&self.line_metrics)
+        }
     }
 
     /// Performs layout for text horizontally, and wrapping vertically. This makes a best effort
@@ -353,20 +401,35 @@ impl<'a, U: Copy + Clone> Layout<U> {
     /// reordered. The output buffer will always contain characters in the order they were defined
     /// in the styles.
     pub fn append<T: Borrow<Font>>(&mut self, fonts: &[T], style: &TextStyle<U>) {
-        let mut byte_offset = 0;
+        // The first layout pass requires some text.
+        if style.text.is_empty() {
+            return;
+        }
+
         let font: &Font = &fonts[style.font_index].borrow();
+
         if let Some(metrics) = font.horizontal_line_metrics(style.px) {
             self.current_ascent = ceil(metrics.ascent);
             self.current_new_line = ceil(metrics.new_line_size);
+            self.current_descent = ceil(metrics.descent);
+            self.current_line_gap = ceil(metrics.line_gap);
             if let Some(line) = self.line_metrics.last_mut() {
-                if self.current_ascent > line.ascent {
-                    line.ascent = self.current_ascent;
+                if self.current_ascent > line.max_ascent {
+                    line.max_ascent = self.current_ascent;
                 }
-                if self.current_new_line > line.new_line_size {
-                    line.new_line_size = self.current_new_line;
+                if self.current_descent < line.min_descent {
+                    line.min_descent = self.current_descent;
+                }
+                if self.current_line_gap > line.max_line_gap {
+                    line.max_line_gap = self.current_line_gap;
+                }
+                if self.current_new_line > line.max_new_line_size {
+                    line.max_new_line_size = self.current_new_line;
                 }
             }
         }
+
+        let mut byte_offset = 0;
         while byte_offset < style.text.len() {
             let character = read_utf8(style.text.as_bytes(), &mut byte_offset);
             let linebreak = self.linebreaker.next(character).mask(self.wrap_mask);
@@ -377,33 +440,42 @@ impl<'a, U: Copy + Clone> Layout<U> {
             } else {
                 Metrics::default()
             };
+            let advance = ceil(metrics.advance_width);
+
             if linebreak >= self.linebreak_prev {
                 self.linebreak_prev = linebreak;
                 self.linebreak_pos = self.current_pos;
-                self.linebreak_idx = self.glyphs.len();
+                self.linebreak_idx = self.glyphs.len() - 1; // Mark the previous glpyh
             }
-            let advance = ceil(metrics.advance_width);
+
+            // Perform a linebreak
             if linebreak.is_hard() || (self.current_pos - self.start_pos + advance > self.max_width) {
                 self.linebreak_prev = LINEBREAK_NONE;
                 if let Some(line) = self.line_metrics.last_mut() {
-                    line.end_index = self.linebreak_idx;
+                    line.line_end = self.linebreak_idx;
                     line.padding = self.max_width - (self.linebreak_pos - self.start_pos);
-                    self.height += line.new_line_size;
+                    self.height += line.max_new_line_size;
                 }
-                self.line_metrics.push(LineMetrics {
+                self.line_metrics.push(LinePosition {
+                    baseline_y: 0.0,
                     padding: 0.0,
-                    ascent: self.current_ascent,
+                    max_ascent: self.current_ascent,
+                    min_descent: self.current_descent,
+                    max_line_gap: self.current_line_gap,
+                    max_new_line_size: self.current_new_line,
+                    line_start: self.glyphs.len(),
+                    line_end: 0,
                     x_start: self.linebreak_pos,
-                    new_line_size: self.current_new_line,
-                    end_index: 0,
                 });
                 self.start_pos = self.linebreak_pos;
             }
+
             let y = if self.flip {
                 floor(-metrics.bounds.height - metrics.bounds.ymin) // PositiveYDown
             } else {
                 floor(metrics.bounds.ymin) // PositiveYUp
             };
+
             self.glyphs.push(GlyphPosition {
                 key: GlyphRasterConfig {
                     glyph_index: glyph_index as u16,
@@ -423,14 +495,12 @@ impl<'a, U: Copy + Clone> Layout<U> {
         }
         if let Some(line) = self.line_metrics.last_mut() {
             line.padding = self.max_width - (self.current_pos - self.start_pos);
-            line.end_index = self.glyphs.len();
+            line.line_end = self.glyphs.len() - 1;
         }
-    }
 
-    /// Gets the current laid out glyphs. Additional layout may be performed lazily here.
-    pub fn glyphs(&'a mut self) -> &'a Vec<GlyphPosition<U>> {
-        if self.glyphs.len() == self.output.len() {
-            return &self.output;
+        // The second layout pass requires at least 1 glyph to layout.
+        if self.glyphs.is_empty() {
+            return;
         }
 
         unsafe { self.output.set_len(0) };
@@ -441,21 +511,26 @@ impl<'a, U: Copy + Clone> Layout<U> {
         } else {
             1.0 // PositiveYUp
         };
-        let mut y = self.y - dir * floor((self.max_height - self.height()) * self.vertical_align);
+
+        let mut baseline_y = self.y - dir * floor((self.max_height - self.height()) * self.vertical_align);
         let mut idx = 0;
-        for line in &self.line_metrics {
-            let x = self.x - line.x_start + floor(line.padding * self.horizontal_align);
-            y -= dir * line.ascent;
-            while idx < line.end_index {
+        for line in &mut self.line_metrics {
+            let x_padding = self.x - line.x_start + floor(line.padding * self.horizontal_align);
+            baseline_y -= dir * line.max_ascent;
+            line.baseline_y = baseline_y;
+            while idx <= line.line_end {
                 let mut glyph = self.glyphs[idx];
-                glyph.x += x;
-                glyph.y += y;
+                glyph.x += x_padding;
+                glyph.y += baseline_y;
                 self.output.push(glyph);
                 idx += 1;
             }
-            y -= dir * (line.new_line_size - line.ascent);
+            baseline_y -= dir * (line.max_new_line_size - line.max_ascent);
         }
+    }
 
+    /// Gets the currently laid out glyphs.
+    pub fn glyphs(&'a self) -> &'a Vec<GlyphPosition<U>> {
         &self.output
     }
 }
