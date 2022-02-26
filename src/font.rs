@@ -224,8 +224,8 @@ fn convert_error(error: FaceParsingError) -> &'static str {
 
 fn convert_name(face: &Face) -> Option<String> {
     for name in face.names() {
-        if name.name_id() == 4 && name.is_unicode() {
-            return Some(unicode::decode_utf16(name.name()));
+        if name.name_id == 4 && name.is_unicode() {
+            return Some(unicode::decode_utf16(name.name));
         }
     }
     None
@@ -254,20 +254,20 @@ impl Font {
         let mut seen_mappings = HashSet::with_capacity(glyph_count as usize);
         let mut char_to_glyph = HashMap::with_capacity(glyph_count as usize);
         seen_mappings.insert(0u16);
-        for subtable in face.character_mapping_subtables() {
-            subtable.codepoints(|codepoint| {
-                if let Some(mapping) = subtable.glyph_index(codepoint) {
-                    if let Some(mapping) = NonZeroU16::new(mapping.0) {
-                        seen_mappings.insert(mapping.get());
-                        char_to_glyph.insert(unsafe { mem::transmute(codepoint) }, mapping);
+        if let Some(subtable) = face.tables().cmap {
+            subtable.subtables.into_iter().for_each(|subtable| {
+                subtable.codepoints(|codepoint| {
+                    if let Some(mapping) = subtable.glyph_index(codepoint) {
+                        if let Some(mapping) = NonZeroU16::new(mapping.0) {
+                            seen_mappings.insert(mapping.get());
+                            char_to_glyph.insert(unsafe { mem::transmute(codepoint) }, mapping);
+                        }
                     }
-                }
+                })
             });
         }
 
-        // This is fairly degenerate, but fonts without a units per em will be assumed to have the
-        // common default for compatibility.
-        let units_per_em = face.units_per_em().unwrap_or(1000) as f32;
+        let units_per_em = face.units_per_em() as f32;
 
         // Parse and store all unique codepoints.
         let mut glyphs: Vec<Glyph> = vec::from_elem(Glyph::default(), glyph_count as usize);
