@@ -255,7 +255,7 @@ impl Font {
         let mut char_to_glyph = HashMap::with_capacity(glyph_count as usize);
         seen_mappings.insert(0u16);
         if let Some(subtable) = face.tables().cmap {
-            subtable.subtables.into_iter().for_each(|subtable| {
+            for subtable in subtable.subtables {
                 subtable.codepoints(|codepoint| {
                     if let Some(mapping) = subtable.glyph_index(codepoint) {
                         if let Some(mapping) = NonZeroU16::new(mapping.0) {
@@ -264,7 +264,7 @@ impl Font {
                         }
                     }
                 })
-            });
+            }
         }
 
         let units_per_em = face.units_per_em() as f32;
