@@ -7,6 +7,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 ### Fixed
 - `LinePosition` doc typo.
+- Benign compiler error in debug mode in layout.
 
 ## [0.7.0] - 2022-02-25
 ### Added

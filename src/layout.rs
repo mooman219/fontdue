@@ -445,7 +445,7 @@ impl<'a, U: Copy + Clone> Layout<U> {
             if linebreak >= self.linebreak_prev {
                 self.linebreak_prev = linebreak;
                 self.linebreak_pos = self.current_pos;
-                self.linebreak_idx = self.glyphs.len() - 1; // Mark the previous glpyh
+                self.linebreak_idx = self.glyphs.len().saturating_sub(1); // Mark the previous glpyh
             }
 
             // Perform a linebreak
@@ -495,7 +495,7 @@ impl<'a, U: Copy + Clone> Layout<U> {
         }
         if let Some(line) = self.line_metrics.last_mut() {
             line.padding = self.max_width - (self.current_pos - self.start_pos);
-            line.line_end = self.glyphs.len() - 1;
+            line.line_end = self.glyphs.len().saturating_sub(1);
         }
 
         // The second layout pass requires at least 1 glyph to layout.
