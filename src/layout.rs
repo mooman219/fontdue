@@ -201,17 +201,17 @@ pub struct LinePosition {
     /// specified, f32::MAX is used.
     pub padding: f32,
     /// The highest point that any glyph in the font extends to above the baseline. Typically
-    /// positive. If there are multiple styles on this line, this their max value.
+    /// positive. If there are multiple styles on this line, this is their max value.
     pub max_ascent: f32,
     /// The lowest point that any glyph in the font extends to below the baseline. Typically
-    /// negative. If there are multiple styles on this line, this their min value.
+    /// negative. If there are multiple styles on this line, this is their min value.
     pub min_descent: f32,
     /// The gap to leave between the descent of one line and the ascent of the next. This is of
     /// course only a guideline given by the font's designers. If there are multiple styles on this
-    /// line, this their max value.
+    /// line, this is their max value.
     pub max_line_gap: f32,
     /// A precalculated value for the of the line depending. It's calculated by: ascent - descent +
-    /// line_gap. If there are multiple styles on this line, this their max value.
+    /// line_gap. If there are multiple styles on this line, this is their max value.
     pub max_new_line_size: f32,
     /// The GlyphPosition index of the first glyph in the line.
     pub glyph_start: usize,
