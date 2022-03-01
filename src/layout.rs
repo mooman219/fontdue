@@ -149,6 +149,9 @@ pub struct GlyphPosition<U: Copy + Clone = ()> {
     pub width: usize,
     /// The height of the glyph. Dimensions are in pixels.
     pub height: usize,
+    /// The byte offset into the original string used in the append call which created
+    /// this glyph.
+    pub byte_offset: usize,
     /// Additional metadata associated with the character used to generate this glyph.
     pub char_data: CharacterData,
     /// Custom user data associated with the text styled used to generate this glyph.
@@ -211,11 +214,11 @@ pub struct LinePosition {
     /// line_gap. If there are multiple styles on this line, this their max value.
     pub max_new_line_size: f32,
     /// The GlyphPosition index of the first glyph in the line.
-    pub line_start: usize,
+    pub glyph_start: usize,
     /// The GlyphPosition index of the last glyph in the line.
-    pub line_end: usize,
-    /// The x position this line starts at.
-    x_start: f32,
+    pub glyph_end: usize,
+    /// The x offset into the first layout pass.
+    tracking_x: f32,
 }
 
 impl Default for LinePosition {
@@ -227,9 +230,9 @@ impl Default for LinePosition {
             min_descent: 0.0,
             max_line_gap: 0.0,
             max_new_line_size: 0.0,
-            line_start: 0,
-            line_end: 0,
-            x_start: 0.0,
+            glyph_start: 0,
+            glyph_end: 0,
+            tracking_x: 0.0,
         }
     }
 }
@@ -431,6 +434,7 @@ impl<'a, U: Copy + Clone> Layout<U> {
 
         let mut byte_offset = 0;
         while byte_offset < style.text.len() {
+            let prev_byte_offset = byte_offset;
             let character = read_utf8(style.text.as_bytes(), &mut byte_offset);
             let linebreak = self.linebreaker.next(character).mask(self.wrap_mask);
             let glyph_index = font.lookup_glyph_index(character);
@@ -452,7 +456,7 @@ impl<'a, U: Copy + Clone> Layout<U> {
             if linebreak.is_hard() || (self.current_pos - self.start_pos + advance > self.max_width) {
                 self.linebreak_prev = LINEBREAK_NONE;
                 if let Some(line) = self.line_metrics.last_mut() {
-                    line.line_end = self.linebreak_idx;
+                    line.glyph_end = self.linebreak_idx;
                     line.padding = self.max_width - (self.linebreak_pos - self.start_pos);
                     self.height += line.max_new_line_size;
                 }
@@ -463,9 +467,9 @@ impl<'a, U: Copy + Clone> Layout<U> {
                     min_descent: self.current_descent,
                     max_line_gap: self.current_line_gap,
                     max_new_line_size: self.current_new_line,
-                    line_start: self.glyphs.len(),
-                    line_end: 0,
-                    x_start: self.linebreak_pos,
+                    glyph_start: self.glyphs.len(),
+                    glyph_end: 0,
+                    tracking_x: self.linebreak_pos,
                 });
                 self.start_pos = self.linebreak_pos;
             }
@@ -484,6 +488,7 @@ impl<'a, U: Copy + Clone> Layout<U> {
                 },
                 font_index: style.font_index,
                 parent: character,
+                byte_offset: prev_byte_offset,
                 x: floor(self.current_pos + metrics.bounds.xmin),
                 y,
                 width: metrics.width,
@@ -495,7 +500,7 @@ impl<'a, U: Copy + Clone> Layout<U> {
         }
         if let Some(line) = self.line_metrics.last_mut() {
             line.padding = self.max_width - (self.current_pos - self.start_pos);
-            line.line_end = self.glyphs.len().saturating_sub(1);
+            line.glyph_end = self.glyphs.len().saturating_sub(1);
         }
 
         // The second layout pass requires at least 1 glyph to layout.
@@ -515,10 +520,10 @@ impl<'a, U: Copy + Clone> Layout<U> {
         let mut baseline_y = self.y - dir * floor((self.max_height - self.height()) * self.vertical_align);
         let mut idx = 0;
         for line in &mut self.line_metrics {
-            let x_padding = self.x - line.x_start + floor(line.padding * self.horizontal_align);
+            let x_padding = self.x - line.tracking_x + floor(line.padding * self.horizontal_align);
             baseline_y -= dir * line.max_ascent;
             line.baseline_y = baseline_y;
-            while idx <= line.line_end {
+            while idx <= line.glyph_end {
                 let mut glyph = self.glyphs[idx];
                 glyph.x += x_padding;
                 glyph.y += baseline_y;
