@@ -455,10 +455,12 @@ impl<'a, U: Copy + Clone> Layout<U> {
             // Perform a linebreak
             if linebreak.is_hard() || (self.current_pos - self.start_pos + advance > self.max_width) {
                 self.linebreak_prev = LINEBREAK_NONE;
+                let mut glyph_start = self.glyphs().len();
                 if let Some(line) = self.line_metrics.last_mut() {
                     line.glyph_end = self.linebreak_idx;
                     line.padding = self.max_width - (self.linebreak_pos - self.start_pos);
                     self.height += line.max_new_line_size;
+                    glyph_start = self.linebreak_idx + 1;
                 }
                 self.line_metrics.push(LinePosition {
                     baseline_y: 0.0,
@@ -467,7 +469,7 @@ impl<'a, U: Copy + Clone> Layout<U> {
                     min_descent: self.current_descent,
                     max_line_gap: self.current_line_gap,
                     max_new_line_size: self.current_new_line,
-                    glyph_start: self.glyphs.len(),
+                    glyph_start: glyph_start,
                     glyph_end: 0,
                     tracking_x: self.linebreak_pos,
                 });
@@ -498,11 +500,16 @@ impl<'a, U: Copy + Clone> Layout<U> {
             });
             self.current_pos += advance;
         }
+
         if let Some(line) = self.line_metrics.last_mut() {
             line.padding = self.max_width - (self.current_pos - self.start_pos);
             line.glyph_end = self.glyphs.len().saturating_sub(1);
         }
 
+        self.finalize();
+    }
+
+    fn finalize(&mut self) {
         // The second layout pass requires at least 1 glyph to layout.
         if self.glyphs.is_empty() {
             return;
