@@ -6,6 +6,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.7.2] - 2022-03-03
+### Added
+- Added `byte_offset` to GlyphPosition
+### Changes
+- Breaking - Renamed `line_start`/`line_end` to `glyph_start`/`glyph_end`
+### Fixed
+- More doc typos.
+- `line_start`/`glyph_start` skipping spacing characters.
+
 ## [0.7.1] - 2022-02-25
 ### Changes
 - `ttf-parser` updated to 0.15
