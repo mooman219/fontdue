@@ -1,19 +1,39 @@
 name: Check
 on: [push, pull_request]
 jobs:
-  check:
+  src:
     runs-on: ubuntu-latest
     steps:
     - uses: hecrj/setup-rust-action@v1
       with:
         components: rustfmt, clippy
     - uses: actions/checkout@master
-    - name: Format
-      run: |
-        cargo fmt --all -- --check
-    - name: Clippy (no default features)
-      run: |
-        cargo clippy --no-default-features -- -D warnings
-    - name: Clippy (all features)
-      run: |
-        cargo clippy --all-features -- -D warnings
+
+    - name: Format src
+      run: cargo fmt --all -- --check
+
+    - name: Clippy src (no default features)
+      run: cargo clippy --no-default-features -- -D warnings
+
+    - name: Clippy src (all features)
+      run: cargo clippy --all-features -- -D warnings
+
+  dev:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: hecrj/setup-rust-action@v1
+      with:
+        components: rustfmt, clippy
+    - uses: actions/checkout@master
+
+    - name: Format dev
+      run: cargo fmt --all -- --check
+      working-directory: ./dev
+
+    - name: Clippy dev (no default features)
+      run: cargo clippy --no-default-features -- -D warnings
+      working-directory: ./dev
+
+    - name: Clippy dev (all features)
+      run: cargo clippy --all-features -- -D warnings
+      working-directory: ./dev

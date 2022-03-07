@@ -11,15 +11,13 @@ keywords = ["font", "text", "truetype", "opentype", "ttf"]
 categories = ["no-std", "gui"]
 readme = "README.md"
 edition = "2018"
-exclude = ["resources/**", "examples/**", "tests/**", "fontdue.pgm"]
+exclude = ["dev/**"]
 
 [badges]
 maintenance = { status = "experimental" }
 
 [features]
 default = ["simd"]
-# Enable this flag to include the freetype benchmark in the benches.
-freetype_benchmark = ["freetype-rs"]
 # Enable this flag to leverage SIMD usage on x86/x86_64 platforms.
 simd = []
 # Enable this flag to parallelize font loading using threads.
@@ -29,27 +27,3 @@ parallel = ["rayon", "hashbrown/rayon"]
 ttf-parser = { version = "0.15", default-features = false }
 hashbrown = "0.11"
 rayon = { version = "1.5.1", optional = true }
-
-# This is a dev-dependency, but those cannot be optional, so it's included here and not built by
-# default.
-freetype-rs = { version = "0.26.0", optional = true }
-
-[dev-dependencies]
-criterion = "0.3"
-rusttype = "0.9.2"
-ab_glyph = "0.2"
-glyph_brush_layout = "0.2.0"
-png = "0.16"
-walkdir = "2.3"
-
-[[bench]]
-name = "rasterize"
-harness = false
-
-[[bench]]
-name = "layout"
-harness = false
-
-[[bench]]
-name = "load"
-harness = false

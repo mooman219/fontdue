@@ -1,0 +1,32 @@
+[package]
+name = "fontdue_dev"
+version = "0.1.0"
+edition = "2021"
+
+[features]
+# Enable this flag to include the freetype benchmark in the benches.
+freetype_benchmark = ["freetype-rs"]
+
+[dependencies]
+fontdue = { path = "../" }
+
+freetype-rs = { version = "0.26.0", optional = true }
+
+criterion = "0.3"
+rusttype = "0.9.2"
+ab_glyph = "0.2"
+glyph_brush_layout = "0.2.0"
+png = "0.16"
+walkdir = "2.3"
+
+[[bench]]
+name = "rasterize"
+harness = false
+
+[[bench]]
+name = "layout"
+harness = false
+
+[[bench]]
+name = "load"
+harness = false

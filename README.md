@@ -18,6 +18,8 @@ A **non-goal** of this library is to be allocation free and have a fast, "zero c
 
 [Live demo](https://mooman219.github.io/fontdue/). This demo is a web-assembly build of `fontdue` rasterizing to a browser canvas. It provides a side by side of characters being rasterized between `fontdue` and the browser's canvas text api provided with the same parameters.
 
+Some other examples can be found under ./dev/examples.
+
 ### Rasterization
 The rasterization API should not see major changes in the near future.
 ```rust
