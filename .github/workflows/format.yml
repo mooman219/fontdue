@@ -30,10 +30,6 @@ jobs:
       run: cargo fmt --all -- --check
       working-directory: ./dev
 
-    - name: Clippy dev (no default features)
-      run: cargo clippy --no-default-features -- -D warnings
-      working-directory: ./dev
-
     - name: Clippy dev (all features)
       run: cargo clippy --all-features -- -D warnings
       working-directory: ./dev
