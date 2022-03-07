@@ -609,6 +609,7 @@ impl Font {
     /// the font then 0 is returned.
     #[inline]
     pub fn lookup_glyph_index(&self, character: char) -> u16 {
+        // This is safe, Option<NonZeroU16> is documented to have the same layout as u16.
         unsafe { mem::transmute::<Option<NonZeroU16>, u16>(self.char_to_glyph.get(&character).copied()) }
     }
 
