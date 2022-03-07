@@ -6,7 +6,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 ### Changes
-- Moved development related artifacts into `fontdue_dev`.
+- Refactored development related artifacts into the `dev` folder. This reduces pollution in the main crate.
+- Removed some needless unsafe, documented other uses.
 
 ## [0.7.2] - 2022-03-03
 ### Added
