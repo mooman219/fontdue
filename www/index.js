@@ -46,14 +46,35 @@ function logFormatted(buffer, width, height) {
     console.log(width, height);
 }
 
+/**
+ * 
+ * @param {number} x 
+ * @param {number} min 
+ * @param {number} max 
+ */
+function clamp(x, min, max) {
+    return x < min ? min : x > max ? max : x;
+}
+
+/**
+ * @param {number} intensity
+ */
+function linearIntensityTosRGBIntensity(intensity) {
+    const scaled = intensity / 255;
+    const converted = scaled <= 0.0031308 ? scaled * 12.92 : 1.055 * Math.pow(scaled, 1/2.4) - 0.055;
+    const rescaled = converted * 255;
+    return clamp(Math.round(rescaled), 0, 255);
+}
+
 function renderFontdueCharacter(char = "¾", size = 600) {
     const rednerResult = wasm.render(size, char);
     const textureRaw = new Uint8ClampedArray(memory.buffer, rednerResult.bitmap.offset(), rednerResult.bitmap.size());
     const clampedFullColor = new Uint8ClampedArray(textureRaw.length * 4);
     for (let i = 0; i < textureRaw.length; i++) {
-        clampedFullColor[i*4] = 255 - textureRaw[i];
-        clampedFullColor[i*4 + 1] = 255 - textureRaw[i];
-        clampedFullColor[i*4 + 2] = 255 - textureRaw[i];
+        const intensity = linearIntensityTosRGBIntensity(255 - textureRaw[i]);
+        clampedFullColor[i*4] = intensity;
+        clampedFullColor[i*4 + 1] = intensity;
+        clampedFullColor[i*4 + 2] = intensity;
         clampedFullColor[i*4 + 3] = 255;
     }
     const image = new ImageData(clampedFullColor, rednerResult.width, rednerResult.height);
