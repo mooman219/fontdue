@@ -57,7 +57,7 @@ pub enum CoordinateSystem {
 
 /// Settings to configure how text layout is constrained. Text layout is considered best effort and
 /// layout may violate the constraints defined here if they prevent text from being laid out.
-#[derive(Clone, PartialEq)]
+#[derive(Copy, Clone, PartialEq)]
 pub struct LayoutSettings {
     /// The leftmost boundary of the text region.
     pub x: f32,
@@ -378,6 +378,11 @@ impl<U> Layout<U> {
             Some(&self.line_metrics)
         }
     }
+
+    /// Gets the currently laid out glyphs.
+    pub fn glyphs(&self) -> &Vec<GlyphPosition<U>> {
+        &self.output
+    }
 }
 
 impl<U: Clone + Copy> Layout<U> {
@@ -525,10 +530,5 @@ impl<U: Clone + Copy> Layout<U> {
             }
             baseline_y -= dir * (line.max_new_line_size - line.max_ascent);
         }
-    }
-
-    /// Gets the currently laid out glyphs.
-    pub fn glyphs(&self) -> &Vec<GlyphPosition<U>> {
-        &self.output
     }
 }
