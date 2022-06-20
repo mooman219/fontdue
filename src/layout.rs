@@ -193,7 +193,7 @@ impl<'a, U> TextStyle<'a, U> {
 }
 
 /// Metrics about a positioned line.
-#[derive(Debug, Copy, Clone)]
+#[derive(Default, Debug, Copy, Clone)]
 pub struct LinePosition {
     /// The y coordinate of the baseline of this line, in pixels.
     pub baseline_y: f32,
@@ -219,22 +219,6 @@ pub struct LinePosition {
     pub glyph_end: usize,
     /// The x offset into the first layout pass.
     tracking_x: f32,
-}
-
-impl Default for LinePosition {
-    fn default() -> Self {
-        LinePosition {
-            baseline_y: 0.0,
-            padding: 0.0,
-            max_ascent: 0.0,
-            min_descent: 0.0,
-            max_line_gap: 0.0,
-            max_new_line_size: 0.0,
-            glyph_start: 0,
-            glyph_end: 0,
-            tracking_x: 0.0,
-        }
-    }
 }
 
 /// Text layout requires a small amount of heap usage which is contained in the Layout struct. This
