@@ -183,7 +183,7 @@ impl<'a> TextStyle<'a, ()> {
 
 impl<'a, U> TextStyle<'a, U> {
     pub fn with_user_data(text: &'a str, px: f32, font_index: usize, user_data: U) -> Self {
-        TextStyle {
+        Self {
             text,
             px,
             font_index,
@@ -280,8 +280,8 @@ pub struct Layout<U = ()> {
 impl<U> Layout<U> {
     /// Creates a layout instance. This requires the direction that the Y coordinate increases in.
     /// Layout needs to be aware of your coordinate system to place the glyphs correctly.
-    pub fn new(coordinate_system: CoordinateSystem) -> Layout<U> {
-        let mut layout = Layout {
+    pub fn new(coordinate_system: CoordinateSystem) -> Self {
+        let mut layout = Self {
             flip: coordinate_system == CoordinateSystem::PositiveYDown,
             x: 0.0,
             y: 0.0,
