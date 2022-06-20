@@ -482,7 +482,7 @@ impl<U: Clone + Copy> Layout<U> {
                 width: metrics.width,
                 height: metrics.height,
                 char_data,
-                user_data: style.user_data.clone(),
+                user_data: style.user_data,
             });
             self.current_pos += advance;
         }
