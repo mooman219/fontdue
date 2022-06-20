@@ -170,7 +170,7 @@ pub struct TextStyle<'a, U = ()> {
     pub user_data: U,
 }
 
-impl<'a> TextStyle<'a, ()> {
+impl<'a> TextStyle<'a> {
     pub fn new(text: &'a str, px: f32, font_index: usize) -> Self {
         Self {
             text,
