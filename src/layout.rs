@@ -129,7 +129,7 @@ impl Eq for GlyphRasterConfig {}
 
 /// A positioned scaled glyph.
 #[derive(Debug, Copy, Clone)]
-pub struct GlyphPosition<U> {
+pub struct GlyphPosition<U = ()> {
     /// Hashable key that can be used to uniquely identify a rasterized glyph.
     pub key: GlyphRasterConfig,
     /// The index of the font used to generate this glyph position.
@@ -159,7 +159,7 @@ pub struct GlyphPosition<U> {
 }
 
 /// A style description for a segment of text.
-pub struct TextStyle<'a, U> {
+pub struct TextStyle<'a, U = ()> {
     /// The text to layout.
     pub text: &'a str,
     /// The scale of the text in pixel units. The units of the scale are pixels per Em unit.
