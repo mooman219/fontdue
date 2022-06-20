@@ -129,7 +129,7 @@ impl Eq for GlyphRasterConfig {}
 
 /// A positioned scaled glyph.
 #[derive(Debug, Copy, Clone)]
-pub struct GlyphPosition<U: Copy + Clone = ()> {
+pub struct GlyphPosition<U = ()> {
     /// Hashable key that can be used to uniquely identify a rasterized glyph.
     pub key: GlyphRasterConfig,
     /// The index of the font used to generate this glyph position.
@@ -159,7 +159,7 @@ pub struct GlyphPosition<U: Copy + Clone = ()> {
 }
 
 /// A style description for a segment of text.
-pub struct TextStyle<'a, U: Copy + Clone = ()> {
+pub struct TextStyle<'a, U = ()> {
     /// The text to layout.
     pub text: &'a str,
     /// The scale of the text in pixel units. The units of the scale are pixels per Em unit.
@@ -171,8 +171,8 @@ pub struct TextStyle<'a, U: Copy + Clone = ()> {
 }
 
 impl<'a> TextStyle<'a> {
-    pub fn new(text: &'a str, px: f32, font_index: usize) -> TextStyle<'a> {
-        TextStyle {
+    pub fn new(text: &'a str, px: f32, font_index: usize) -> Self {
+        Self {
             text,
             px,
             font_index,
@@ -181,9 +181,9 @@ impl<'a> TextStyle<'a> {
     }
 }
 
-impl<'a, U: Copy + Clone> TextStyle<'a, U> {
-    pub fn with_user_data(text: &'a str, px: f32, font_index: usize, user_data: U) -> TextStyle<'a, U> {
-        TextStyle {
+impl<'a, U> TextStyle<'a, U> {
+    pub fn with_user_data(text: &'a str, px: f32, font_index: usize, user_data: U) -> Self {
+        Self {
             text,
             px,
             font_index,
@@ -193,7 +193,7 @@ impl<'a, U: Copy + Clone> TextStyle<'a, U> {
 }
 
 /// Metrics about a positioned line.
-#[derive(Debug, Copy, Clone)]
+#[derive(Default, Debug, Copy, Clone)]
 pub struct LinePosition {
     /// The y coordinate of the baseline of this line, in pixels.
     pub baseline_y: f32,
@@ -221,26 +221,10 @@ pub struct LinePosition {
     tracking_x: f32,
 }
 
-impl Default for LinePosition {
-    fn default() -> Self {
-        LinePosition {
-            baseline_y: 0.0,
-            padding: 0.0,
-            max_ascent: 0.0,
-            min_descent: 0.0,
-            max_line_gap: 0.0,
-            max_new_line_size: 0.0,
-            glyph_start: 0,
-            glyph_end: 0,
-            tracking_x: 0.0,
-        }
-    }
-}
-
 /// Text layout requires a small amount of heap usage which is contained in the Layout struct. This
 /// context is reused between layout calls. Reusing the Layout struct will greatly reduce memory
 /// allocations and is advisable for performance.
-pub struct Layout<U: Copy + Clone = ()> {
+pub struct Layout<U = ()> {
     /// Marks if layout should be performed as if the Y axis is flipped (Positive Y incrementing
     /// down instead of up).
     flip: bool,
@@ -293,11 +277,11 @@ pub struct Layout<U: Copy + Clone = ()> {
     start_pos: f32,
 }
 
-impl<'a, U: Copy + Clone> Layout<U> {
+impl<U> Layout<U> {
     /// Creates a layout instance. This requires the direction that the Y coordinate increases in.
     /// Layout needs to be aware of your coordinate system to place the glyphs correctly.
-    pub fn new(coordinate_system: CoordinateSystem) -> Layout<U> {
-        let mut layout = Layout {
+    pub fn new(coordinate_system: CoordinateSystem) -> Self {
+        let mut layout = Self {
             flip: coordinate_system == CoordinateSystem::PositiveYDown,
             x: 0.0,
             y: 0.0,
@@ -387,7 +371,7 @@ impl<'a, U: Copy + Clone> Layout<U> {
     }
 
     /// Gets the currently positioned lines. If there are no lines positioned, this returns none.
-    pub fn lines(&'a self) -> Option<&'a Vec<LinePosition>> {
+    pub fn lines(&self) -> Option<&Vec<LinePosition>> {
         if self.glyphs.is_empty() {
             None
         } else {
@@ -395,6 +379,13 @@ impl<'a, U: Copy + Clone> Layout<U> {
         }
     }
 
+    /// Gets the currently laid out glyphs.
+    pub fn glyphs(&self) -> &Vec<GlyphPosition<U>> {
+        &self.output
+    }
+}
+
+impl<U: Copy> Layout<U> {
     /// Performs layout for text horizontally, and wrapping vertically. This makes a best effort
     /// attempt at laying out the text defined in the given styles with the provided layout
     /// settings. Text may overflow out of the bounds defined in the layout settings and it's up
@@ -539,10 +530,5 @@ impl<'a, U: Copy + Clone> Layout<U> {
             }
             baseline_y -= dir * (line.max_new_line_size - line.max_ascent);
         }
-    }
-
-    /// Gets the currently laid out glyphs.
-    pub fn glyphs(&'a self) -> &'a Vec<GlyphPosition<U>> {
-        &self.output
     }
 }
