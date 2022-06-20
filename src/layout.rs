@@ -57,7 +57,7 @@ pub enum CoordinateSystem {
 
 /// Settings to configure how text layout is constrained. Text layout is considered best effort and
 /// layout may violate the constraints defined here if they prevent text from being laid out.
-#[derive(Copy, Clone, PartialEq)]
+#[derive(Clone, PartialEq)]
 pub struct LayoutSettings {
     /// The leftmost boundary of the text region.
     pub x: f32,
@@ -396,7 +396,7 @@ impl<U> Layout<U> {
     }
 }
 
-impl<U: Copy> Layout<U> {
+impl<U: Clone + Copy> Layout<U> {
     /// Performs layout for text horizontally, and wrapping vertically. This makes a best effort
     /// attempt at laying out the text defined in the given styles with the provided layout
     /// settings. Text may overflow out of the bounds defined in the layout settings and it's up
@@ -498,7 +498,7 @@ impl<U: Copy> Layout<U> {
                 width: metrics.width,
                 height: metrics.height,
                 char_data,
-                user_data: style.user_data,
+                user_data: style.user_data.clone(),
             });
             self.current_pos += advance;
         }
