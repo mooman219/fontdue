@@ -385,7 +385,7 @@ impl<U> Layout<U> {
     }
 }
 
-impl<U: Clone + Copy> Layout<U> {
+impl<U: Copy> Layout<U> {
     /// Performs layout for text horizontally, and wrapping vertically. This makes a best effort
     /// attempt at laying out the text defined in the given styles with the provided layout
     /// settings. Text may overflow out of the bounds defined in the layout settings and it's up
