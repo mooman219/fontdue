@@ -291,12 +291,17 @@ pub struct Layout<U: Copy + Clone = ()> {
     current_new_line: f32,
     /// The x position the current line starts at.
     start_pos: f32,
+
+    /// The settings currently being used for layout.
+    settings: LayoutSettings,
 }
 
 impl<'a, U: Copy + Clone> Layout<U> {
     /// Creates a layout instance. This requires the direction that the Y coordinate increases in.
     /// Layout needs to be aware of your coordinate system to place the glyphs correctly.
     pub fn new(coordinate_system: CoordinateSystem) -> Layout<U> {
+        let settings = LayoutSettings::default();
+
         let mut layout = Layout {
             flip: coordinate_system == CoordinateSystem::PositiveYDown,
             x: 0.0,
@@ -320,13 +325,15 @@ impl<'a, U: Copy + Clone> Layout<U> {
             current_new_line: 0.0,
             start_pos: 0.0,
             height: 0.0,
+            settings,
         };
-        layout.reset(&LayoutSettings::default());
+        layout.reset(&settings);
         layout
     }
 
     /// Resets the current layout settings and clears all appended text.
     pub fn reset(&mut self, settings: &LayoutSettings) {
+        self.settings = *settings;
         self.x = settings.x;
         self.y = settings.y;
         self.wrap_mask = LinebreakData::from_mask(
@@ -449,7 +456,7 @@ impl<'a, U: Copy + Clone> Layout<U> {
             if linebreak >= self.linebreak_prev {
                 self.linebreak_prev = linebreak;
                 self.linebreak_pos = self.current_pos;
-                self.linebreak_idx = self.glyphs.len().saturating_sub(1); // Mark the previous glpyh
+                self.linebreak_idx = self.glyphs.len().saturating_sub(1); // Mark the previous glyph
             }
 
             // Perform a linebreak
@@ -544,5 +551,10 @@ impl<'a, U: Copy + Clone> Layout<U> {
     /// Gets the currently laid out glyphs.
     pub fn glyphs(&'a self) -> &'a Vec<GlyphPosition<U>> {
         &self.output
+    }
+
+    /// Gets the settings currently being used for layout.
+    pub fn settings(&self) -> &LayoutSettings {
+        &self.settings
     }
 }
