@@ -456,7 +456,7 @@ impl<'a, U: Copy + Clone> Layout<U> {
             if linebreak >= self.linebreak_prev {
                 self.linebreak_prev = linebreak;
                 self.linebreak_pos = self.current_pos;
-                self.linebreak_idx = self.glyphs.len().saturating_sub(1); // Mark the previous glpyh
+                self.linebreak_idx = self.glyphs.len().saturating_sub(1); // Mark the previous glyph
             }
 
             // Perform a linebreak
