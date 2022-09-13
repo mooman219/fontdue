@@ -81,6 +81,20 @@ This benchmark measures the time it takes to layout latin characters of sample t
 
 ![Layout benchmarks](/images/layout.png)
 
+## License
+
+Licensed under any one of
+
+ * Apache License, Version 2.0, ([LICENSE-APACHE](LICENSE-APACHE) or http://www.apache.org/licenses/LICENSE-2.0)
+ * MIT license ([LICENSE-MIT](LICENSE-MIT) or http://opensource.org/licenses/MIT)
+ * Zlib license ([LICENSE-ZLIB](LICENSE-ZLIB) or http://opensource.org/licenses/Zlib)
+
+at your option.
+
+### Contribution
+
+Unless you explicitly state otherwise, any contribution intentionally submitted for inclusion in the work by you, as defined in the Apache-2.0 license, shall be multi-licensed as above, without any additional terms or conditions.
+
 ## Notices
 
 ### Maintenance
