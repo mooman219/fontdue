@@ -62,7 +62,7 @@ pub struct Metrics {
     /// Whole pixel offset of the left-most edge of the bitmap. This may be negative to reflect the
     /// glyph is positioned to the left of the origin.
     pub xmin: i32,
-    /// Whole pixel offset of the bottom-most edge of the bitmap. This may be negative to refelct
+    /// Whole pixel offset of the bottom-most edge of the bitmap. This may be negative to reflect
     /// the glyph is positioned below the baseline.
     pub ymin: i32,
     /// The width of the bitmap in whole pixels.
