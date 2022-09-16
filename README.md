@@ -32,7 +32,7 @@ let (metrics, bitmap) = font.rasterize('g', 17.0);
 ```
 
 ### Layout
-The layout API is immature and may see breaking changes. The layout `fontdue` provides is naïve and is only designed to be on par with existing libraries like `glpyh_brush`.
+The layout API is immature and may see breaking changes. The layout `fontdue` provides is naïve and is only designed to be on par with existing libraries like `glyph_brush`.
 ```rust
 // Read the font data.
 let font = include_bytes!("../resources/fonts/Roboto-Regular.ttf") as &[u8];
