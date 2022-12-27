@@ -76,6 +76,8 @@ pub struct LayoutSettings {
     pub horizontal_align: HorizontalAlign,
     /// The default is Top. This option does nothing if the max_height isn't set.
     pub vertical_align: VerticalAlign,
+    /// The height of each line as a multiplier of the default.
+    pub line_height: f32,
     /// The default is Word. Wrap style is a hint for how strings of text should be wrapped to the
     /// next line. Line wrapping can happen when the max width/height is reached.
     pub wrap_style: WrapStyle,
@@ -93,6 +95,7 @@ impl Default for LayoutSettings {
             max_height: None,
             horizontal_align: HorizontalAlign::Left,
             vertical_align: VerticalAlign::Top,
+            line_height: 1.0,
             wrap_style: WrapStyle::Word,
             wrap_hard_breaks: true,
         }
@@ -258,6 +261,8 @@ pub struct Layout<U: Copy + Clone = ()> {
     vertical_align: f32,
     /// A multiplier for how text fills unused horizontal space.
     horizontal_align: f32,
+    /// A multiplier for the amount of space between lines.
+    line_height: f32,
     /// The current height of all laid out text.
     height: f32,
 
@@ -311,6 +316,7 @@ impl<'a, U: Copy + Clone> Layout<U> {
             max_height: 0.0,
             vertical_align: 0.0,
             horizontal_align: 0.0,
+            line_height: 1.0,
             output: Vec::new(),
             glyphs: Vec::new(),
             line_metrics: Vec::new(),
@@ -361,6 +367,7 @@ impl<'a, U: Copy + Clone> Layout<U> {
                 HorizontalAlign::Right => 1.0,
             }
         };
+        self.line_height = settings.line_height;
         self.clear();
     }
 
@@ -466,7 +473,7 @@ impl<'a, U: Copy + Clone> Layout<U> {
                 if let Some(line) = self.line_metrics.last_mut() {
                     line.glyph_end = self.linebreak_idx;
                     line.padding = self.max_width - (self.linebreak_pos - self.start_pos);
-                    self.height += line.max_new_line_size;
+                    self.height += line.max_new_line_size * self.line_height;
                     next_glyph_start = self.linebreak_idx + 1;
                 }
                 self.line_metrics.push(LinePosition {
@@ -544,7 +551,7 @@ impl<'a, U: Copy + Clone> Layout<U> {
                 self.output.push(glyph);
                 idx += 1;
             }
-            baseline_y -= dir * (line.max_new_line_size - line.max_ascent);
+            baseline_y -= dir * (line.max_new_line_size * self.line_height - line.max_ascent);
         }
     }
 
