@@ -6,6 +6,7 @@
 #![allow(dead_code)]
 #![allow(clippy::style)]
 #![allow(clippy::complexity)]
+#![allow(clippy::misnamed_getters)]
 
 extern crate alloc;
 
