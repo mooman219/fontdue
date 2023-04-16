@@ -9,6 +9,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Refactored development related artifacts into the `dev` folder. This reduces pollution in the main crate.
 - Removed some needless unsafe, documented other uses.
 
+## [0.7.3] - 2023-04-16
+### Added
+- Expose layout settings on `Layout`
+- Add a line height option to LayoutSettings
+### Changes
+- Relicense to MIT OR Apache-2.0 OR Zlib
+- Update `hashbrown` to 0.13
+### Fixed
+- More doc typos.
+
 ## [0.7.2] - 2022-03-03
 ### Added
 - Added `byte_offset` to GlyphPosition
