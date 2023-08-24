@@ -266,6 +266,77 @@ impl Font {
                 })
             }
         }
+        #[cfg(feature = "gsub")]
+        if let Some(subtable) = face.tables().gsub {
+            use ttf_parser::gsub::SubstitutionSubtable;
+            use ttf_parser::opentype_layout::Coverage;
+
+            for lookup in subtable.lookups {
+                for table in lookup.subtables.into_iter::<SubstitutionSubtable>() {
+                    match table {
+                        SubstitutionSubtable::Single(ss) => {
+                            use ttf_parser::gsub::SingleSubstitution;
+                            match ss {
+                                SingleSubstitution::Format1 {
+                                    coverage,
+                                    delta,
+                                } => match coverage {
+                                    Coverage::Format1 {
+                                        glyphs,
+                                    } => {
+                                        for glyph in glyphs {
+                                            seen_mappings.insert((glyph.0 as i32 + delta as i32) as u16);
+                                        }
+                                    }
+                                    Coverage::Format2 {
+                                        records,
+                                    } => {
+                                        for record in records {
+                                            for id in record.start.0..record.end.0 {
+                                                seen_mappings.insert((id as i32 + delta as i32) as u16);
+                                            }
+                                        }
+                                    }
+                                },
+                                SingleSubstitution::Format2 {
+                                    coverage: _,
+                                    substitutes,
+                                } => {
+                                    substitutes.into_iter().for_each(|g| {
+                                        seen_mappings.insert(g.0);
+                                    });
+                                }
+                            }
+                        }
+                        SubstitutionSubtable::Multiple(ms) => {
+                            ms.sequences.into_iter().for_each(|seq| {
+                                seq.substitutes.into_iter().for_each(|g| {
+                                    seen_mappings.insert(g.0);
+                                })
+                            });
+                        }
+                        SubstitutionSubtable::Alternate(als) => {
+                            als.alternate_sets.into_iter().for_each(|al| {
+                                al.alternates.into_iter().for_each(|g| {
+                                    seen_mappings.insert(g.0);
+                                })
+                            });
+                        }
+                        SubstitutionSubtable::Ligature(ls) => ls.ligature_sets.into_iter().for_each(|ls| {
+                            ls.into_iter().for_each(|l| {
+                                seen_mappings.insert(l.glyph.0);
+                            })
+                        }),
+                        SubstitutionSubtable::ReverseChainSingle(rcsl) => {
+                            rcsl.substitutes.into_iter().for_each(|g| {
+                                seen_mappings.insert(g.0);
+                            })
+                        }
+                        _ => {}
+                    }
+                }
+            }
+        }
 
         let units_per_em = face.units_per_em() as f32;
 

@@ -22,6 +22,10 @@ default = ["simd"]
 simd = []
 # Enable this flag to parallelize font loading using threads.
 parallel = ["rayon", "hashbrown/rayon"]
+# Enable this flag to load ligatures & substitutions on compatible fonts.
+# Only makes a difference when using indexed operations, e.g. `rasterize_indexed()`,
+# as singular chars do not have enough context to be substituted.
+gsub = ["ttf-parser/opentype-layout"]
 
 [dependencies]
 ttf-parser = { version = "0.15", default-features = false }
