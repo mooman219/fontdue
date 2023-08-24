@@ -266,6 +266,8 @@ impl Font {
                 })
             }
         }
+
+        // If the gsub table exists and the user needs it, add all of its glyphs to the glyphs we should load.
         #[cfg(feature = "gsub")]
         if let Some(subtable) = face.tables().gsub {
             use ttf_parser::gsub::SubstitutionSubtable;
@@ -302,35 +304,35 @@ impl Font {
                                     coverage: _,
                                     substitutes,
                                 } => {
-                                    substitutes.into_iter().for_each(|g| {
+                                    for g in substitutes {
                                         seen_mappings.insert(g.0);
-                                    });
+                                    }
                                 }
                             }
                         }
                         SubstitutionSubtable::Multiple(ms) => {
-                            ms.sequences.into_iter().for_each(|seq| {
-                                seq.substitutes.into_iter().for_each(|g| {
+                            for seq in ms.sequences {
+                                for g in seq.substitutes {
                                     seen_mappings.insert(g.0);
-                                })
-                            });
+                                }
+                            }
                         }
                         SubstitutionSubtable::Alternate(als) => {
-                            als.alternate_sets.into_iter().for_each(|al| {
-                                al.alternates.into_iter().for_each(|g| {
+                            for alt in als.alternate_sets {
+                                for g in alt.alternates {
                                     seen_mappings.insert(g.0);
-                                })
-                            });
+                                }
+                            }
                         }
                         SubstitutionSubtable::Ligature(ls) => ls.ligature_sets.into_iter().for_each(|ls| {
-                            ls.into_iter().for_each(|l| {
+                            for l in ls {
                                 seen_mappings.insert(l.glyph.0);
-                            })
+                            }
                         }),
                         SubstitutionSubtable::ReverseChainSingle(rcsl) => {
-                            rcsl.substitutes.into_iter().for_each(|g| {
+                            for g in rcsl.substitutes {
                                 seen_mappings.insert(g.0);
-                            })
+                            }
                         }
                         _ => {}
                     }
