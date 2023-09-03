@@ -167,6 +167,11 @@ pub struct FontSettings {
     /// glyphs rendered larger than this will looks worse but perform slightly better. The units of
     /// the scale are pixels per Em unit.
     pub scale: f32,
+    /// The default is true. If enabled, will load glyphs for substitutions (liagtures, etc.) from
+    /// the gsub table on compatible fonrs. Only makes a difference when using indexed operations,
+    /// i.e. `Font::raserize_indexed`, as singular characters do not have enough context to be
+    /// substituted.
+    pub load_substitutions: bool,
 }
 
 impl Default for FontSettings {
@@ -174,6 +179,7 @@ impl Default for FontSettings {
         FontSettings {
             collection_index: 0,
             scale: 40.0,
+            load_substitutions: true,
         }
     }
 }
@@ -251,15 +257,15 @@ impl Font {
 
         // Collect all the unique codepoint to glyph mappings.
         let glyph_count = face.number_of_glyphs();
-        let mut seen_mappings = HashSet::with_capacity(glyph_count as usize);
+        let mut indices_to_load = HashSet::with_capacity(glyph_count as usize);
         let mut char_to_glyph = HashMap::with_capacity(glyph_count as usize);
-        seen_mappings.insert(0u16);
+        indices_to_load.insert(0u16);
         if let Some(subtable) = face.tables().cmap {
             for subtable in subtable.subtables {
                 subtable.codepoints(|codepoint| {
                     if let Some(mapping) = subtable.glyph_index(codepoint) {
                         if let Some(mapping) = NonZeroU16::new(mapping.0) {
-                            seen_mappings.insert(mapping.get());
+                            indices_to_load.insert(mapping.get());
                             char_to_glyph.insert(unsafe { mem::transmute(codepoint) }, mapping);
                         }
                     }
@@ -268,73 +274,73 @@ impl Font {
         }
 
         // If the gsub table exists and the user needs it, add all of its glyphs to the glyphs we should load.
-        #[cfg(feature = "gsub")]
-        if let Some(subtable) = face.tables().gsub {
-            use ttf_parser::gsub::SubstitutionSubtable;
-            use ttf_parser::opentype_layout::Coverage;
-
-            for lookup in subtable.lookups {
-                for table in lookup.subtables.into_iter::<SubstitutionSubtable>() {
-                    match table {
-                        SubstitutionSubtable::Single(ss) => {
-                            use ttf_parser::gsub::SingleSubstitution;
-                            match ss {
-                                SingleSubstitution::Format1 {
-                                    coverage,
-                                    delta,
-                                } => match coverage {
-                                    Coverage::Format1 {
-                                        glyphs,
-                                    } => {
-                                        for glyph in glyphs {
-                                            seen_mappings.insert((glyph.0 as i32 + delta as i32) as u16);
-                                        }
-                                    }
-                                    Coverage::Format2 {
-                                        records,
-                                    } => {
-                                        for record in records {
-                                            for id in record.start.0..record.end.0 {
-                                                seen_mappings.insert((id as i32 + delta as i32) as u16);
+        if settings.load_substitutions {
+            if let Some(subtable) = face.tables().gsub {
+                use ttf_parser::gsub::SubstitutionSubtable;
+                for lookup in subtable.lookups {
+                    for table in lookup.subtables.into_iter::<SubstitutionSubtable>() {
+                        match table {
+                            SubstitutionSubtable::Single(ss) => {
+                                use ttf_parser::gsub::SingleSubstitution;
+                                use ttf_parser::opentype_layout::Coverage;
+                                match ss {
+                                    SingleSubstitution::Format1 {
+                                        coverage,
+                                        delta,
+                                    } => match coverage {
+                                        Coverage::Format1 {
+                                            glyphs,
+                                        } => {
+                                            for glyph in glyphs {
+                                                indices_to_load.insert((glyph.0 as i32 + delta as i32) as u16);
                                             }
                                         }
+                                        Coverage::Format2 {
+                                            records,
+                                        } => {
+                                            for record in records {
+                                                for id in record.start.0..record.end.0 {
+                                                    indices_to_load.insert((id as i32 + delta as i32) as u16);
+                                                }
+                                            }
+                                        }
+                                    },
+                                    SingleSubstitution::Format2 {
+                                        coverage: _,
+                                        substitutes,
+                                    } => {
+                                        for g in substitutes {
+                                            indices_to_load.insert(g.0);
+                                        }
                                     }
-                                },
-                                SingleSubstitution::Format2 {
-                                    coverage: _,
-                                    substitutes,
-                                } => {
-                                    for g in substitutes {
-                                        seen_mappings.insert(g.0);
+                                }
+                            }
+                            SubstitutionSubtable::Multiple(ms) => {
+                                for seq in ms.sequences {
+                                    for g in seq.substitutes {
+                                        indices_to_load.insert(g.0);
                                     }
                                 }
                             }
-                        }
-                        SubstitutionSubtable::Multiple(ms) => {
-                            for seq in ms.sequences {
-                                for g in seq.substitutes {
-                                    seen_mappings.insert(g.0);
+                            SubstitutionSubtable::Alternate(als) => {
+                                for alt in als.alternate_sets {
+                                    for g in alt.alternates {
+                                        indices_to_load.insert(g.0);
+                                    }
                                 }
                             }
-                        }
-                        SubstitutionSubtable::Alternate(als) => {
-                            for alt in als.alternate_sets {
-                                for g in alt.alternates {
-                                    seen_mappings.insert(g.0);
+                            SubstitutionSubtable::Ligature(ls) => ls.ligature_sets.into_iter().for_each(|ls| {
+                                for l in ls {
+                                    indices_to_load.insert(l.glyph.0);
+                                }
+                            }),
+                            SubstitutionSubtable::ReverseChainSingle(rcsl) => {
+                                for g in rcsl.substitutes {
+                                    indices_to_load.insert(g.0);
                                 }
                             }
+                            _ => {}
                         }
-                        SubstitutionSubtable::Ligature(ls) => ls.ligature_sets.into_iter().for_each(|ls| {
-                            for l in ls {
-                                seen_mappings.insert(l.glyph.0);
-                            }
-                        }),
-                        SubstitutionSubtable::ReverseChainSingle(rcsl) => {
-                            for g in rcsl.substitutes {
-                                seen_mappings.insert(g.0);
-                            }
-                        }
-                        _ => {}
                     }
                 }
             }
@@ -366,13 +372,13 @@ impl Font {
         };
 
         #[cfg(not(feature = "parallel"))]
-        for index in seen_mappings {
+        for index in indices_to_load {
             glyphs[index as usize] = generate_glyph(index)?;
         }
 
         #[cfg(feature = "parallel")]
         {
-            let generated: Vec<(u16, Glyph)> = seen_mappings
+            let generated: Vec<(u16, Glyph)> = indices_to_load
                 .into_par_iter()
                 .map(|index| Ok((index, generate_glyph(index)?)))
                 .collect::<Result<_, _>>()?;
