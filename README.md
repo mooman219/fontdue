@@ -1,6 +1,6 @@
 # Fontdue
 
-[![Test](https://github.com/mooman219/fontdue/actions/workflows/bui/badge.svg)](https://github.com/mooman219/fontdue/actions)
+[![Test](https://github.com/mooman219/fontdue/actions/workflows/build/badge.svg)](https://github.com/mooman219/fontdue/actions)
 [![Documentation](https://docs.rs/fontdue/badge.svg)](https://docs.rs/fontdue)
 [![Crates.io](https://img.shields.io/crates/v/fontdue.svg)](https://crates.io/crates/fontdue)
 [![License](https://img.shields.io/crates/l/fontdue.svg)](https://github.com/mooman219/fontdue/blob/master/LICENSE)
