@@ -12,3 +12,6 @@ Cargo.lock
 # Fontdue Test files
 *.pgm
 resources/baselines/local
+
+# Editor files
+.vscode/*
