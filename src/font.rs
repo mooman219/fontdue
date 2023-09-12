@@ -239,10 +239,10 @@ fn convert_name(face: &Face) -> Option<String> {
 
 impl Font {
     /// Constructs a font from an array of bytes.
-    pub fn from_bytes<Data: Deref<Target = [u8]>>(data: Data, settings: FontSettings) -> FontResult<Font> {
-        let hash = crate::hash::hash(&data);
+    pub fn from_bytes(data: impl AsRef<[u8]>, settings: FontSettings) -> FontResult<Font> {
+        let hash = crate::hash::hash(data.as_ref());
 
-        let face = match Face::from_slice(&data, settings.collection_index) {
+        let face = match Face::from_slice(data.as_ref(), settings.collection_index) {
             Ok(f) => f,
             Err(e) => return Err(convert_error(e)),
         };
