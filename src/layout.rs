@@ -304,9 +304,17 @@ pub struct Layout<U: Copy + Clone = ()> {
 impl<'a, U: Copy + Clone> Layout<U> {
     /// Creates a layout instance. This requires the direction that the Y coordinate increases in.
     /// Layout needs to be aware of your coordinate system to place the glyphs correctly.
+    /// If you want to construct a layout with settings you can use the Layout::with_settings
+    /// function.
     pub fn new(coordinate_system: CoordinateSystem) -> Layout<U> {
         let settings = LayoutSettings::default();
+        Self::with_settings(coordinate_system, settings)
+    }
 
+    /// Creates a layout instance with settings. This requires the direction that the Y coordinate
+    /// increases in.
+    /// Layout needs to be aware of your coordinate system to place the glyphs correctly.
+    pub fn with_settings(coordinate_system: CoordinateSystem, settings: LayoutSettings) -> Layout<U> {
         let mut layout = Layout {
             flip: coordinate_system == CoordinateSystem::PositiveYDown,
             x: 0.0,
