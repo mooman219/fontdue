@@ -88,13 +88,13 @@ pub struct LayoutSettings {
 
 impl LayoutSettings {
     /// Instatiates a builder for the LayoutSettings allowing for easier configuration.
-    pub fn builder() -> LayoutSettingsBuilder {
+    pub const fn builder() -> LayoutSettingsBuilder {
         LayoutSettingsBuilder::new()
     }
-}
 
-impl Default for LayoutSettings {
-    fn default() -> LayoutSettings {
+    /// Const version of the default function allowing, required for implementing the const
+    /// LayoutSettingsBuilder.
+    const fn const_default() -> Self {
         LayoutSettings {
             x: 0.0,
             y: 0.0,
@@ -109,6 +109,12 @@ impl Default for LayoutSettings {
     }
 }
 
+impl Default for LayoutSettings {
+    fn default() -> LayoutSettings {
+        Self::const_default()
+    }
+}
+
 /// Builder helper for the construction of LayoutSettings.
 /// When instatianting the builder a default LayoutSettings is used, by calling the various
 /// configuration methods you can change the values, the methods consume an instance of the builder
@@ -120,18 +126,19 @@ pub struct LayoutSettingsBuilder {
 
 impl LayoutSettingsBuilder {
     /// Instatiates a new LayoutSettingsBuilder
-    pub fn new() -> Self {
+    pub const fn new() -> Self {
+        let settings = LayoutSettings::const_default();
         Self {
-            value: LayoutSettings::default()
+            value: settings
         }
     }
     /// The leftmost boundary of the text region.
-    pub fn x(mut self, x: f32) -> Self {
+    pub const fn x(mut self, x: f32) -> Self {
         self.value.x = x;
         self
     }
     /// The topmost boundary of the text region.
-    pub fn y(mut self, y: f32) -> Self {
+    pub const fn y(mut self, y: f32) -> Self {
         self.value.y = y;
         self
     }
@@ -139,46 +146,46 @@ impl LayoutSettingsBuilder {
     /// max_width is wrapped to the line below. If the width of a glyph is larger than the
     /// max_width, the glyph will overflow past the max_width. The application is responsible for
     /// handling the overflow.
-    pub fn max_width(mut self, max_width: Option<f32>) -> Self {
+    pub const fn max_width(mut self, max_width: Option<f32>) -> Self {
         self.value.max_width = max_width;
         self
     }
     /// An optional bottom boundary on the text region. This is used for positioning the
     /// vertical_align option. Text that exceeds the defined max_height will overflow past it. The
     /// application is responsible for handling the overflow.
-    pub fn max_height(mut self, max_height: Option<f32>) -> Self {
+    pub const fn max_height(mut self, max_height: Option<f32>) -> Self {
         self.value.max_height = max_height;
         self
     }
     /// The default is Left. This option does nothing if the max_width isn't set.
-    pub fn horizontal_align(mut self, horizontal_align: HorizontalAlign) -> Self {
+    pub const fn horizontal_align(mut self, horizontal_align: HorizontalAlign) -> Self {
         self.value.horizontal_align = horizontal_align;
         self
     }
     /// The default is Top. This option does nothing if the max_height isn't set.
-    pub fn vertical_align(mut self, vertical_align: VerticalAlign) -> Self {
+    pub const fn vertical_align(mut self, vertical_align: VerticalAlign) -> Self {
         self.value.vertical_align = vertical_align;
         self
     }
     /// The height of each line as a multiplier of the default.
-    pub fn line_height(mut self, line_height: f32) -> Self {
+    pub const fn line_height(mut self, line_height: f32) -> Self {
         self.value.line_height = line_height;
         self
     }
     /// The default is Word. Wrap style is a hint for how strings of text should be wrapped to the
     /// next line. Line wrapping can happen when the max width/height is reached.
-    pub fn wrap_style(mut self, wrap_style: WrapStyle) -> Self {
+    pub const fn wrap_style(mut self, wrap_style: WrapStyle) -> Self {
         self.value.wrap_style = wrap_style;
         self
     }
     /// The default is true. This option enables hard breaks, like new line characters, to
     /// prematurely wrap lines. If false, hard breaks will not prematurely create a new line.
-    pub fn wrap_hard_breaks(mut self, wrap_hard_breaks: bool) -> Self {
+    pub const fn wrap_hard_breaks(mut self, wrap_hard_breaks: bool) -> Self {
         self.value.wrap_hard_breaks = wrap_hard_breaks;
         self
     }
     /// Creates LayoutSettings instance from the parameters set in the builder.
-    pub fn build(self) -> LayoutSettings {
+    pub const fn build(self) -> LayoutSettings {
         self.value
     }
 }
