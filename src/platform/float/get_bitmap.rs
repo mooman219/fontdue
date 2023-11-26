@@ -25,17 +25,23 @@ pub fn get_bitmap(a: &Vec<f32>, length: usize) -> Vec<u8> {
     #[cfg(target_arch = "x86_64")]
     use core::arch::x86_64::*;
 
-    let aligned_length = (length + 3) & !3;
-    assert!(aligned_length <= a.len());
-    // Turns out zeroing takes a while on very large sizes.
-    let mut output = Vec::with_capacity(aligned_length);
     unsafe {
-        output.set_len(aligned_length);
+        // Allocate a 4 byte aligned vector of bytes, and skip zeroing it. Turns out zeroing takes a
+        // while on very large sizes.
+        let mut output = {
+            // Aligned length is ceil(length / 4).
+            let aligned_length = (length + 3) >> 2;
+            let mut aligned: Vec<u32> = Vec::with_capacity(aligned_length);
+            let ptr = aligned.as_mut_ptr();
+            let cap = aligned.capacity() << 2;
+            core::mem::forget(aligned);
+            Vec::from_raw_parts(ptr as *mut u8, aligned_length << 2, cap)
+        };
         // offset = Zeroed out lanes
         let mut offset = _mm_setzero_ps();
         // Negative zero is important here.
         let nzero = _mm_castps_si128(_mm_set1_ps(-0.0));
-        for i in (0..aligned_length).step_by(4) {
+        for i in (0..output.len()).step_by(4) {
             // x = Read 4 floats from self.a
             let mut x = _mm_loadu_ps(a.get_unchecked(i));
             // x += (0.0, x[0], x[1], x[2])
@@ -61,7 +67,7 @@ pub fn get_bitmap(a: &Vec<f32>, length: usize) -> Vec<u8> {
             // offset = (x[3], x[3], x[3], x[3])
             offset = _mm_set1_ps(core::mem::transmute::<__m128, [f32; 4]>(x)[3]);
         }
+        output.truncate(length);
+        output
     }
-    output.truncate(length);
-    output
 }
