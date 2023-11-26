@@ -5,6 +5,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [0.8.0] - 2023-11-25
+### Added
+- `Font.has_glyph()` for convenience.
 ### Changes
 - The 0.7.4 breaks semver by adding a field to FontSettings. 0.7.4 is yanked and republished as 0.8.0
 
