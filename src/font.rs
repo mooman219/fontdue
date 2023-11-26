@@ -616,6 +616,12 @@ impl Font {
         (metrics, canvas.get_bitmap())
     }
 
+    /// Checks if the font has a glyph for the given character.
+    #[inline]
+    pub fn has_glyph(&self, character: char) -> bool {
+        self.lookup_glyph_index(character) != 0
+    }
+
     /// Finds the internal glyph index for the given character. If the character is not present in
     /// the font then 0 is returned.
     #[inline]
