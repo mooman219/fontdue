@@ -242,7 +242,7 @@ impl Font {
     pub fn from_bytes<Data: Deref<Target = [u8]>>(data: Data, settings: FontSettings) -> FontResult<Font> {
         let hash = crate::hash::hash(&data);
 
-        let face = match Face::from_slice(&data, settings.collection_index) {
+        let face = match Face::parse(&data, settings.collection_index) {
             Ok(f) => f,
             Err(e) => return Err(convert_error(e)),
         };
@@ -250,7 +250,7 @@ impl Font {
 
         // Optionally get kerning values for the font. This should be a try block in the future.
         let horizontal_kern: Option<HashMap<u32, i16>> = (|| {
-            let table: &[u8] = face.table_data(Tag::from_bytes(&b"kern"))?;
+            let table: &[u8] = face.raw_face().table(Tag::from_bytes(&b"kern"))?;
             let table: TableKern = TableKern::new(table)?;
             Some(table.horizontal_mappings)
         })();

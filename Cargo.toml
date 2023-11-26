@@ -1,6 +1,6 @@
 [package]
 name = "fontdue"
-version = "0.7.3"
+version = "0.7.4"
 authors = ["Joe Cumbo <mooman219@gmail.com>"]
 license = "MIT OR Apache-2.0 OR Zlib"
 documentation = "https://docs.rs/fontdue"
@@ -24,6 +24,8 @@ simd = []
 parallel = ["rayon", "hashbrown/rayon"]
 
 [dependencies]
-ttf-parser = { version = "0.15", default-features = false, features = ["opentype-layout"]  }
-hashbrown = "0.13"
+ttf-parser = { version = "0.20", default-features = false, features = [
+    "opentype-layout",
+] }
+hashbrown = "0.14"
 rayon = { version = "1.5.1", optional = true }
