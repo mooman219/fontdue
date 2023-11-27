@@ -100,8 +100,11 @@ function renderBuiltinCharacter(char = "¾", xmin, ymin, height = 200, width = 2
 function init() {
     const input = /** @type {HTMLInputElement} */(document.getElementById("input"));
     input.addEventListener("change", function () {
-        const [height, width, xmin, ymin] = renderFontdueCharacter(this.value);
-        renderBuiltinCharacter(this.value, xmin, ymin, height, width);
+        const present = wasm.has_glyph(this.value);
+        const char = present ? this.value : "?";
+        const [height, width, xmin, ymin] = renderFontdueCharacter(char);
+        renderBuiltinCharacter(char, xmin, ymin, height, width);
+        /** @type {HTMLElement} */(document.getElementById("warning")).innerHTML = present ? "" : "Character missing from font bundled into page.";
     });
     const [height, width, xmin, ymin] = renderFontdueCharacter();
     renderBuiltinCharacter(undefined, xmin, ymin, height, width);
