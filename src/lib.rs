@@ -66,3 +66,14 @@ pub fn render(size: f32, input: char) -> CharRender {
         underlying: bitmap
     }
 }
+
+#[wasm_bindgen]
+pub fn has_glyph(input: char) -> bool {
+    set_panic_hook();
+    let settings = fontdue::FontSettings {
+        scale: 24.0,
+        ..fontdue::FontSettings::default()
+    };
+    let font = Font::from_bytes(ROBOTO_MONO_REGULAR_TTF, settings).unwrap();
+    font.has_glyph(input)
+}
