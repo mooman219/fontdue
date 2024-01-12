@@ -577,15 +577,7 @@ impl Font {
     /// 0% coverage of that pixel by the glyph and 255 represents 100% coverage. The vec starts at
     /// the top left corner of the glyph.
     pub fn rasterize_indexed(&self, index: u16, px: f32) -> (Metrics, Vec<u8>) {
-        if px <= 0.0 {
-            return (Metrics::default(), Vec::new());
-        }
-        let glyph = &self.glyphs[index as usize];
-        let scale = self.scale_factor(px);
-        let (metrics, offset_x, offset_y) = self.metrics_raw(scale, glyph, 0.0);
-        let mut canvas = Raster::new(metrics.width, metrics.height);
-        canvas.draw(&glyph, scale, scale, offset_x, offset_y);
-        (metrics, canvas.get_bitmap())
+        self.rasterize_indexed_offset(index, px, 0.0)
     }
 
     /// Retrieves the layout metrics and rasterized bitmap at the given index. You normally want to
@@ -605,12 +597,59 @@ impl Font {
     /// represents 0% coverage of that subpixel by the glyph and 255 represents 100% coverage. The
     /// vec starts at the top left corner of the glyph.
     pub fn rasterize_indexed_subpixel(&self, index: u16, px: f32) -> (Metrics, Vec<u8>) {
+        self.rasterize_indexed_subpixel_offset(index, px, 0.0)
+    }
+
+    /// Retrieves the layout metrics and rasterized bitmap at the given index. You normally want to
+    /// be using rasterize(char, f32) instead, unless your glyphs are pre-indexed.
+    /// # Arguments
+    ///
+    /// * `index` - The glyph index in the font to rasterize.
+    /// * `px` - The size to render the character at. Cannot be negative. The units of the scale
+    /// are pixels per Em unit.
+    /// * `offset` - Additional horizontal offset to apply while rendering for more control over hinting.
+    /// # Returns
+    ///
+    /// * `Metrics` - Sizing and positioning metadata for the rasterized glyph.
+    /// * `Vec<u8>` - Coverage vector for the glyph. Coverage is a linear scale where 0 represents
+    /// 0% coverage of that pixel by the glyph and 255 represents 100% coverage. The vec starts at
+    /// the top left corner of the glyph.
+    pub fn rasterize_indexed_offset(&self, index: u16, px: f32, offset: f32) -> (Metrics, Vec<u8>) {
         if px <= 0.0 {
             return (Metrics::default(), Vec::new());
         }
         let glyph = &self.glyphs[index as usize];
         let scale = self.scale_factor(px);
-        let (metrics, offset_x, offset_y) = self.metrics_raw(scale, glyph, 0.0);
+        let (metrics, offset_x, offset_y) = self.metrics_raw(scale, glyph, offset);
+        let mut canvas = Raster::new(metrics.width, metrics.height);
+        canvas.draw(&glyph, scale, scale, offset_x, offset_y);
+        (metrics, canvas.get_bitmap())
+    }
+
+    /// Retrieves the layout metrics and rasterized bitmap at the given index. You normally want to
+    /// be using rasterize(char, f32) instead, unless your glyphs are pre-indexed.
+    ///
+    /// This will perform the operation with the width multiplied by 3, as to simulate subpixels.
+    /// Taking these as RGB values will perform subpixel anti aliasing.
+    /// # Arguments
+    ///
+    /// * `index` - The glyph index in the font to rasterize.
+    /// * `px` - The size to render the character at. Cannot be negative. The units of the scale
+    /// are pixels per Em unit.
+    /// * `offset` - Additional horizontal offset to apply while rendering for more control over hinting.
+    /// # Returns
+    ///
+    /// * `Metrics` - Sizing and positioning metadata for the rasterized glyph.
+    /// * `Vec<u8>` - Swizzled RGB coverage vector for the glyph. Coverage is a linear scale where 0
+    /// represents 0% coverage of that subpixel by the glyph and 255 represents 100% coverage. The
+    /// vec starts at the top left corner of the glyph.
+    pub fn rasterize_indexed_subpixel_offset(&self, index: u16, px: f32, offset: f32) -> (Metrics, Vec<u8>) {
+        if px <= 0.0 {
+            return (Metrics::default(), Vec::new());
+        }
+        let glyph = &self.glyphs[index as usize];
+        let scale = self.scale_factor(px);
+        let (metrics, offset_x, offset_y) = self.metrics_raw(scale, glyph, offset);
         let mut canvas = Raster::new(metrics.width * 3, metrics.height);
         canvas.draw(&glyph, scale * 3.0, scale, offset_x, offset_y);
         (metrics, canvas.get_bitmap())
