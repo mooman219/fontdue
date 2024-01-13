@@ -649,7 +649,7 @@ impl Font {
         }
         let glyph = &self.glyphs[index as usize];
         let scale = self.scale_factor(px);
-        let (metrics, offset_x, offset_y) = self.metrics_raw(scale, glyph, offset);
+        let (metrics, offset_x, offset_y) = self.metrics_raw(scale, glyph, offset * 3.0);
         let mut canvas = Raster::new(metrics.width * 3, metrics.height);
         canvas.draw(&glyph, scale * 3.0, scale, offset_x, offset_y);
         (metrics, canvas.get_bitmap())
