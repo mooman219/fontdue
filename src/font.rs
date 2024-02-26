@@ -345,6 +345,12 @@ impl Font {
         })
     }
 
+    /// Returns the font's face name if it has one. It is from `Name ID 4` (Full Name) in the name table.
+    /// See https://learn.microsoft.com/en-us/typography/opentype/spec/name#name-ids for more info.
+    pub fn name(&self) -> Option<&str> {
+        self.name.as_deref()
+    }
+
     /// Returns all valid unicode codepoints that have mappings to glyph geometry in the font, along
     /// with their associated index. This does not include grapheme cluster mappings. The mapped
     /// NonZeroU16 index can be used in the _indexed font functions.
