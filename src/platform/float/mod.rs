@@ -16,6 +16,7 @@ pub use floor::*;
 pub use fract::*;
 pub use get_bitmap::*;
 pub use sqrt::*;
+#[allow(unused_imports)]
 pub use trunc::*;
 
 /// Sets the high bit 0x80000000 on a float.

@@ -168,7 +168,7 @@ pub struct FontSettings {
     /// the scale are pixels per Em unit.
     pub scale: f32,
     /// The default is true. If enabled, will load glyphs for substitutions (liagtures, etc.) from
-    /// the gsub table on compatible fonrs. Only makes a difference when using indexed operations,
+    /// the gsub table on compatible fonts. Only makes a difference when using indexed operations,
     /// i.e. `Font::raserize_indexed`, as singular characters do not have enough context to be
     /// substituted.
     pub load_substitutions: bool,
