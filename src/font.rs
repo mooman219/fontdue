@@ -434,7 +434,7 @@ impl Font {
     /// font, then the layout for the font's default character is returned instead.
     /// # Arguments
     ///
-    /// * `index` - The character in the font to to generate the layout metrics for.
+    /// * `character` - The character in the font to to generate the layout metrics for.
     /// * `px` - The size to generate the layout metrics for the character at. Cannot be negative.
     /// The units of the scale are pixels per Em unit.
     /// # Returns
