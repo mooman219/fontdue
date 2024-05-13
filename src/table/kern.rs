@@ -1,8 +1,5 @@
 use crate::table::parse::*;
-#[cfg(feature = "hashbrown")]
-use hashbrown::HashMap;
-#[cfg(not(feature = "hashbrown"))]
-use std::collections::HashMap;
+use crate::HashMap;
 
 // Apple: https://developer.apple.com/fonts/TrueType-Reference-Manual/RM06/Chap6kern.html
 // Microsoft: https://docs.microsoft.com/en-us/typography/opentype/spec/kern

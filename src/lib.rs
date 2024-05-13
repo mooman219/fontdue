@@ -22,5 +22,10 @@ mod unicode;
 
 pub use crate::font::*;
 
+#[cfg(feature = "hashbrown")]
+pub(crate) use hashbrown::{HashMap, HashSet};
+#[cfg(not(feature = "hashbrown"))]
+pub(crate) use std::collections::{HashMap, HashSet};
+
 /// Alias for Result<T, &'static str>.
 pub type FontResult<T> = Result<T, &'static str>;

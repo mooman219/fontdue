@@ -1,7 +1,4 @@
-#[cfg(feature = "hashbrown")]
-use hashbrown::HashSet;
-#[cfg(not(feature = "hashbrown"))]
-use std::collections::HashSet;
+use crate::HashSet;
 use ttf_parser::Face;
 
 pub fn load_gsub(face: &Face, indices_to_load: &mut HashSet<u16>) {
