@@ -10,8 +10,11 @@ jobs:
         targets: wasm32-unknown-unknown
     - uses: actions/checkout@master
 
-    - name: Build src (native) (no default features)
-      run: cargo build --no-default-features --verbose
+    - name: Build src (native) (no default features, std)
+      run: cargo build --no-default-features --features std --verbose
+
+    - name: Build src (native) (no default features, hashbrown)
+      run: cargo build --no-default-features --features hashbrown --verbose
 
     - name: Build src (native) (all features)
       run: cargo build --all-features --verbose

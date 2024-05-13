@@ -12,8 +12,8 @@ jobs:
     - name: Format src
       run: cargo fmt --all -- --check
 
-    - name: Clippy src (no default features)
-      run: cargo clippy --no-default-features -- -D warnings
+    - name: Clippy src (no default features, hashbrown)
+      run: cargo clippy --no-default-features --features hashbrown -- -D warnings
 
     - name: Clippy src (all features)
       run: cargo clippy --all-features -- -D warnings
