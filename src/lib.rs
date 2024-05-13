@@ -2,7 +2,7 @@
 //!
 //! This is a no_std crate, but still requires the alloc crate.
 
-#![no_std]
+#![cfg_attr(all(not(test), not(feature = "std")), no_std)]
 #![allow(dead_code)]
 #![allow(clippy::style)]
 #![allow(clippy::complexity)]
