@@ -17,6 +17,7 @@ exclude = ["dev/**"]
 maintenance = { status = "experimental" }
 
 [features]
+# If using no default features, you must enable either hashbrown or std.
 default = ["simd", "hashbrown"]
 # Enable this flag to use std::HashMap instead of hashbrown::HashMap
 std = []
