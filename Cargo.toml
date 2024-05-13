@@ -17,15 +17,17 @@ exclude = ["dev/**"]
 maintenance = { status = "experimental" }
 
 [features]
-default = ["simd"]
+default = ["simd", "hashbrown"]
+# Enable this flag to use std::HashMap instead of hashbrown::HashMap
+std = []
 # Enable this flag to leverage SIMD usage on x86/x86_64 platforms.
 simd = []
 # Enable this flag to parallelize font loading using threads.
-parallel = ["rayon", "hashbrown/rayon"]
+parallel = ["rayon", "hashbrown", "hashbrown/rayon"]
 
 [dependencies]
 ttf-parser = { version = "0.20", default-features = false, features = [
     "opentype-layout",
 ] }
-hashbrown = "0.14"
+hashbrown = { version = "0.14", optional = true }
 rayon = { version = "1.5.1", optional = true }
