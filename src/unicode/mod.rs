@@ -179,7 +179,7 @@ impl CharacterData {
         }
     }
 
-    /// A heuristic for if the glpyh this was classified from should be rasterized. Missing glyphs,
+    /// A heuristic for if the glyph this was classified from should be rasterized. Missing glyphs,
     /// whitespace, and control characters will return false.
     pub fn rasterize(&self) -> bool {
         self.bits == 0
