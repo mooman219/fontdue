@@ -22,6 +22,15 @@ jobs:
     - name: Build src (wasm)
       run: cargo build --verbose --target wasm32-unknown-unknown
 
+    - name: Build src (wasm) (no default features, std)
+      run: cargo build --no-default-features --features std --verbose --target wasm32-unknown-unknown
+
+    - name: Build src (wasm) (no default features, hashbrown)
+      run: cargo build --no-default-features --features hashbrown --verbose --target wasm32-unknown-unknown
+
+    - name: Build src (wasm) (all features)
+      run: cargo build --all-features --verbose --target wasm32-unknown-unknown
+
     - name: Test src (native)
       run: cargo test --verbose --workspace
 
