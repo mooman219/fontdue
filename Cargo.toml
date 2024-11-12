@@ -30,5 +30,5 @@ parallel = ["rayon", "hashbrown", "hashbrown/rayon"]
 ttf-parser = { version = "0.21", default-features = false, features = [
     "opentype-layout",
 ] }
-hashbrown = { version = "0.14", optional = true }
+hashbrown = { version = "0.15", optional = true }
 rayon = { version = "1.10", optional = true }
