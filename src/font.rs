@@ -266,7 +266,7 @@ impl Font {
                     if let Some(mapping) = subtable.glyph_index(codepoint) {
                         if let Some(mapping) = NonZeroU16::new(mapping.0) {
                             indices_to_load.insert(mapping.get());
-                            char_to_glyph.insert(unsafe { mem::transmute(codepoint) }, mapping);
+                            char_to_glyph.insert(unsafe { mem::transmute::<u32, char>(codepoint) }, mapping);
                         }
                     }
                 })

@@ -62,7 +62,7 @@ pub fn get_bitmap(a: &Vec<f32>, length: usize) -> Vec<u8> {
             y = _mm_packus_epi16(_mm_packs_epi32(y, nzero), nzero);
 
             // Store the first 4 u8s from y in output.
-            let pointer: &mut i32 = core::mem::transmute(output.get_unchecked_mut(i));
+            let pointer: &mut i32 = core::mem::transmute::<&mut u8, &mut i32>(output.get_unchecked_mut(i));
             *pointer = core::mem::transmute::<__m128i, [i32; 4]>(y)[0];
             // offset = (x[3], x[3], x[3], x[3])
             offset = _mm_set1_ps(core::mem::transmute::<__m128, [f32; 4]>(x)[3]);

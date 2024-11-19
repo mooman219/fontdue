@@ -25,17 +25,24 @@ impl f32x4 {
 
     #[inline(always)]
     pub fn new_u32(x0: u32, x1: u32, x2: u32, x3: u32) -> Self {
-        unsafe { Self::new(transmute(x0), transmute(x1), transmute(x2), transmute(x3)) }
+        unsafe {
+            Self::new(
+                transmute::<u32, f32>(x0),
+                transmute::<u32, f32>(x1),
+                transmute::<u32, f32>(x2),
+                transmute::<u32, f32>(x3),
+            )
+        }
     }
 
     #[inline(always)]
     pub fn sub_integer(&self, other: f32x4) -> f32x4 {
         unsafe {
             Self::new(
-                transmute(transmute::<f32, u32>(self.x0) - transmute::<f32, u32>(other.x0)),
-                transmute(transmute::<f32, u32>(self.x1) - transmute::<f32, u32>(other.x1)),
-                transmute(transmute::<f32, u32>(self.x2) - transmute::<f32, u32>(other.x2)),
-                transmute(transmute::<f32, u32>(self.x3) - transmute::<f32, u32>(other.x3)),
+                transmute::<u32, f32>(transmute::<f32, u32>(self.x0) - transmute::<f32, u32>(other.x0)),
+                transmute::<u32, f32>(transmute::<f32, u32>(self.x1) - transmute::<f32, u32>(other.x1)),
+                transmute::<u32, f32>(transmute::<f32, u32>(self.x2) - transmute::<f32, u32>(other.x2)),
+                transmute::<u32, f32>(transmute::<f32, u32>(self.x3) - transmute::<f32, u32>(other.x3)),
             )
         }
     }
