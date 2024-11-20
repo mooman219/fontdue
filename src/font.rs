@@ -416,7 +416,7 @@ impl Font {
         self.horizontal_kern_indexed(self.lookup_glyph_index(left), self.lookup_glyph_index(right), px)
     }
 
-    /// Retrieves the horizontal scaled kerning value for two adjacent glyph indicies.
+    /// Retrieves the horizontal scaled kerning value for two adjacent glyph indices.
     /// # Arguments
     ///
     /// * `left` - The glyph index on the left hand side of the pairing.
