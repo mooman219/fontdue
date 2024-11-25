@@ -443,12 +443,13 @@ impl Font {
     /// * `index` - The character in the font to to generate the layout metrics for.
     /// * `px` - The size to generate the layout metrics for the character at. Cannot be negative.
     /// The units of the scale are pixels per Em unit.
+    /// * `dx` - The sub-pixel x offset in which to render the glyph.
     /// # Returns
     ///
     /// * `Metrics` - Sizing and positioning metadata for the glyph.
     #[inline]
-    pub fn metrics(&self, character: char, px: f32) -> Metrics {
-        self.metrics_indexed(self.lookup_glyph_index(character), px)
+    pub fn metrics(&self, character: char, px: f32, dx: f32) -> Metrics {
+        self.metrics_indexed(self.lookup_glyph_index(character), px, dx)
     }
 
     /// Retrieves the layout metrics at the given index. You normally want to be using
@@ -458,13 +459,14 @@ impl Font {
     /// * `index` - The glyph index in the font to to generate the layout metrics for.
     /// * `px` - The size to generate the layout metrics for the glyph at. Cannot be negative. The
     /// units of the scale are pixels per Em unit.
+    /// * `dx` - The sub-pixel x offset in which to render the glyph.
     /// # Returns
     ///
     /// * `Metrics` - Sizing and positioning metadata for the glyph.
-    pub fn metrics_indexed(&self, index: u16, px: f32) -> Metrics {
+    pub fn metrics_indexed(&self, index: u16, px: f32, dx: f32) -> Metrics {
         let glyph = &self.glyphs[index as usize];
         let scale = self.scale_factor(px);
-        let (metrics, _, _) = self.metrics_raw(scale, glyph, 0.0);
+        let (metrics, _, _) = self.metrics_raw(scale, glyph, dx);
         metrics
     }
 
@@ -480,7 +482,7 @@ impl Font {
             offset_y += 1.0;
         }
         let metrics = Metrics {
-            xmin: as_i32(floor(bounds.xmin)),
+            xmin: as_i32(floor(bounds.xmin + offset)),
             ymin: as_i32(floor(bounds.ymin)),
             width: as_i32(ceil(bounds.width + offset_x)) as usize,
             height: as_i32(ceil(bounds.height + offset_y)) as usize,
@@ -505,7 +507,7 @@ impl Font {
     /// the top left corner of the glyph.
     #[inline]
     pub fn rasterize_config(&self, config: GlyphRasterConfig) -> (Metrics, Vec<u8>) {
-        self.rasterize_indexed(config.glyph_index, config.px)
+        self.rasterize_indexed(config.glyph_index, config.px, 0.0)
     }
 
     /// Retrieves the layout metrics and rasterized bitmap for the given character. If the
@@ -516,6 +518,7 @@ impl Font {
     /// * `character` - The character to rasterize.
     /// * `px` - The size to render the character at. Cannot be negative. The units of the scale
     /// are pixels per Em unit.
+    /// * `dx` - The sub-pixel x offset in which to render the glyph.
     /// # Returns
     ///
     /// * `Metrics` - Sizing and positioning metadata for the rasterized glyph.
@@ -523,8 +526,8 @@ impl Font {
     /// 0% coverage of that pixel by the glyph and 255 represents 100% coverage. The vec starts at
     /// the top left corner of the glyph.
     #[inline]
-    pub fn rasterize(&self, character: char, px: f32) -> (Metrics, Vec<u8>) {
-        self.rasterize_indexed(self.lookup_glyph_index(character), px)
+    pub fn rasterize(&self, character: char, px: f32, dx: f32) -> (Metrics, Vec<u8>) {
+        self.rasterize_indexed(self.lookup_glyph_index(character), px, dx)
     }
 
     /// Retrieves the layout rasterized bitmap for the given raster config. If the raster config's
@@ -576,19 +579,21 @@ impl Font {
     /// * `index` - The glyph index in the font to rasterize.
     /// * `px` - The size to render the character at. Cannot be negative. The units of the scale
     /// are pixels per Em unit.
+    /// * `dx` - The sub-pixel x offset in which to render the glyph.
+    /// # Returns
     /// # Returns
     ///
     /// * `Metrics` - Sizing and positioning metadata for the rasterized glyph.
     /// * `Vec<u8>` - Coverage vector for the glyph. Coverage is a linear scale where 0 represents
     /// 0% coverage of that pixel by the glyph and 255 represents 100% coverage. The vec starts at
     /// the top left corner of the glyph.
-    pub fn rasterize_indexed(&self, index: u16, px: f32) -> (Metrics, Vec<u8>) {
+    pub fn rasterize_indexed(&self, index: u16, px: f32, dx: f32) -> (Metrics, Vec<u8>) {
         if px <= 0.0 {
             return (Metrics::default(), Vec::new());
         }
         let glyph = &self.glyphs[index as usize];
         let scale = self.scale_factor(px);
-        let (metrics, offset_x, offset_y) = self.metrics_raw(scale, glyph, 0.0);
+        let (metrics, offset_x, offset_y) = self.metrics_raw(scale, glyph, dx);
         let mut canvas = Raster::new(metrics.width, metrics.height);
         canvas.draw(&glyph, scale, scale, offset_x, offset_y);
         (metrics, canvas.get_bitmap())
