@@ -454,7 +454,7 @@ impl<'a, U: Copy + Clone> Layout<U> {
             let glyph_index = font.lookup_glyph_index(character);
             let char_data = CharacterData::classify(character, glyph_index);
             let metrics = if !char_data.is_control() {
-                font.metrics_indexed(glyph_index, style.px)
+                font.metrics_indexed(glyph_index, style.px, 0.0)
             } else {
                 Metrics::default()
             };
