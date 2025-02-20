@@ -27,7 +27,7 @@ simd = []
 parallel = ["rayon", "hashbrown", "hashbrown/rayon"]
 
 [dependencies]
-ttf-parser = { version = "0.21", default-features = false, features = [
+ttf-parser = { version = "0.25", default-features = false, features = [
     "opentype-layout",
 ] }
 hashbrown = { version = "0.15", optional = true }
