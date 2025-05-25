@@ -4,10 +4,11 @@ jobs:
   src:
     runs-on: ubuntu-latest
     steps:
-    - uses: hecrj/setup-rust-action@v1
+    - uses: actions/checkout@v4
+    - uses: actions-rs/toolchain@v1
       with:
         components: rustfmt, clippy
-    - uses: actions/checkout@master
+        override: true
 
     - name: Format src
       run: cargo fmt --all -- --check
@@ -21,10 +22,11 @@ jobs:
   dev:
     runs-on: ubuntu-latest
     steps:
-    - uses: hecrj/setup-rust-action@v1
+    - uses: actions/checkout@v4
+    - uses: actions-rs/toolchain@v1
       with:
         components: rustfmt, clippy
-    - uses: actions/checkout@master
+        override: true
 
     - name: Format dev
       run: cargo fmt --all -- --check

@@ -4,11 +4,12 @@ jobs:
   src:
     runs-on: ubuntu-latest
     steps:
-    - uses: hecrj/setup-rust-action@v1
+    - uses: actions/checkout@v4
+    - uses: actions-rs/toolchain@v1
       with:
-        rust-version: stable
-        targets: wasm32-unknown-unknown
-    - uses: actions/checkout@master
+        toolchain: stable
+        target: wasm32-unknown-unknown
+        override: true
 
     - name: Build src (native) (no default features, std)
       run: cargo build --no-default-features --features std --verbose
@@ -37,10 +38,11 @@ jobs:
   dev:
     runs-on: ubuntu-latest
     steps:
-    - uses: hecrj/setup-rust-action@v1
+    - uses: actions/checkout@v4
+    - uses: actions-rs/toolchain@v1
       with:
-        rust-version: stable
-    - uses: actions/checkout@master
+        toolchain: stable
+        override: true
 
     - name: Build dev (native) (all features)
       run: cargo build --all-features --verbose
