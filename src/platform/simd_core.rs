@@ -1,6 +1,5 @@
 #![allow(non_camel_case_types)]
 
-use core::mem::transmute;
 use core::ops::{Add, AddAssign, Div, DivAssign, Mul, MulAssign, Sub, SubAssign};
 
 #[repr(C)]
@@ -25,26 +24,22 @@ impl f32x4 {
 
     #[inline(always)]
     pub fn new_u32(x0: u32, x1: u32, x2: u32, x3: u32) -> Self {
-        unsafe {
-            Self::new(
-                transmute::<u32, f32>(x0),
-                transmute::<u32, f32>(x1),
-                transmute::<u32, f32>(x2),
-                transmute::<u32, f32>(x3),
-            )
-        }
+        Self::new(
+            f32::from_bits(x0),
+            f32::from_bits(x1),
+            f32::from_bits(x2),
+            f32::from_bits(x3),
+        )
     }
 
     #[inline(always)]
     pub fn sub_integer(&self, other: f32x4) -> f32x4 {
-        unsafe {
-            Self::new(
-                transmute::<u32, f32>(transmute::<f32, u32>(self.x0) - transmute::<f32, u32>(other.x0)),
-                transmute::<u32, f32>(transmute::<f32, u32>(self.x1) - transmute::<f32, u32>(other.x1)),
-                transmute::<u32, f32>(transmute::<f32, u32>(self.x2) - transmute::<f32, u32>(other.x2)),
-                transmute::<u32, f32>(transmute::<f32, u32>(self.x3) - transmute::<f32, u32>(other.x3)),
-            )
-        }
+        Self::new(
+            f32::from_bits(f32::to_bits(self.x0) - f32::to_bits(other.x0)),
+            f32::from_bits(f32::to_bits(self.x1) - f32::to_bits(other.x1)),
+            f32::from_bits(f32::to_bits(self.x2) - f32::to_bits(other.x2)),
+            f32::from_bits(f32::to_bits(self.x3) - f32::to_bits(other.x3)),
+        )
     }
 
     #[inline(always)]
