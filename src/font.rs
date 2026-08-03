@@ -2,9 +2,9 @@ use crate::layout::GlyphRasterConfig;
 use crate::math::{Geometry, Line};
 use crate::platform::{as_i32, ceil, floor, fract, is_negative};
 use crate::raster::Raster;
-use crate::table::{load_gsub, TableKern};
+use crate::table::{TableKern, load_gsub};
 use crate::unicode;
-use crate::FontResult;
+use crate::{FontError, FontResult};
 use crate::{HashMap, HashSet};
 use alloc::string::String;
 use alloc::vec;
@@ -13,7 +13,7 @@ use core::hash::{Hash, Hasher};
 use core::mem;
 use core::num::NonZeroU16;
 use core::ops::Deref;
-use ttf_parser::{Face, FaceParsingError, GlyphId, Tag};
+use ttf_parser::{Face, GlyphId, Tag};
 
 #[cfg(feature = "parallel")]
 use rayon::prelude::*;
@@ -215,19 +215,6 @@ impl core::fmt::Debug for Font {
     }
 }
 
-/// Converts a ttf-parser FaceParsingError into a string.
-fn convert_error(error: FaceParsingError) -> &'static str {
-    use FaceParsingError::*;
-    match error {
-        MalformedFont => "An attempt to read out of bounds detected.",
-        UnknownMagic => "Face data must start with 0x00010000, 0x74727565, 0x4F54544F or 0x74746366.",
-        FaceIndexOutOfBounds => "The face index is larger than the number of faces in the font.",
-        NoHeadTable => "The head table is missing or malformed.",
-        NoHheaTable => "The hhea table is missing or malformed.",
-        NoMaxpTable => "The maxp table is missing or malformed.",
-    }
-}
-
 fn convert_name(face: &Face) -> Option<String> {
     for name in face.names() {
         if name.name_id == 4 && name.is_unicode() {
@@ -242,10 +229,7 @@ impl Font {
     pub fn from_bytes<Data: Deref<Target = [u8]>>(data: Data, settings: FontSettings) -> FontResult<Font> {
         let hash = crate::hash::hash(&data);
 
-        let face = match Face::parse(&data, settings.collection_index) {
-            Ok(f) => f,
-            Err(e) => return Err(convert_error(e)),
-        };
+        let face = Face::parse(&data, settings.collection_index)?;
         let name = convert_name(&face);
 
         // Optionally get kerning values for the font. This should be a try block in the future.
@@ -286,9 +270,9 @@ impl Font {
         // Parse and store all unique codepoints.
         let mut glyphs: Vec<Glyph> = vec::from_elem(Glyph::default(), glyph_count as usize);
 
-        let generate_glyph = |index: u16| -> Result<Glyph, &'static str> {
+        let generate_glyph = |index: u16| -> Result<Glyph, FontError> {
             if index >= glyph_count {
-                return Err("Attempted to map a codepoint out of bounds.");
+                return Err(FontError::CodepointOutOfBounds);
             }
 
             let mut glyph = Glyph::default();
@@ -315,7 +299,7 @@ impl Font {
         {
             let generated: Vec<(u16, Glyph)> = indices_to_load
                 .into_par_iter()
-                .map(|index| Ok((index, generate_glyph(index)?)))
+                .map(|index| Ok::<_, FontError>((index, generate_glyph(index)?)))
                 .collect::<Result<_, _>>()?;
             for (index, glyph) in generated {
                 glyphs[index as usize] = glyph;
