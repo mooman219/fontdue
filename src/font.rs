@@ -284,7 +284,7 @@ impl Font {
         let units_per_em = face.units_per_em() as f32;
 
         // Parse and store all unique codepoints.
-        let mut glyphs: Vec<Glyph> = vec::from_elem(Glyph::default(), glyph_count as usize);
+        let mut glyphs: Vec<Glyph> = vec![Glyph::default(); glyph_count as usize];
 
         let generate_glyph = |index: u16| -> Result<Glyph, &'static str> {
             if index >= glyph_count {
