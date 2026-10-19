@@ -4,7 +4,6 @@ version = "0.9.4"
 authors = ["Joe Cumbo <mooman219@gmail.com>"]
 license = "MIT OR Apache-2.0 OR Zlib"
 documentation = "https://docs.rs/fontdue"
-homepage = "https://github.com/mooman219/fontdue"
 repository = "https://github.com/mooman219/fontdue"
 description = "A simple no_std font parser and rasterizer."
 keywords = ["font", "text", "truetype", "opentype", "ttf"]

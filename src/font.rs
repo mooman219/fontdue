@@ -265,7 +265,7 @@ impl Font {
                 subtable.codepoints(|codepoint| {
                     if let Some(mapping) = subtable.glyph_index(codepoint) {
                         if let Some(mapping) = NonZeroU16::new(mapping.0) {
-                            // Invalid indicies are ignored.
+                            // Invalid codepoints are not mapped in the lookup table.
                             if let Some(c) = char::from_u32(codepoint) {
                                 indices_to_load.insert(mapping.get());
                                 char_to_glyph.insert(c, mapping);

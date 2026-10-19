@@ -276,7 +276,7 @@ impl Line {
         let dx = end.x - start.x;
         let dy = end.y - start.y;
         let tdx = if dx == 0.0 {
-            core::f32::MAX
+            f32::MAX
         } else {
             1.0 / dx
         };
@@ -415,10 +415,10 @@ impl Geometry {
             v_lines: Vec::new(),
             m_lines: Vec::new(),
             effective_bounds: AABB {
-                xmin: core::f32::MAX,
-                xmax: core::f32::MIN,
-                ymin: core::f32::MAX,
-                ymax: core::f32::MIN,
+                xmin: f32::MAX,
+                xmax: f32::MIN,
+                ymin: f32::MAX,
+                ymax: f32::MIN,
             },
             start_point: Point::default(),
             previous_point: Point::default(),

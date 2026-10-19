@@ -347,8 +347,8 @@ impl<'a, U: Copy + Clone> Layout<U> {
             settings.wrap_hard_breaks,
             settings.max_width.is_some(),
         );
-        self.max_width = settings.max_width.unwrap_or(core::f32::MAX);
-        self.max_height = settings.max_height.unwrap_or(core::f32::MAX);
+        self.max_width = settings.max_width.unwrap_or(f32::MAX);
+        self.max_height = settings.max_height.unwrap_or(f32::MAX);
         self.vertical_align = if settings.max_height.is_none() {
             0.0
         } else {
