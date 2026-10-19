@@ -262,13 +262,17 @@ impl Font {
         indices_to_load.insert(0u16);
         if let Some(subtable) = face.tables().cmap {
             for subtable in subtable.subtables {
+                if !subtable.is_unicode() {
+                    continue;
+                }
+
                 subtable.codepoints(|codepoint| {
                     if let Some(mapping) = subtable.glyph_index(codepoint) {
                         if let Some(mapping) = NonZeroU16::new(mapping.0) {
                             // Invalid codepoints are not mapped in the lookup table.
                             if let Some(c) = char::from_u32(codepoint) {
                                 indices_to_load.insert(mapping.get());
-                                char_to_glyph.insert(c, mapping);
+                                char_to_glyph.entry(c).or_insert(mapping);
                             }
                         }
                     }
@@ -642,5 +646,28 @@ impl Font {
     /// Gets the total glyphs in the font.
     pub fn glyph_count(&self) -> u16 {
         self.glyphs.len() as u16
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::{Font, FontSettings};
+    use ttf_parser::Face;
+
+    #[test]
+    fn lookup_glyph_index_uses_unicode_cmap_mappings() {
+        let data = include_bytes!("../dev/resources/fonts/FasterOne-Regular.ttf");
+        let face = Face::parse(data, 0).unwrap();
+        let font = Font::from_bytes(&data[..], FontSettings::default()).unwrap();
+
+        for codepoint in 0x80..=0x1ff {
+            let character = char::from_u32(codepoint).unwrap();
+            let expected = face.glyph_index(character).map_or(0, |glyph| glyph.0);
+            assert_eq!(
+                font.lookup_glyph_index(character),
+                expected,
+                "wrong glyph mapping for U+{codepoint:04X}"
+            );
+        }
     }
 }
