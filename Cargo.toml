@@ -31,3 +31,4 @@ ttf-parser = { version = "0.25", default-features = false, features = [
 ] }
 hashbrown = { version = "0.15", optional = true }
 rayon = { version = "1.10", optional = true }
+thiserror = { version = "2.0.17", default-features = false }
